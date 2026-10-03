@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Fiches Projets - Eau Potable</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #1e6fa5;
+            --primary-dark: #155a8a;
+            --secondary: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --border: #dee2e6;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-icon { font-size: 2.5rem; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; }
+        .header p { font-size: 0.85rem; opacity: 0.85; margin-top: 3px; }
+        .sync-status {
+            margin-left: auto;
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sync-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #ffc107;
+        }
+        .sync-dot.online { background: #28a745; }
+        .sync-dot.offline { background: #dc3545; }
+
+        /* NAV */
+        .nav {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: var(--light);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: #333; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* PAGES */
+        .page { display: none; padding: 25px; }
+        .page.active { display: block; }
+
+        /* ACCUEIL */
+        .accueil-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        @media (max-width: 600px) { .accueil-grid { grid-template-columns: 1fr; } }
+
+        .accueil-card {
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .accueil-card:hover {
+            border-color: var(--primary);
+            background: #e8f4fd;
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        .accueil-card .icon { font-size: 3rem; margin-bottom: 12px; }
+        .accueil-card h3 { color: var(--primary); font-size: 1.1rem; margin-bottom: 8px; }
+        .accueil-card p { color: #666; font-size: 0.85rem; }
+
+        .stats-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .stat-chip {
+            background: var(--primary);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .stat-chip.green { background: var(--secondary); }
+        .stat-chip.orange { background: #fd7e14; }
+
+        /* LISTE FICHES */
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .fiche-card {
+            background: var(--light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .fiche-card:hover { border-color: var(--primary); background: #e8f4fd; box-shadow: var(--shadow); }
+        .fiche-card .fiche-icon { font-size: 1.8rem; }
+        .fiche-card .fiche-info { flex: 1; }
+        .fiche-card .fiche-nom { font-weight: 700; color: var(--dark); font-size: 0.95rem; }
+        .fiche-card .fiche-meta { color: #666; font-size: 0.8rem; margin-top: 3px; }
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-encours { background: #d4edda; color: #155724; }
+        .badge-cloture { background: #d6d8db; color: #383d41; }
+        .badge-suspendu { background: #fff3cd; color: #856404; }
+
+        .fiche-actions { display: flex; gap: 8px; }
+        .btn-sm { padding: 5px 10px; font-size: 0.75rem; border-radius: 6px; }
+
+        /* FORMULAIRE */
+        .form-section {
+            background: var(--light);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-section h3 {
+            color: var(--primary);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+        .form-group label .required { color: var(--danger); }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,111,165,0.1); }
+        textarea.form-control { resize: vertical; min-height: 80px; }
+        select.form-control { cursor: pointer; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+        /* PHOTOS */
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .photo-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: var(--border);
+        }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-delete {
+            position: absolute;
+            top: 5px; right: 5px;
+            background: rgba(220,53,69,0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px; height: 24px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        .upload-zone:hover { border-color: var(--primary); background: #e8f4fd; }
+        .upload-zone input { display: none; }
+
+        /* DETAIL FICHE */
+        .detail-section {
+            margin-bottom: 20px;
+            background: var(--light);
+            border-radius: 10px;
+            padding: 18px;
+        }
+        .detail-section h3 {
+            color: var(--primary);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-row { display: flex; margin-bottom: 8px; gap: 10px; }
+        .detail-label { font-weight: 600; font-size: 0.82rem; color: #555; min-width: 160px; }
+        .detail-value { font-size: 0.85rem; color: var(--dark); flex: 1; }
+        .detail-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
+        .detail-photos img { width: 100%; border-radius: 6px; aspect-ratio: 1; object-fit: cover; cursor: pointer; }
+
+        /* LOADING */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 20px; right: 20px;
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 9999;
+            max-width: 300px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--secondary); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: var(--primary); }
+
+        /* EMPTY STATE */
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+        /* LIGHTBOX */
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+        .lightbox-close {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px; height: 36px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        /* LOGIN */
+        .login-screen {
+            position: fixed; inset: 0; z-index: 20000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .login-screen.hidden { display: none; }
+        .login-box {
+            background: white; border-radius: 16px; box-shadow: var(--shadow);
+            padding: 35px 30px; width: 100%; max-width: 380px; text-align: center;
+        }
+        .login-box .logo { font-size: 3rem; }
+        .login-box h1 { color: var(--primary); font-size: 1.4rem; margin: 8px 0 4px; }
+        .login-box p.sub { color: #666; font-size: 0.85rem; margin-bottom: 22px; }
+        .login-box .form-group { text-align: left; }
+        .login-box .btn { width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 8px; }
+        .login-error { color: var(--danger); font-size: 0.85rem; min-height: 1.2em; margin-top: 10px; }
+        .user-chip { font-size: 0.75rem; color: #555; margin-left: auto; align-self: center; }
+    </style>
+</head>
+<body>
+
+<!-- ÉCRAN DE CONNEXION -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <div class="logo">💧</div>
+        <h1>Fiches Projets</h1>
+        <p class="sub">Service Eau Potable — accès réservé</p>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" class="form-control" id="loginEmail" autocomplete="username" placeholder="prenom.nom@paysvoironnais.com">
+        </div>
+        <div class="form-group">
+            <label>Mot de passe</label>
+            <input type="password" class="form-control" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" id="btnLogin" onclick="seConnecter()">🔐 Se connecter</button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-icon">💧</div>
+        <div>
+            <h1>Fiches Projets</h1>
+            <p>Service Eau Potable — CAPV</p>
+        </div>
+        <div class="sync-status" id="syncStatus">
+            <div class="sync-dot" id="syncDot"></div>
+            <span id="syncText">Connexion...</span>
+        </div>
+    </div>
+
+    <!-- NAV -->
+    <div class="nav" id="mainNav" style="display:none">
+        <button class="btn btn-outline" onclick="location.href='index.html'">⬅️ Portail</button>
+        <button class="btn btn-outline" onclick="showPage('accueil')">🏠 Accueil</button>
+        <button class="btn btn-primary" onclick="nouvellesFiche()">➕ Nouvelle fiche</button>
+        <button class="btn btn-secondary" onclick="showPage('liste')">📂 Mes fiches</button>
+        <button class="btn btn-warning" onclick="exporterCSV()">📊 Export Calc</button>
+        <span class="user-chip" id="userChip"></span>
+        <button class="btn btn-danger" onclick="seDeconnecter()">🚪 Déconnexion</button>
+    </div>
+
+    <!-- PAGE ACCUEIL -->
+    <div class="page active" id="page-accueil">
+        <div class="loading" id="loadingAccueil">
+            <div class="spinner"></div>
+            <p>Connexion à la base de données...</p>
+        </div>
+
+        <div id="accueilContent" style="display:none">
+            <h2 style="color:var(--primary); margin-bottom:8px;">Tableau de bord</h2>
+            <p style="color:#666; font-size:0.85rem; margin-bottom:20px;">Gestion des projets eau potable</p>
+
+            <div class="stats-bar">
+                <div class="stat-chip" id="statTotal">📋 0 fiches</div>
+                <div class="stat-chip green" id="statEncours">🟢 0 en cours</div>
+                <div class="stat-chip orange" id="statCloture">✅ 0 clôturées</div>
+            </div>
+
+            <div class="accueil-grid">
+                <div class="accueil-card" onclick="nouvellesFiche()">
+                    <div class="icon">➕</div>
+                    <h3>Nouvelle fiche</h3>
+                    <p>Créer un nouveau projet eau potable</p>
+                </div>
+                <div class="accueil-card" onclick="showPage('liste')">
+                    <div class="icon">📂</div>
+                    <h3>Fiches existantes</h3>
+                    <p>Consulter et modifier les fiches</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE LISTE -->
+    <div class="page" id="page-liste">
+        <h2 style="color:var(--primary); margin-bottom:15px;">📂 Fiches projets</h2>
+
+        <div class="filters">
+            <button class="filter-btn active" onclick="filtrerFiches('all', this)">Toutes</button>
+            <button class="filter-btn" onclick="filtrerFiches('En cours', this)">🟢 En cours</button>
+            <button class="filter-btn" onclick="filtrerFiches('Clôturé', this)">✅ Clôturées</button>
+            <button class="filter-btn" onclick="filtrerFiches('Suspendu', this)">⏸️ Suspendues</button>
+        </div>
+
+        <div id="listeFiches">
+            <div class="loading"><div class="spinner"></div><p>Chargement...</p></div>
+        </div>
+    </div>
+
+    <!-- PAGE FORMULAIRE -->
+    <div class="page" id="page-formulaire">
+        <h2 style="color:var(--primary); margin-bottom:5px;" id="formTitle">➕ Nouvelle fiche</h2>
+        <p style="color:#666; font-size:0.82rem; margin-bottom:20px;" id="formSubtitle">Remplissez tous les champs nécessaires</p>
+
+        <form id="ficheForm" onsubmit="return false;">
+            <input type="hidden" id="ficheId">
+
+            <!-- PHOTOS -->
+            <div class="form-section">
+                <h3>📸 0. Photos du projet</h3>
+                <div class="alert alert-warning">⚠️ Maximum 3 photos recommandées pour optimiser le stockage</div>
+                <div class="upload-zone" onclick="document.getElementById('photoInput').click()">
+                    <input type="file" id="photoInput" accept="image/*" multiple onchange="ajouterPhotos(this)">
+                    <div style="font-size:2rem;">📷</div>
+                    <p style="margin-top:8px; color:#666; font-size:0.85rem;">Cliquer pour ajouter des photos (max 3)</p>
+                </div>
+                <div class="photos-grid" id="photosPreview"></div>
+            </div>
+
+            <!-- IDENTIFICATION -->
+            <div class="form-section">
+                <h3>🔖 1. Identification</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nom du projet <span class="required">*</span></label>
+                        <input type="text" class="form-control" id="nomProjet" placeholder="Ex: Réhabilitation réseau rue des Alpes" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Référence interne</label>
+                        <input type="text" class="form-control" id="refInterne" placeholder="Ex: AEP-2026-001">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Service / Unité</label>
+                        <input type="text" class="form-control" id="service" placeholder="Ex: Service Eau Potable">
+                    </div>
+                    <div class="form-group">
+                        <label>Responsable du projet</label>
+                        <input type="text" class="form-control" id="responsable" placeholder="Nom et prénom">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date d'ouverture</label>
+                        <input type="date" class="form-control" id="dateOuverture">
+                    </div>
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select class="form-control" id="statut">
+                            <option value="En cours">🟢 En cours</option>
+                            <option value="Clôturé">✅ Clôturé</option>
+                            <option value="Suspendu">⏸️ Suspendu</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTEXTE -->
+            <div class="form-section">
+                <h3>📋 2. Contexte</h3>
+                <div class="form-group">
+                    <label>Origine de la demande</label>
+                    <textarea class="form-control" id="originedemande" placeholder="Ex: Signalement fuite, plainte client..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Problème / Besoin identifié</label>
+                    <textarea class="form-control" id="probleme" placeholder="Décrivez le problème ou besoin..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Enjeux</label>
+                    <textarea class="form-control" id="enjeux" placeholder="Qualité, sécurité, conformité, continuité de service, environnement..."></textarea>
+                </div>
+            </div>
+
+            <!-- OBJECTIFS -->
+            <div class="form-section">
+                <h3>🎯 3. Objectifs</h3>
+                <div class="form-group">
+                    <label>Objectif principal</label>
+                    <textarea class="form-control" id="objectifPrincipal" placeholder="L'objectif majeur du projet..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Objectifs secondaires</label>
+                    <textarea class="form-control" id="objectifsSecondaires" placeholder="Autres objectifs visés..."></textarea>
+                </div>
+            </div>
+
+            <!-- PORTEE -->
+            <div class="form-section">
+                <h3>🗺️ 4. Portée</h3>
+                <div class="form-group">
+                    <label>Périmètre inclus</label>
+                    <textarea class="form-control" id="perimetreInclus" placeholder="Ce qui est dans le scope du projet..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Périmètre exclu</label>
+                    <textarea class="form-control" id="perimetreExclu" placeholder="Ce qui est hors scope..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Contraintes identifiées</label>
+                    <textarea class="form-control" id="contraintes" placeholder="Contraintes techniques, réglementaires, calendaires..."></textarea>
+                </div>
+            </div>
+
+            <!-- PARTIES PRENANTES -->
+            <div class="form-section">
+                <h3>👥 5. Parties prenantes</h3>
+                <div class="form-group">
+                    <label>Interne</label>
+                    <textarea class="form-control" id="partiesInternes" placeholder="Services, équipes, agents impliqués..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Externe</label>
+                    <textarea class="form-control" id="partiesExternes" placeholder="Entreprises, sous-traitants, organismes..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Utilisateurs impactés</label>
+                    <textarea class="form-control" id="utilisateurs" placeholder="Abonnés, communes, services impactés..."></textarea>
+                </div>
+            </div>
+
+            <!-- LIVRABLES -->
+            <div class="form-section">
+                <h3>📦 6. Livrables attendus</h3>
+                <div class="form-group">
+                    <textarea class="form-control" id="livrables" rows="4" placeholder="- Rapport d'intervention&#10;- Plans mis à jour&#10;- PV de réception..."></textarea>
+                </div>
+            </div>
+
+            <!-- PLANNING -->
+            <div class="form-section">
+                <h3>📅 7. Planning prévisionnel</h3>
+                <div class="form-group">
+                    <label>Étapes clés</label>
+                    <textarea class="form-control" id="etapesCles" placeholder="- Phase 1 : Diagnostic&#10;- Phase 2 : Travaux&#10;- Phase 3 : Réception..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Date de fin estimée</label>
+                    <input type="date" class="form-control" id="dateFinEstimee">
+                </div>
+            </div>
+
+            <!-- RESSOURCES -->
+            <div class="form-section">
+                <h3>🔧 8. Ressources nécessaires</h3>
+                <div class="form-group">
+                    <label>Matérielles</label>
+                    <textarea class="form-control" id="ressourcesMat" placeholder="Matériaux, équipements, engins..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Humaines</label>
+                    <textarea class="form-control" id="ressourcesHum" placeholder="Nombre d'agents, compétences requises..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Budget (€)</label>
+                    <input type="text" class="form-control" id="budget" placeholder="Ex: 15 000 €">
+                </div>
+            </div>
+
+            <!-- RISQUES -->
+            <div class="form-section">
+                <h3>⚠️ 9. Analyse des risques</h3>
+                <div class="form-group">
+                    <label>Risques identifiés</label>
+                    <textarea class="form-control" id="risques" placeholder="Risques techniques, organisationnels, environnementaux..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Impact</label>
+                        <select class="form-control" id="impact">
+                            <option value="">-- Sélectionner --</option>
+                            <option>Faible</option>
+                            <option>Modéré</option>
+                            <option>Élevé</option>
+                            <option>Critique</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Probabilité</label>
+                        <select class="form-control" id="probabilite">
+                            <option value="">-- Sélectionner --</option>
+                            <option>Faible</option>
+                            <option>Moyenne</option>
+                            <option>Élevée</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mesures préventives</label>
+                    <textarea class="form-control" id="mesuresPreventives" placeholder="Actions pour réduire les risques..."></textarea>
+                </div>
+            </div>
+
+            <!-- INDICATEURS -->
+            <div class="form-section">
+                <h3>📊 10. Indicateurs de suivi</h3>
+                <div class="form-group">
+                    <label>Indicateurs de performance</label>
+                    <textarea class="form-control" id="indicateurs" placeholder="KPIs, critères de succès..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Fréquence de suivi</label>
+                    <input type="text" class="form-control" id="frequenceSuivi" placeholder="Ex: Hebdomadaire, Mensuel">
+                </div>
+            </div>
+
+            <!-- VALIDATION -->
+            <div class="form-section">
+                <h3>✅ 11. Validation</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Responsable de validation</label>
+                        <input type="text" class="form-control" id="responsableValidation" placeholder="Nom et fonction">
+                    </div>
+                    <div class="form-group">
+                        <label>Date de validation</label>
+                        <input type="date" class="form-control" id="dateValidation">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                <button type="button" class="btn btn-primary" id="btnSave" onclick="sauvegarderFiche()">💾 Enregistrer la fiche</button>
+                <button type="button" class="btn btn-secondary" onclick="showPage('liste')">❌ Annuler</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- PAGE DETAIL -->
+    <div class="page" id="page-detail">
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://xvdryqptuejenspbypvy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let toutesLesFiches = [];
+let photosActuelles = [];
+let ficheEnEdition = null;
+let filtreActuel = 'all';
+
+// ─── AUTHENTIFICATION ───────────────────────────────────────────────────────
+async function verifierSession() {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('userChip').textContent = '👤 ' + session.user.email;
+        init();
+    } else {
+        document.getElementById('loginScreen').classList.remove('hidden');
+        setSyncStatus(false);
+    }
+}
+
+async function seConnecter() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const err = document.getElementById('loginError');
+    const btn = document.getElementById('btnLogin');
+    err.textContent = '';
+    if (!email || !password) { err.textContent = 'Renseigne ton email et ton mot de passe.'; return; }
+    btn.disabled = true; btn.textContent = '⏳ Connexion...';
+    const { error } = await db.auth.signInWithPassword({ email, password });
+    btn.disabled = false; btn.textContent = '🔐 Se connecter';
+    if (error) { err.textContent = 'Email ou mot de passe incorrect.'; return; }
+    document.getElementById('loginPassword').value = '';
+    verifierSession();
+}
+
+async function seDeconnecter() {
+    if (!confirm('Se déconnecter ?')) return;
+    await db.auth.signOut();
+    toutesLesFiches = [];
+    document.getElementById('mainNav').style.display = 'none';
+    document.getElementById('accueilContent').style.display = 'none';
+    document.getElementById('loginScreen').classList.remove('hidden');
+    setSyncStatus(false);
+}
+
+// Valider avec la touche Entrée
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') seConnecter(); });
+
+// ─── INIT ───────────────────────────────────────────────────────────────────
+async function init() {
+    try {
+        const { error } = await db.from('fiches').select('id', { count: 'exact', head: true });
+        if (error) throw error;
+        setSyncStatus(true);
+        document.getElementById('mainNav').style.display = 'flex';
+        await chargerFiches();
+        showPage('accueil');
+    } catch (e) {
+        setSyncStatus(false);
+        document.getElementById('loadingAccueil').style.display = 'block';
+        document.getElementById('loadingAccueil').innerHTML = `
+            <div style="color:var(--danger); font-size:2rem;">⚠️</div>
+            <p style="color:var(--danger); font-weight:600; margin-top:10px;">Impossible de se connecter à la base de données</p>
+            <p style="color:#666; font-size:0.82rem; margin-top:5px;">${e.message}</p>
+            <button class="btn btn-primary" style="margin-top:15px;" onclick="init()">🔄 Réessayer</button>
+        `;
+    }
+}
+
+function setSyncStatus(online) {
+    const dot = document.getElementById('syncDot');
+    const text = document.getElementById('syncText');
+    dot.className = 'sync-dot ' + (online ? 'online' : 'offline');
+    text.textContent = online ? 'Synchronisé 🇫🇷' : 'Hors ligne';
+}
+
+// ─── CHARGEMENT ──────────────────────────────────────────────────────────────
+async function chargerFiches() {
+    const { data, error } = await db.from('fiches').select('*').order('created_at', { ascending: false });
+    if (error) { showToast('Erreur chargement : ' + error.message, 'error'); return; }
+    toutesLesFiches = data || [];
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    if (page === 'liste') afficherListe(filtreActuel);
+    if (page === 'accueil') afficherAccueil();
+}
+
+function afficherAccueil() {
+    const encours = toutesLesFiches.filter(f => f.statut === 'En cours').length;
+    const cloture = toutesLesFiches.filter(f => f.statut === 'Clôturé').length;
+    document.getElementById('statTotal').textContent = `📋 ${toutesLesFiches.length} fiche${toutesLesFiches.length > 1 ? 's' : ''}`;
+    document.getElementById('statEncours').textContent = `🟢 ${encours} en cours`;
+    document.getElementById('statCloture').textContent = `✅ ${cloture} clôturée${cloture > 1 ? 's' : ''}`;
+    document.getElementById('loadingAccueil').style.display = 'none';
+    document.getElementById('accueilContent').style.display = 'block';
+}
+
+// ─── LISTE ───────────────────────────────────────────────────────────────────
+function filtrerFiches(filtre, btn) {
+    filtreActuel = filtre;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    afficherListe(filtre);
+}
+
+function afficherListe(filtre = 'all') {
+    const fiches = filtre === 'all' ? toutesLesFiches : toutesLesFiches.filter(f => f.statut === filtre);
+    const container = document.getElementById('listeFiches');
+
+    if (fiches.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Aucune fiche ${filtre !== 'all' ? '"' + filtre + '"' : ''} trouvée</p><button class="btn btn-primary" style="margin-top:15px;" onclick="nouvellesFiche()">➕ Créer une fiche</button></div>`;
+        return;
+    }
+
+    container.innerHTML = fiches.map(f => `
+        <div class="fiche-card" onclick="voirFiche('${f.id}')">
+            <div class="fiche-icon">💧</div>
+            <div class="fiche-info">
+                <div class="fiche-nom">${f.nom_projet || 'Sans titre'}</div>
+                <div class="fiche-meta">
+                    ${f.ref_interne ? f.ref_interne + ' · ' : ''}
+                    ${f.responsable ? f.responsable + ' · ' : ''}
+                    ${f.date_ouverture ? new Date(f.date_ouverture).toLocaleDateString('fr-FR') : 'Date non définie'}
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                <span class="badge badge-${f.statut === 'En cours' ? 'encours' : f.statut === 'Clôturé' ? 'cloture' : 'suspendu'}">${f.statut}</span>
+                <div class="fiche-actions" onclick="event.stopPropagation()">
+                    <button class="btn btn-primary btn-sm" onclick="modifierFiche('${f.id}')">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="supprimerFiche('${f.id}')">🗑️</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ─── FORMULAIRE ──────────────────────────────────────────────────────────────
+function nouvellesFiche() {
+    ficheEnEdition = null;
+    photosActuelles = [];
+    document.getElementById('ficheForm').reset();
+    document.getElementById('ficheId').value = '';
+    document.getElementById('photosPreview').innerHTML = '';
+    document.getElementById('formTitle').textContent = '➕ Nouvelle fiche projet';
+    document.getElementById('formSubtitle').textContent = 'Remplissez les informations du projet';
+    document.getElementById('btnSave').textContent = '💾 Enregistrer la fiche';
+    document.getElementById('dateOuverture').value = new Date().toISOString().split('T')[0];
+    showPage('formulaire');
+}
+
+function modifierFiche(id) {
+    const f = toutesLesFiches.find(f => f.id == id);
+    if (!f) return;
+    ficheEnEdition = f;
+    photosActuelles = f.photos ? JSON.parse(f.photos) : [];
+
+    document.getElementById('ficheId').value = f.id;
+    document.getElementById('nomProjet').value = f.nom_projet || '';
+    document.getElementById('refInterne').value = f.ref_interne || '';
+    document.getElementById('service').value = f.service || '';
+    document.getElementById('responsable').value = f.responsable || '';
+    document.getElementById('dateOuverture').value = f.date_ouverture || '';
+    document.getElementById('statut').value = f.statut || 'En cours';
+    document.getElementById('originedemande').value = f.origine_demande || '';
+    document.getElementById('probleme').value = f.probleme || '';
+    document.getElementById('enjeux').value = f.enjeux || '';
+    document.getElementById('objectifPrincipal').value = f.objectif_principal || '';
+    document.getElementById('objectifsSecondaires').value = f.objectifs_secondaires || '';
+    document.getElementById('perimetreInclus').value = f.perimetre_inclus || '';
+    document.getElementById('perimetreExclu').value = f.perimetre_exclu || '';
+    document.getElementById('contraintes').value = f.contraintes || '';
+    document.getElementById('partiesInternes').value = f.parties_internes || '';
+    document.getElementById('partiesExternes').value = f.parties_externes || '';
+    document.getElementById('utilisateurs').value = f.utilisateurs || '';
+    document.getElementById('livrables').value = f.livrables || '';
+    document.getElementById('etapesCles').value = f.etapes_cles || '';
+    document.getElementById('dateFinEstimee').value = f.date_fin_estimee || '';
+    document.getElementById('ressourcesMat').value = f.ressources_mat || '';
+    document.getElementById('ressourcesHum').value = f.ressources_hum || '';
+    document.getElementById('budget').value = f.budget || '';
+    document.getElementById('risques').value = f.risques || '';
+    document.getElementById('impact').value = f.impact || '';
+    document.getElementById('probabilite').value = f.probabilite || '';
+    document.getElementById('mesuresPreventives').value = f.mesures_preventives || '';
+    document.getElementById('indicateurs').value = f.indicateurs || '';
+    document.getElementById('frequenceSuivi').value = f.frequence_suivi || '';
+    document.getElementById('responsableValidation').value = f.responsable_validation || '';
+    document.getElementById('dateValidation').value = f.date_validation || '';
+
+    afficherPhotosPreview();
+    document.getElementById('formTitle').textContent = '✏️ Modifier la fiche';
+    document.getElementById('formSubtitle').textContent = f.nom_projet;
+    document.getElementById('btnSave').textContent = '💾 Mettre à jour';
+    showPage('formulaire');
+}
+
+// ─── PHOTOS ──────────────────────────────────────────────────────────────────
+function ajouterPhotos(input) {
+    const files = Array.from(input.files);
+    const remaining = 3 - photosActuelles.length;
+    if (remaining <= 0) { showToast('Maximum 3 photos atteint', 'error'); return; }
+
+    const toProcess = files.slice(0, remaining);
+    toProcess.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            compresserImage(e.target.result, (compressed) => {
+                photosActuelles.push(compressed);
+                afficherPhotosPreview();
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+    input.value = '';
+}
+
+function compresserImage(src, callback) {
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > h && w > MAX) { h = h * MAX / w; w = MAX; }
+        else if (h > MAX) { w = w * MAX / h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', 0.65));
+    };
+    img.src = src;
+}
+
+function afficherPhotosPreview() {
+    document.getElementById('photosPreview').innerHTML = photosActuelles.map((p, i) => `
+        <div class="photo-item">
+            <img src="${p}" alt="Photo ${i+1}">
+            <button class="photo-delete" onclick="supprimerPhoto(${i})">✕</button>
+        </div>
+    `).join('');
+}
+
+function supprimerPhoto(i) {
+    photosActuelles.splice(i, 1);
+    afficherPhotosPreview();
+}
+
+// ─── SAUVEGARDE ──────────────────────────────────────────────────────────────
+async function sauvegarderFiche() {
+    const nom = document.getElementById('nomProjet').value.trim();
+    if (!nom) { showToast('Le nom du projet est obligatoire !', 'error'); document.getElementById('nomProjet').focus(); return; }
+
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true;
+    btn.textContent = '⏳ Enregistrement...';
+
+    const data = {
+        nom_projet: nom,
+        ref_interne: document.getElementById('refInterne').value.trim(),
+        service: document.getElementById('service').value.trim(),
+        responsable: document.getElementById('responsable').value.trim(),
+        date_ouverture: document.getElementById('dateOuverture').value || null,
+        statut: document.getElementById('statut').value,
+        origine_demande: document.getElementById('originedemande').value.trim(),
+        probleme: document.getElementById('probleme').value.trim(),
+        enjeux: document.getElementById('enjeux').value.trim(),
+        objectif_principal: document.getElementById('objectifPrincipal').value.trim(),
+        objectifs_secondaires: document.getElementById('objectifsSecondaires').value.trim(),
+        perimetre_inclus: document.getElementById('perimetreInclus').value.trim(),
+        perimetre_exclu: document.getElementById('perimetreExclu').value.trim(),
+        contraintes: document.getElementById('contraintes').value.trim(),
+        parties_internes: document.getElementById('partiesInternes').value.trim(),
+        parties_externes: document.getElementById('partiesExternes').value.trim(),
+        utilisateurs: document.getElementById('utilisateurs').value.trim(),
+        livrables: document.getElementById('livrables').value.trim(),
+        etapes_cles: document.getElementById('etapesCles').value.trim(),
+        date_fin_estimee: document.getElementById('dateFinEstimee').value || null,
+        ressources_mat: document.getElementById('ressourcesMat').value.trim(),
+        ressources_hum: document.getElementById('ressourcesHum').value.trim(),
+        budget: document.getElementById('budget').value.trim(),
+        risques: document.getElementById('risques').value.trim(),
+        impact: document.getElementById('impact').value,
+        probabilite: document.getElementById('probabilite').value,
+        mesures_preventives: document.getElementById('mesuresPreventives').value.trim(),
+        indicateurs: document.getElementById('indicateurs').value.trim(),
+        frequence_suivi: document.getElementById('frequenceSuivi').value.trim(),
+        responsable_validation: document.getElementById('responsableValidation').value.trim(),
+        date_validation: document.getElementById('dateValidation').value || null,
+        photos: JSON.stringify(photosActuelles),
+        updated_at: new Date().toISOString()
+    };
+
+    try {
+        let error;
+        const id = document.getElementById('ficheId').value;
+        if (id) {
+            ({ error } = await db.from('fiches').update(data).eq('id', id));
+        } else {
+            ({ error } = await db.from('fiches').insert([data]));
+        }
+        if (error) throw error;
+
+        await chargerFiches();
+        showToast(id ? '✅ Fiche mise à jour !' : '✅ Fiche créée !', 'success');
+        showPage('liste');
+    } catch (e) {
+        showToast('Erreur : ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Enregistrer la fiche';
+    }
+}
+
+// ─── DETAIL ──────────────────────────────────────────────────────────────────
+function voirFiche(id) {
+    const f = toutesLesFiches.find(f => f.id == id);
+    if (!f) return;
+    const photos = f.photos ? JSON.parse(f.photos) : [];
+
+    const champ = (label, val) => val ? `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${val}</span></div>` : '';
+
+    document.getElementById('detailContent').innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+            <button class="btn btn-secondary" onclick="showPage('liste')">← Retour</button>
+            <button class="btn btn-primary" onclick="modifierFiche('${f.id}')">✏️ Modifier</button>
+            <button class="btn btn-danger" onclick="supprimerFiche('${f.id}')">🗑️ Supprimer</button>
+            <span class="badge badge-${f.statut === 'En cours' ? 'encours' : f.statut === 'Clôturé' ? 'cloture' : 'suspendu'}" style="padding:8px 16px;font-size:0.85rem;">${f.statut}</span>
+        </div>
+        <h2 style="color:var(--primary);margin-bottom:20px;">💧 ${f.nom_projet}</h2>
+
+        ${photos.length > 0 ? `
+        <div class="detail-section">
+            <h3>📸 Photos</h3>
+            <div class="detail-photos">${photos.map(p => `<img src="${p}" onclick="openLightbox('${p}')" alt="photo">`).join('')}</div>
+        </div>` : ''}
+
+        <div class="detail-section">
+            <h3>🔖 1. Identification</h3>
+            ${champ('Référence', f.ref_interne)}
+            ${champ('Service', f.service)}
+            ${champ('Responsable', f.responsable)}
+            ${champ('Date ouverture', f.date_ouverture ? new Date(f.date_ouverture).toLocaleDateString('fr-FR') : null)}
+        </div>
+        <div class="detail-section">
+            <h3>📋 2. Contexte</h3>
+            ${champ('Origine demande', f.origine_demande)}
+            ${champ('Problème / Besoin', f.probleme)}
+            ${champ('Enjeux', f.enjeux)}
+        </div>
+        <div class="detail-section">
+            <h3>🎯 3. Objectifs</h3>
+            ${champ('Objectif principal', f.objectif_principal)}
+            ${champ('Objectifs secondaires', f.objectifs_secondaires)}
+        </div>
+        <div class="detail-section">
+            <h3>🗺️ 4. Portée</h3>
+            ${champ('Périmètre inclus', f.perimetre_inclus)}
+            ${champ('Périmètre exclu', f.perimetre_exclu)}
+            ${champ('Contraintes', f.contraintes)}
+        </div>
+        <div class="detail-section">
+            <h3>👥 5. Parties prenantes</h3>
+            ${champ('Interne', f.parties_internes)}
+            ${champ('Externe', f.parties_externes)}
+            ${champ('Utilisateurs impactés', f.utilisateurs)}
+        </div>
+        <div class="detail-section">
+            <h3>📦 6. Livrables</h3>
+            ${champ('Livrables', f.livrables)}
+        </div>
+        <div class="detail-section">
+            <h3>📅 7. Planning</h3>
+            ${champ('Étapes clés', f.etapes_cles)}
+            ${champ('Date fin estimée', f.date_fin_estimee ? new Date(f.date_fin_estimee).toLocaleDateString('fr-FR') : null)}
+        </div>
+        <div class="detail-section">
+            <h3>🔧 8. Ressources</h3>
+            ${champ('Matérielles', f.ressources_mat)}
+            ${champ('Humaines', f.ressources_hum)}
+            ${champ('Budget', f.budget)}
+        </div>
+        <div class="detail-section">
+            <h3>⚠️ 9. Risques</h3>
+            ${champ('Risques', f.risques)}
+            ${champ('Impact', f.impact)}
+            ${champ('Probabilité', f.probabilite)}
+            ${champ('Mesures préventives', f.mesures_preventives)}
+        </div>
+        <div class="detail-section">
+            <h3>📊 10. Indicateurs</h3>
+            ${champ('Indicateurs', f.indicateurs)}
+            ${champ('Fréquence de suivi', f.frequence_suivi)}
+        </div>
+        <div class="detail-section">
+            <h3>✅ 11. Validation</h3>
+            ${champ('Responsable validation', f.responsable_validation)}
+            ${champ('Date validation', f.date_validation ? new Date(f.date_validation).toLocaleDateString('fr-FR') : null)}
+        </div>
+    `;
+    showPage('detail');
+}
+
+// ─── SUPPRESSION ─────────────────────────────────────────────────────────────
+async function supprimerFiche(id) {
+    const f = toutesLesFiches.find(f => f.id == id);
+    if (!confirm(`Supprimer la fiche "${f?.nom_projet}" ?\nCette action est irréversible.`)) return;
+
+    const { error } = await db.from('fiches').delete().eq('id', id);
+    if (error) { showToast('Erreur suppression : ' + error.message, 'error'); return; }
+
+    await chargerFiches();
+    showToast('🗑️ Fiche supprimée', 'info');
+    showPage('liste');
+}
+
+// ─── EXPORT CSV ──────────────────────────────────────────────────────────────
+function exporterCSV() {
+    if (toutesLesFiches.length === 0) { showToast('Aucune fiche à exporter', 'error'); return; }
+
+    const entetes = ['ID','Nom du projet','Référence','Service','Responsable','Date ouverture','Statut',
+        'Origine demande','Problème/Besoin','Enjeux','Objectif principal','Objectifs secondaires',
+        'Périmètre inclus','Périmètre exclu','Contraintes','Parties internes','Parties externes',
+        'Utilisateurs','Livrables','Étapes clés','Date fin estimée','Ressources matérielles',
+        'Ressources humaines','Budget','Risques','Impact','Probabilité','Mesures préventives',
+        'Indicateurs','Fréquence suivi','Responsable validation','Date validation','Nb photos'];
+
+    const esc = v => `"${(v||'').toString().replace(/"/g,'""')}"`;
+
+    const lignes = toutesLesFiches.map(f => [
+        f.id, f.nom_projet, f.ref_interne, f.service, f.responsable, f.date_ouverture, f.statut,
+        f.origine_demande, f.probleme, f.enjeux, f.objectif_principal, f.objectifs_secondaires,
+        f.perimetre_inclus, f.perimetre_exclu, f.contraintes, f.parties_internes, f.parties_externes,
+        f.utilisateurs, f.livrables, f.etapes_cles, f.date_fin_estimee, f.ressources_mat,
+        f.ressources_hum, f.budget, f.risques, f.impact, f.probabilite, f.mesures_preventives,
+        f.indicateurs, f.frequence_suivi, f.responsable_validation, f.date_validation,
+        (f.photos ? JSON.parse(f.photos).length : 0)
+    ].map(esc).join(';'));
+
+    const csv = '\uFEFF' + [entetes.map(esc).join(';'), ...lignes].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `fiches-projets-CAPV-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    showToast(`📊 Export de ${toutesLesFiches.length} fiche(s) !`, 'success');
+}
+
+// ─── LIGHTBOX ────────────────────────────────────────────────────────────────
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── DÉMARRAGE ───────────────────────────────────────────────────────────────
+verifierSession();
+</script>
+</body>
+</html>

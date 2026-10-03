@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f26a0f">
+<title>Portail Eau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --g1:#ffb347; --g2:#f26a0f; --g3:#a83a06;
+  --ink:#2b1405; --tile:rgba(255,255,255,.18); --tile-b:rgba(255,255,255,.35);
+  --font:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+body[data-theme="ambre"]{ --g1:#ffd36e; --g2:#f5a623; --g3:#b86b00; }
+body[data-theme="terre"]{ --g1:#e9a273; --g2:#c4622d; --g3:#6e2e12; }
+body[data-theme="couchant"]{ --g1:#ffcf6b; --g2:#ff6a3d; --g3:#8e1f4e; }
+body[data-theme="nuit"]{ --g1:#5a2a12; --g2:#2a160b; --g3:#120904; --tile:rgba(255,140,40,.14); --tile-b:rgba(255,160,80,.35); }
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:var(--font); color:#fff; min-height:100%;
+  background:linear-gradient(165deg,var(--g1) 0%,var(--g2) 45%,var(--g3) 100%) fixed;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+}
+.app{max-width:520px;margin:0 auto;padding:22px 20px 40px;min-height:100vh;display:flex;flex-direction:column}
+
+/* En-tête */
+.top{display:flex;align-items:center;gap:12px;min-height:56px;margin-bottom:6px}
+.back{display:none;background:var(--tile);border:1px solid var(--tile-b);color:#fff;width:42px;height:42px;border-radius:14px;font-size:1.2rem;cursor:pointer}
+.back.on{display:block}
+.title{flex:1}
+.title h1{font-size:1.65rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.title p{font-size:.88rem;opacity:.85;margin-top:3px}
+.icon-btn{background:var(--tile);border:1px solid var(--tile-b);color:#fff;width:42px;height:42px;border-radius:14px;font-size:1.1rem;cursor:pointer}
+
+/* Grille */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px 14px;margin-top:22px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;position:relative;user-select:none;background:none;border:none;color:#fff;font-family:inherit}
+.tile:focus-visible .ico{outline:3px solid #fff;outline-offset:3px}
+.ico{
+  width:100%;max-width:96px;aspect-ratio:1;border-radius:26%;
+  background:var(--tile);border:1px solid var(--tile-b);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;font-size:2.4rem;
+  box-shadow:0 6px 18px rgba(80,20,0,.25);transition:transform .12s;
+}
+.tile:active .ico{transform:scale(.92)}
+.lbl{font-size:.82rem;font-weight:600;text-align:center;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+.soon{position:absolute;top:-6px;right:4px;background:#fff;color:var(--g3);font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:10px}
+
+/* Dossier : mini-icônes 2x2 */
+.folder{display:grid;grid-template-columns:1fr 1fr;gap:6%;padding:16%;font-size:1.25rem}
+.folder span{display:flex;align-items:center;justify-content:center}
+
+/* Mode personnalisation */
+.editing .tile .ico{animation:wiggle .35s ease-in-out infinite alternate}
+@keyframes wiggle{from{transform:rotate(-1.5deg)}to{transform:rotate(1.5deg)}}
+@media (prefers-reduced-motion:reduce){.editing .tile .ico{animation:none}}
+.tile.hidden-t{opacity:.35}
+.ctrl{display:none;gap:4px;margin-top:2px}
+.editing .ctrl{display:flex}
+.ctrl button{background:#fff;color:var(--g3);border:none;border-radius:8px;width:28px;height:26px;font-size:.8rem;font-weight:800;cursor:pointer}
+.editbar{display:none;margin-top:26px;background:rgba(255,255,255,.95);color:var(--ink);border-radius:18px;padding:16px}
+.editing .editbar{display:block}
+.editbar h3{font-size:1rem;margin-bottom:10px}
+.themes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.th{width:46px;height:46px;border-radius:14px;border:3px solid transparent;cursor:pointer}
+.th.sel{border-color:var(--ink)}
+.th span{display:block;font-size:.65rem;margin-top:50px;text-align:center;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:none;border-radius:12px;padding:11px 16px;font-family:inherit;font-weight:700;font-size:.9rem;cursor:pointer}
+.btn-main{background:var(--g2);color:#fff}
+.btn-ghost{background:#f1e4da;color:var(--ink)}
+.hint{font-size:.8rem;color:#6b4a35;margin-bottom:12px}
+
+/* Feuille de choix d'icône */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.sheet.on{display:flex}
+.sheet-box{background:#fff;color:var(--ink);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0))}
+.sheet-box h3{margin-bottom:12px}
+.emojis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-height:45vh;overflow:auto}
+.emojis button{font-size:1.7rem;background:#f7efe8;border:none;border-radius:12px;aspect-ratio:1;cursor:pointer}
+.sheet input{width:100%;padding:11px;border:1.5px solid #e2d3c7;border-radius:12px;font:inherit;margin:10px 0}
+
+/* Connexion */
+.login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;background:linear-gradient(165deg,var(--g1),var(--g2) 45%,var(--g3))}
+.login.off{display:none}
+.login-box{background:#fff;color:var(--ink);border-radius:24px;padding:30px 24px;width:100%;max-width:380px}
+.login-box .drop{font-size:2.8rem}
+.login-box h2{font-size:1.5rem;font-weight:800;margin:6px 0 4px}
+.login-box p{font-size:.88rem;color:#6b4a35;margin-bottom:18px}
+.login-box label{display:block;font-size:.82rem;font-weight:700;margin:10px 0 5px}
+.login-box input{width:100%;padding:12px;border:1.5px solid #e2d3c7;border-radius:12px;font:inherit}
+.login-box input:focus{outline:none;border-color:var(--g2)}
+.login-box .btn{width:100%;margin-top:16px;padding:13px}
+.err{color:#c0262d;font-size:.85rem;min-height:1.2em;margin-top:10px}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translate(-50%,120px);background:rgba(43,20,5,.92);color:#fff;padding:12px 18px;border-radius:14px;font-size:.9rem;font-weight:600;transition:transform .25s;z-index:200;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0)}
+.foot{margin-top:auto;padding-top:30px;text-align:center;font-size:.75rem;opacity:.75}
+.foot button{background:none;border:none;color:#fff;text-decoration:underline;font:inherit;cursor:pointer}
+</style>
+</head>
+<body data-theme="orange">
+
+<!-- Connexion -->
+<div class="login" id="login">
+  <div class="login-box">
+    <div class="drop">💧</div>
+    <h2>Portail Eau</h2>
+    <p>Accès réservé aux agents du service.</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username">
+    <label for="pwd">Mot de passe</label>
+    <input id="pwd" type="password" autocomplete="current-password">
+    <button class="btn btn-main" id="btnLogin" onclick="login()">Se connecter</button>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="top">
+    <button class="back" id="back" onclick="history.back()" aria-label="Retour">‹</button>
+    <div class="title"><h1 id="h1">Bonjour</h1><p id="sub">Que fait-on aujourd'hui ?</p></div>
+    <button class="icon-btn" id="btnEdit" onclick="toggleEdit()" aria-label="Personnaliser">✏️</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="editbar">
+    <h3>Personnaliser</h3>
+    <p class="hint">◀ ▶ pour déplacer, 👁 pour masquer ou afficher, touche une icône pour la changer.</p>
+    <div class="themes" id="themes"></div>
+    <div class="row">
+      <button class="btn btn-main" onclick="toggleEdit()">Terminer</button>
+      <button class="btn btn-ghost" onclick="resetLevel()">Réinitialiser cet écran</button>
+    </div>
+  </div>
+
+  <div class="foot"><span id="who"></span> · <button onclick="logout()">Se déconnecter</button></div>
+</div>
+
+<!-- Choix d'icône -->
+<div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet-box">
+    <h3>Changer l'icône</h3>
+    <div class="emojis" id="emojis"></div>
+    <input id="ownEmoji" placeholder="Ou colle ton propre emoji ici" maxlength="4">
+    <div class="row"><button class="btn btn-main" onclick="applyOwn()">Utiliser</button><button class="btn btn-ghost" onclick="closeSheet()">Annuler</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://xvdryqptuejenspbypvy.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+/* ── Catalogue des modules ─────────────────────────────────────────
+   url  = page qui existe déjà
+   sans url ni children = "bientôt"                                  */
+const MODULES={
+  root:{title:null,items:['releves','maintenance','afaire','donnees','docs','projets','planning','contacts']},
+
+  releves:{icon:'📝',label:'Relevés',items:['r_chlore','r_jaugeage','r_piezo','r_compteur']},
+  r_chlore:{icon:'🧪',label:'Tournée chlore / dioxyde'},
+  r_jaugeage:{icon:'💧',label:'Jaugeages'},
+  r_piezo:{icon:'📏',label:'Piézomètres'},
+  r_compteur:{icon:'🔢',label:'Index compteurs'},
+
+  maintenance:{icon:'🔧',label:'Maintenance',items:['m_antibelier','m_visite','m_filtres','m_pi']},
+  m_antibelier:{icon:'🎈',label:'Anti-béliers'},
+  m_visite:{icon:'🏚️',label:'Visites d\'ouvrages'},
+  m_filtres:{icon:'🧽',label:'Filtres'},
+  m_pi:{icon:'🚒',label:'Poteaux incendie'},
+
+  afaire:{icon:'✅',label:'À faire'},
+
+  donnees:{icon:'📈',label:'Données',items:['d_jaugeages','d_debits','d_nappes','d_qnuit','d_conso','d_qualite']},
+  d_jaugeages:{icon:'📊',label:'Jaugeages',url:'jaugeages.html'},
+  d_debits:{icon:'🌊',label:'Débits / volumes'},
+  d_nappes:{icon:'📉',label:'Niveaux de nappes'},
+  d_qnuit:{icon:'🌙',label:'Débits de nuit'},
+  d_conso:{icon:'🚰',label:'Consommations'},
+  d_qualite:{icon:'🔬',label:'Qualité eau'},
+
+  docs:{icon:'📚',label:'Documentation',items:['k_plans','k_schemas','k_maint','k_proc','k_fiches']},
+  k_plans:{icon:'🗺️',label:'Plans'},
+  k_schemas:{icon:'📐',label:'Schémas'},
+  k_maint:{icon:'🔧',label:'Notices'},
+  k_proc:{icon:'📋',label:'Procédures'},
+  k_fiches:{icon:'🏷️',label:'Fiches ouvrages'},
+
+  projets:{icon:'📁',label:'Fiches projets',url:'fiches.html'},
+  planning:{icon:'📅',label:'Planning'},
+  contacts:{icon:'📞',label:'Contacts'}
+};
+const THEMES=[['orange','Orange','#f26a0f'],['ambre','Ambre','#f5a623'],['terre','Terre','#c4622d'],['couchant','Couchant','#ff6a3d'],['nuit','Nuit','#2a160b']];
+const EMOJIS='💧🚰🌊🧪🔬📏📐📊📈📉🌙🔢🎈🏚️🏗️🔧🔩⚙️🛠️🚧📋📁📚🗺️🏷️📅⏰📞🔔⚠️✅📸🚚🧰💡🔋📡🌡️🌧️☀️⛰️🌲🐟🧯🚒🔑📝'.match(/\p{Extended_Pictographic}\uFE0F?/gu);
+
+let cfg={theme:'orange',order:{},hidden:[],icons:{}};
+let user=null, level='root', editing=false, iconTarget=null, saveTimer=null;
+
+/* ── Connexion ── */
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user;
+  document.getElementById('login').classList.add('off');
+  document.getElementById('who').textContent=user.email;
+  await loadCfg();
+  route();
+}
+async function login(){
+  const e=document.getElementById('email').value.trim(), p=document.getElementById('pwd').value, err=document.getElementById('err'), b=document.getElementById('btnLogin');
+  err.textContent=''; if(!e||!p){err.textContent='Renseigne ton email et ton mot de passe.';return;}
+  b.disabled=true;b.textContent='Connexion…';
+  const {error}=await db.auth.signInWithPassword({email:e,password:p});
+  b.disabled=false;b.textContent='Se connecter';
+  if(error){err.textContent='Email ou mot de passe incorrect.';return;}
+  document.getElementById('pwd').value=''; start();
+}
+async function logout(){ if(!confirm('Se déconnecter ?'))return; await db.auth.signOut(); location.hash=''; location.reload(); }
+document.getElementById('pwd').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+
+/* ── Préférences : Supabase + copie locale ── */
+async function loadCfg(){
+  try{ const c=localStorage.getItem('portail-cfg-'+user.id); if(c)cfg={...cfg,...JSON.parse(c)}; }catch(e){}
+  try{
+    const {data,error}=await db.from('preferences').select('config').eq('user_id',user.id).maybeSingle();
+    if(!error&&data&&data.config) cfg={...cfg,...data.config};
+  }catch(e){}
+  document.body.dataset.theme=cfg.theme;
+}
+function saveCfg(){
+  try{localStorage.setItem('portail-cfg-'+user.id,JSON.stringify(cfg));}catch(e){}
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    const {error}=await db.from('preferences').upsert({user_id:user.id,config:cfg,updated_at:new Date().toISOString()});
+    if(error) console.warn('Préférences non synchronisées :',error.message);
+  },600);
+}
+
+/* ── Navigation (le bouton retour du téléphone fonctionne) ── */
+window.addEventListener('hashchange',route);
+function route(){
+  const h=location.hash.slice(1);
+  level=(h&&MODULES[h]&&MODULES[h].items)?h:'root';
+  render();
+}
+function itemsOf(lv){
+  const base=MODULES[lv].items, saved=cfg.order[lv]||[];
+  return [...saved.filter(id=>base.includes(id)), ...base.filter(id=>!saved.includes(id))];
+}
+
+/* ── Affichage ── */
+function render(){
+  const isRoot=level==='root';
+  document.getElementById('back').classList.toggle('on',!isRoot);
+  const name=(user.email.split('@')[0].split(/[._-]/)[0]||'');
+  document.getElementById('h1').textContent=isRoot?('Bonjour '+name.charAt(0).toUpperCase()+name.slice(1)):MODULES[level].label;
+  document.getElementById('sub').textContent=isRoot?"Que fait-on aujourd'hui ?":'Choisis un module';
+  document.getElementById('app').classList.toggle('editing',editing);
+
+  const ids=itemsOf(level).filter(id=>editing||!cfg.hidden.includes(id));
+  const g=document.getElementById('grid'); g.innerHTML='';
+  ids.forEach(id=>{
+    const m=MODULES[id], ico=cfg.icons[id]||m.icon, hid=cfg.hidden.includes(id);
+    const ready=m.url||m.items;
+    const t=document.createElement('div');
+    t.className='tile'+(hid?' hidden-t':''); t.tabIndex=0; t.setAttribute('role','button');
+    let face;
+    if(m.items){
+      const kids=itemsOf(id).filter(k=>!cfg.hidden.includes(k)).slice(0,4);
+      face=`<div class="ico folder">${kids.map(k=>`<span>${cfg.icons[k]||MODULES[k].icon}</span>`).join('')}</div>`;
+    } else face=`<div class="ico">${ico}</div>`;
+    t.innerHTML=`${face}<div class="lbl">${m.label}</div>${!ready&&!editing?'<span class="soon">bientôt</span>':''}
+      <div class="ctrl"><button data-a="l">◀</button><button data-a="h">${hid?'🚫':'👁'}</button><button data-a="r">▶</button></div>`;
+    t.addEventListener('click',ev=>{
+      const a=ev.target.dataset&&ev.target.dataset.a;
+      if(a){ev.stopPropagation();ctrl(id,a);return;}
+      if(editing){ if(m.items) location.hash=id; else openSheet(id); return;}
+      open(id);
+    });
+    t.addEventListener('keydown',ev=>{if(ev.key==='Enter')t.click();});
+    g.appendChild(t);
+  });
+
+  document.getElementById('themes').innerHTML=THEMES.map(([k,n,c])=>
+    `<button class="th ${cfg.theme===k?'sel':''}" style="background:${c}" onclick="setTheme('${k}')" aria-label="${n}" title="${n}"></button>`).join('');
+}
+
+function open(id){
+  const m=MODULES[id];
+  if(m.items){location.hash=id;return;}
+  if(m.url){location.href=m.url;return;}
+  toast(m.label+' : bientôt disponible');
+}
+
+/* ── Personnalisation ── */
+function toggleEdit(){editing=!editing;document.getElementById('btnEdit').textContent=editing?'✔️':'✏️';render();}
+function ctrl(id,a){
+  if(a==='h'){
+    cfg.hidden=cfg.hidden.includes(id)?cfg.hidden.filter(x=>x!==id):[...cfg.hidden,id];
+  } else {
+    const list=itemsOf(level), i=list.indexOf(id), j=a==='l'?i-1:i+1;
+    if(j<0||j>=list.length)return;
+    [list[i],list[j]]=[list[j],list[i]]; cfg.order[level]=list;
+  }
+  saveCfg(); render();
+}
+function setTheme(k){cfg.theme=k;document.body.dataset.theme=k;saveCfg();render();}
+function resetLevel(){
+  if(!confirm('Remettre cet écran dans son état d\'origine ?'))return;
+  const ids=MODULES[level].items;
+  delete cfg.order[level];
+  cfg.hidden=cfg.hidden.filter(x=>!ids.includes(x));
+  ids.forEach(x=>delete cfg.icons[x]);
+  saveCfg(); render();
+}
+function openSheet(id){
+  iconTarget=id;
+  document.getElementById('emojis').innerHTML=EMOJIS.map(e=>`<button onclick="pickIcon('${e}')">${e}</button>`).join('');
+  document.getElementById('ownEmoji').value='';
+  document.getElementById('sheet').classList.add('on');
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');}
+function pickIcon(e){cfg.icons[iconTarget]=e;saveCfg();closeSheet();render();}
+function applyOwn(){const v=document.getElementById('ownEmoji').value.trim();if(v)pickIcon(v);}
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200);}
+
+start();
+</script>
+</body>
+</html>
