@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Saisir un jaugeage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#F4F1EC;--card:#fff;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;--acc:#B84712;--acc-soft:#FBE9DC;
+  --ok:#2F7D4F;--ok-soft:#E3F1E8;--warn:#B7791F;--warn-soft:#FCF1DC;--bad:#B42318;--bad-soft:#FDE7E4;
+  --font:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45}
+button,input,textarea{font:inherit}button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.wrap{max-width:760px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0)) 16px calc(110px + env(safe-area-inset-bottom,0))}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.top a,.top button.back{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--ink);text-decoration:none;font-size:1.3rem;flex:none}
+.top h1{font-size:1.35rem;font-weight:700;line-height:1.2}.top .sub{font-size:.85rem;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.net{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;font-size:.88rem;font-weight:500;margin-bottom:12px}
+.net.off{background:var(--warn-soft);color:var(--warn)}.net.wait{background:var(--acc-soft);color:var(--acc)}
+.net button{margin-left:auto;border:none;background:var(--acc);color:#fff;border-radius:8px;padding:6px 12px;font-weight:600;font-size:.82rem}
+.prog{padding:14px 16px;margin-bottom:16px}
+.prog .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.prog b{font-size:1.5rem}.prog .bar{height:8px;background:#EFEAE3;border-radius:99px;margin-top:10px;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--acc);border-radius:99px}
+.mois{display:flex;gap:6px;align-items:center}
+.mois button{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:32px}
+.mois span{font-weight:600;font-size:.9rem;min-width:118px;text-align:center}
+.grp{font-size:.78rem;font-weight:700;color:var(--mute);margin:18px 2px 8px}
+.site{display:flex;align-items:center;gap:12px;padding:13px 14px;margin-bottom:8px;width:100%;text-align:left;color:inherit}
+.site .n{font-weight:600}.site .m{font-size:.8rem;color:var(--mute)}
+.site .st{margin-left:auto;flex:none}
+.chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.c-ok{background:var(--ok-soft);color:var(--ok)}.c-todo{background:#EFEBE5;color:var(--mute)}.c-wait{background:var(--acc-soft);color:var(--acc)}
+/* Formulaire */
+.fld{margin-bottom:14px}
+.fld>label{display:block;font-size:.82rem;font-weight:600;margin-bottom:6px}
+.inp{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-size:.88rem;font-weight:500;color:var(--ink)}
+.seg button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pt{padding:16px;margin-bottom:12px}
+.pt h3{font-size:1rem;margin-bottom:10px;display:flex;justify-content:space-between;gap:8px}
+.pt h3 small{font-weight:500;color:var(--mute);font-size:.8rem}
+.big{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+.big input{flex:1;font-size:1.6rem;font-weight:700;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;font-variant-numeric:tabular-nums;min-width:0}
+.big input:focus{border-color:var(--acc);outline:none}
+.big span{font-weight:600;color:var(--mute);min-width:52px}
+.conv{font-size:.85rem;color:var(--mute);min-height:1.3em}
+.warn{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:.85rem;font-weight:500;margin-top:8px}
+.helper{margin-top:10px;padding:12px;background:#FBF8F4;border-radius:10px;display:none}
+.helper.on{display:block}
+.helper .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.helper input{width:110px;padding:9px;border:1px solid var(--line);border-radius:8px}
+.lnk{background:none;border:none;color:var(--acc);font-weight:600;font-size:.85rem;padding:4px 0}
+.tot{padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline}
+.tot b{font-size:1.3rem;font-variant-numeric:tabular-nums}
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0));z-index:10}
+.foot .in{max-width:760px;margin:0 auto;display:flex;gap:10px}
+.btn{flex:1;background:var(--acc);color:#fff;border:none;border-radius:12px;padding:14px;font-weight:700;font-size:1rem}
+.btn:disabled{opacity:.5}
+.btn2{border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px 16px;font-weight:600;color:var(--bad)}
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}.login .card{width:100%;max-width:360px;padding:28px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0));transform:translate(-50%,30px);opacity:0;background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;font-size:.9rem;font-weight:500;transition:.2s;z-index:60;max-width:92vw;text-align:center;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1}
+.loading{padding:50px;text-align:center;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="login off" id="login"><div class="card">
+  <h2>Connexion</h2><p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px">Accès réservé aux agents du service.</p>
+  <label for="em">Email</label><input class="inp" id="em" type="email" autocomplete="username">
+  <label for="pw">Mot de passe</label><input class="inp" id="pw" type="password" autocomplete="current-password">
+  <button class="btn" style="width:100%;margin-top:16px" id="bl" onclick="login()">Se connecter</button><div class="err" id="er"></div>
+</div></div>
+<div class="wrap"><div id="net"></div><div id="view"><div class="loading">Chargement…</div></div></div>
+<div class="foot" id="foot" style="display:none"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let user=null,REF=LS.get('jg-ref',null),moisCour=null,FS=null,sending=false;
+const today=()=>new Date().toISOString().slice(0,10);
+
+/* ── Conversions ── */
+function chevallon(hcm,P=28,L=0.2,g=9.81){ // méthode terrain validée : coefficient figé à h = 1 cm
+  const mu=(0.405+0.003/0.01)*(1+0.55*(0.01**2/(0.01+P/100)**2));
+  return (2/3)*mu*L*Math.sqrt(2*g)*Math.pow(hcm/100,1.5)*1000*60;}
+const nb=v=>v===''||v===null||v===undefined?null:Number(String(v).replace(',','.'));
+const f=(x,d=1)=>x==null||isNaN(x)?'–':x.toLocaleString('fr-FR',{maximumFractionDigits:d});
+
+/* ── Connexion ── */
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){login_.classList.remove('off');return;}
+  user=session.user; login_.classList.add('off');
+  await chargerRef(); sync(); route();
+}
+const login_=document.getElementById('login');
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;
+  if(error){er.textContent=navigator.onLine?'Email ou mot de passe incorrect.':'Pas de réseau : connecte-toi une première fois avec du réseau.';return;}start();}
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+
+/* ── Référentiel + normales + mesures récentes, gardés sur le téléphone ── */
+async function toutes(q){let o=[],a=0;while(true){const {data,error}=await q().range(a,a+999);if(error)throw error;o=o.concat(data);if(data.length<1000)break;a+=1000;}return o;}
+async function chargerRef(){
+  if(!navigator.onLine&&REF)return;
+  try{
+    const [sites,points]=await Promise.all([toutes(()=>db.from('sites').select('id,commune,nom,actif').eq('actif',true)),
+      toutes(()=>db.from('points').select('*').eq('famille','jaugeage').eq('actif',true).order('ordre'))]);
+    const ids=points.map(p=>p.id);
+    const hist=await toutes(()=>db.from('mesures').select('point_id,date_mesure,valeur,statut').in('point_id',ids).eq('statut','mesure'));
+    const norm={};
+    for(const m of hist){const k=m.point_id+'|'+(+m.date_mesure.slice(5,7));(norm[k]??=[]).push(+m.valeur);}
+    const normales={};for(const k in norm)if(norm[k].length>=3){const a=norm[k].sort((x,y)=>x-y);normales[k]={moy:a.reduce((x,y)=>x+y,0)/a.length,med:a[Math.floor(a.length/2)]};}
+    const d0=new Date();d0.setMonth(d0.getMonth()-3);
+    const recent=await toutes(()=>db.from('mesures').select('id,point_id,date_mesure,valeur_brute,valeur,statut,meteo,commentaire,agent').in('point_id',ids).gte('date_mesure',d0.toISOString().slice(0,10)));
+    const sIds=new Set(points.map(p=>p.site_id));
+    REF={sites:sites.filter(s=>sIds.has(s.id)),points,normales,recent,maj:Date.now()};LS.set('jg-ref',REF);
+  }catch(e){if(!REF)throw e;}
+}
+
+/* ── File d'attente hors connexion ── */
+const queue=()=>LS.get('jg-queue',[]);
+function enqueue(op){const q=queue();q.push(op);LS.set('jg-queue',q);}
+async function sync(){
+  const q=queue(); banner();
+  if(!q.length||sending||!navigator.onLine)return;
+  sending=true;banner();
+  try{
+    while(queue().length){
+      const op=queue()[0];
+      if(op.del&&op.del.length){const {error}=await db.from('mesures').delete().in('id',op.del);if(error)throw error;}
+      if(op.rows.length){const {error}=await db.from('mesures').insert(op.rows);if(error)throw error;}
+      LS.set('jg-queue',queue().slice(1));
+    }
+    toast('Mesures envoyées ✓');await chargerRef();if(!FS)route();
+  }catch(e){console.warn(e);}
+  sending=false;banner();
+}
+window.addEventListener('online',()=>{chargerRef().then(()=>{sync();if(!FS)route();})});
+window.addEventListener('offline',banner);
+function banner(){
+  const n=queue().length,el=document.getElementById('net');
+  if(!navigator.onLine)el.innerHTML=`<div class="net off">Pas de réseau. Tu peux saisir : ${n?n+' relevé(s) gardé(s) sur le téléphone, envoi au retour du réseau.':'les relevés seront envoyés au retour du réseau.'}</div>`;
+  else if(n)el.innerHTML=`<div class="net wait">${sending?'Envoi en cours…':n+' relevé(s) en attente d\'envoi'}${sending?'':'<button onclick="sync()">Envoyer</button>'}</div>`;
+  else el.innerHTML='';
+}
+
+/* ── État du mois : base + file d'attente ── */
+function mesuresDuMois(ym){
+  const pending=queue().flatMap(op=>op.rows.map(r=>({...r,_wait:true})));
+  const delIds=new Set(queue().flatMap(op=>op.del||[]));
+  return [...REF.recent.filter(m=>!delIds.has(m.id)),...pending].filter(m=>m.date_mesure.slice(0,7)===ym);
+}
+
+/* ── Routage ── */
+window.addEventListener('hashchange',route);
+function route(){
+  if(!REF){view.innerHTML='<div class="loading">Données indisponibles : connecte-toi une première fois avec du réseau.</div>';return;}
+  const m=location.hash.match(/site=(\d+)/);
+  m?ouvrir(+m[1]):liste();
+}
+
+/* ── Liste du mois ── */
+function liste(){
+  FS=null;foot.style.display='none';
+  moisCour??=today().slice(0,7);
+  const ms=mesuresDuMois(moisCour), P=Object.fromEntries(REF.points.map(p=>[p.id,p]));
+  const etat={};for(const m of ms){const s=P[m.point_id]?.site_id;if(!s)continue;const e=etat[s]??={date:m.date_mesure,agent:m.agent,wait:false};e.wait=e.wait||!!m._wait;if(m.date_mesure>e.date)e.date=m.date_mesure;}
+  const sites=[...REF.sites].sort((a,b)=>a.commune.localeCompare(b.commune)||a.nom.localeCompare(b.nom));
+  const fait=sites.filter(s=>etat[s.id]).length;
+  const [y,mo]=moisCour.split('-').map(Number);
+  let html=`<div class="top"><a href="index.html" aria-label="Retour au portail">‹</a><div><h1>Saisir un jaugeage</h1><div class="sub">Relevé mensuel partagé par l'équipe</div></div></div>
+  <div class="card prog"><div class="row"><div><b>${fait}</b> / ${sites.length} captages relevés</div>
+    <div class="mois"><button onclick="chMois(-1)" aria-label="Mois précédent">‹</button><span>${MOIS[mo-1]} ${y}</span><button onclick="chMois(1)" aria-label="Mois suivant">›</button></div></div>
+    <div class="bar"><i style="width:${sites.length?fait/sites.length*100:0}%"></i></div></div>`;
+  let com='';
+  for(const s of sites){
+    if(s.commune!==com){com=s.commune;html+=`<div class="grp">${com}</div>`;}
+    const e=etat[s.id],n=REF.points.filter(p=>p.site_id===s.id).length;
+    const st=!e?'<span class="chip c-todo">À faire</span>':e.wait?'<span class="chip c-wait">En attente d\'envoi</span>':`<span class="chip c-ok">✓ ${e.date.slice(8,10)}/${e.date.slice(5,7)}${e.agent?' · '+e.agent.split('@')[0].split('.')[0]:''}</span>`;
+    html+=`<button class="card site" onclick="location.hash='site=${s.id}'"><div><div class="n">${s.nom}</div><div class="m">${n>1?n+' points de mesure':'1 point de mesure'}</div></div><div class="st">${st}</div></button>`;
+  }
+  view.innerHTML=html;banner();
+}
+function chMois(d){const [y,m]=moisCour.split('-').map(Number);const t=new Date(y,m-1+d,1);moisCour=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0');liste();}
+
+/* ── Formulaire d'un captage ── */
+const STATUTS=[['mesure','Mesuré'],['sec','Sec'],['plafond','Seau plein'],['injaugeable','Injaugeable'],['arret','Arrêt'],['travaux','Travaux']];
+function ouvrir(sid){
+  const s=REF.sites.find(x=>x.id===sid);if(!s){location.hash='';return;}
+  moisCour??=today().slice(0,7);
+  const pts=REF.points.filter(p=>p.site_id===sid);
+  const exist=mesuresDuMois(moisCour).filter(m=>pts.some(p=>p.id===m.point_id));
+  const auj=today(),date=exist[0]?.date_mesure||(auj.slice(0,7)===moisCour?auj:moisCour+'-15');
+  FS={sid,date,meteo:exist[0]?.meteo||'',com:(exist[0]?.commentaire||'').replace(/^\[filtre\] ?/,''),filtre:/^\[filtre\]/.test(exist[0]?.commentaire||''),
+    del:exist.filter(m=>m.id).map(m=>m.id),edit:exist.length>0,
+    v:Object.fromEntries(pts.map(p=>{const e=exist.find(m=>m.point_id===p.id);
+      return [p.id,{statut:e?.statut||'mesure',saisie:e?(p.methode==='deversoir'||p.methode==='volume_temps'?e.valeur_brute:e.valeur):'',ok:false}];}))};
+  drawForm();
+}
+function drawForm(){
+  const s=REF.sites.find(x=>x.id===FS.sid),pts=REF.points.filter(p=>p.site_id===FS.sid);
+  const mo=+FS.date.slice(5,7);
+  view.innerHTML=`<div class="top"><button class="back" onclick="history.back()" aria-label="Retour">‹</button><div><h1>${s.nom}</h1><div class="sub">${s.commune}${FS.edit?' · modification du relevé':''}</div></div></div>
+  <div class="fld"><label for="dt">Date du relevé</label><input class="inp" id="dt" type="date" value="${FS.date}" max="${today()}" onchange="FS.date=this.value;drawForm()"></div>
+  <div class="fld"><label>Conditions</label><div class="seg">${['Sec','Pluie','Ressuyage'].map(x=>`<button class="${FS.meteo===x?'on':''}" onclick="FS.meteo=FS.meteo==='${x}'?'':'${x}';drawForm()">${x}</button>`).join('')}</div></div>
+  ${pts.map(p=>bloc(p,mo)).join('')}
+  ${pts.filter(p=>p.dans_total).length>1?`<div class="card tot"><span>Total du captage</span><b id="tot"></b></div>`:''}
+  <div class="fld"><label><input type="checkbox" ${FS.filtre?'checked':''} onchange="FS.filtre=this.checked"> Filtre changé / compteur nettoyé</label></div>
+  <div class="fld"><label for="cm">Observation</label><textarea class="inp" id="cm" rows="2" oninput="FS.com=this.value" placeholder="Facultatif">${FS.com}</textarea></div>`;
+  foot.style.display='block';
+  foot.innerHTML=`<div class="in">${FS.edit?'<button class="btn2" onclick="supprimer()">Supprimer</button>':''}<button class="btn" id="bs" onclick="enregistrer()">${FS.edit?'Mettre à jour':'Enregistrer'}</button></div>`;
+  pts.forEach(p=>calc(p.id,false));
+}
+function bloc(p,mo){
+  const v=FS.v[p.id],unit=p.methode==='deversoir'?'cm':p.methode==='volume_temps'?'s':(p.unite_saisie==='m3/h'?'m³/h':'l/min');
+  const lab=p.methode==='deversoir'?'Hauteur sur le seuil':p.methode==='volume_temps'?`Temps de remplissage (${(p.params.volume_l||24000).toLocaleString('fr-FR')} l)`:'Débit';
+  const nrm=REF.normales[p.id+'|'+mo];
+  return `<div class="card pt"><h3>${p.nom}<small>${nrm?'normale de '+MOIS[mo-1]+' : '+f(nrm.moy,0)+' l/min':''}</small></h3>
+    <div class="seg">${STATUTS.filter(([k])=>k!=='plafond'||p.plafond_lmin||p.methode==='seau').map(([k,l])=>`<button class="${v.statut===k?'on':''}" onclick="setSt(${p.id},'${k}')">${l}${k==='plafond'&&p.plafond_lmin?' (> '+p.plafond_lmin+')':''}</button>`).join('')}</div>
+    ${v.statut==='mesure'?`<label class="big"><input inputmode="decimal" id="in${p.id}" value="${v.saisie??''}" placeholder="0" oninput="FS.v[${p.id}].saisie=this.value;FS.v[${p.id}].ok=false;calc(${p.id},true)" aria-label="${lab}"><span>${unit}</span></label>
+    <div class="conv" id="cv${p.id}"></div><div id="wn${p.id}"></div>
+    ${unit==='l/min'?`<button class="lnk" onclick="document.getElementById('hp${p.id}').classList.toggle('on')">⏱ Calculer avec un seau et un chrono</button>
+    <div class="helper" id="hp${p.id}"><div class="row"><span>Seau</span>${[10,15].map(l=>`<button class="lnk" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px" onclick="seau(${p.id},${l})">${l} l</button>`).join('')}
+      <input inputmode="decimal" id="sv${p.id}" placeholder="litres" value="${p.params.seau_l||10}" style="width:80px"> <input inputmode="decimal" id="ss${p.id}" placeholder="secondes" style="width:96px">
+      <button class="lnk" onclick="chrono(${p.id})">Calculer</button></div></div>`:''}`:''}
+  </div>`;
+}
+function seau(id,l){document.getElementById('sv'+id).value=l;}
+function chrono(id){const l=nb(document.getElementById('sv'+id).value),s=nb(document.getElementById('ss'+id).value);
+  if(!l||!s){toast('Indique les litres et les secondes');return;}
+  const q=Math.round(l/s*60*10)/10;FS.v[id].saisie=String(q).replace('.',',');document.getElementById('in'+id).value=FS.v[id].saisie;
+  if(s<=1)toast('Seau plein en 1 s ou moins : utilise plutôt « Seau plein »');calc(id,true);}
+function setSt(id,k){FS.v[id].statut=k;if(k!=='mesure')FS.v[id].saisie='';drawForm();}
+function lmin(p,v){
+  if(v.statut==='sec')return 0;if(v.statut!=='mesure')return null;
+  const x=nb(v.saisie);if(x===null||isNaN(x))return null;
+  if(p.methode==='deversoir')return chevallon(x,p.params.P||28,p.params.L||0.2);
+  if(p.methode==='volume_temps')return x>0?(p.params.volume_l||24000)/x*60:null;
+  if(p.unite_saisie==='m3/h')return x*1000/60;
+  return x;
+}
+function calc(id,typing){
+  const p=REF.points.find(x=>x.id===id),v=FS.v[id],q=lmin(p,v),cv=document.getElementById('cv'+id),wn=document.getElementById('wn'+id);
+  if(cv)cv.textContent=q===null?'':(p.methode!=='saisie_directe'||p.unite_saisie!=='l/min'?f(q)+' l/min · ':'')+f(q*0.06,2)+' m³/h · '+f(q*1.44,0)+' m³/j';
+  const n=REF.normales[id+'|'+(+FS.date.slice(5,7))];
+  v.alerte=null;
+  if(q!==null&&n&&n.moy>5&&(q>n.moy*3||q<n.moy/4)&&q>0)v.alerte=`Valeur inhabituelle : la normale de ce mois est de ${f(n.moy,0)} l/min. Vérifie la saisie (virgule, unité).`;
+  if(p.plafond_lmin&&q>=p.plafond_lmin)v.alerte=`Au-delà de ${p.plafond_lmin} l/min, la mesure au seau n'est plus fiable : préfère « Seau plein ».`;
+  if(wn)wn.innerHTML=v.alerte?`<div class="warn">${v.alerte}</div>`:'';
+  const t=document.getElementById('tot');
+  if(t){const pts=REF.points.filter(x=>x.site_id===FS.sid&&x.dans_total);let tot=0,okk=true,pl=false;
+    for(const x of pts){const vv=FS.v[x.id];if(vv.statut==='plafond'){pl=true;continue;}const qq=lmin(x,vv);if(qq===null){okk=false;continue;}tot+=qq;}
+    t.textContent=(pl?'> ':'')+f(tot)+' l/min · '+f(tot*1.44,0)+' m³/j'+(okk?'':' (incomplet)');}
+}
+
+/* ── Enregistrement ── */
+function enregistrer(){
+  const pts=REF.points.filter(p=>p.site_id===FS.sid),rows=[];
+  if(!FS.date||FS.date>today()){toast('Date invalide');return;}
+  for(const p of pts){
+    const v=FS.v[p.id],q=lmin(p,v);
+    if(v.statut==='mesure'&&q===null){toast(`${p.nom} : saisis une valeur ou choisis un état (sec, injaugeable…)`);document.getElementById('in'+p.id)?.focus();return;}
+    if(v.alerte&&!v.ok){if(!confirm(p.nom+' — '+v.alerte+'\n\nEnregistrer quand même ?'))return;v.ok=true;}
+    rows.push({point_id:p.id,date_mesure:FS.date,statut:v.statut,
+      valeur_brute:v.statut==='mesure'?nb(v.saisie):null,
+      valeur:v.statut==='plafond'?(p.plafond_lmin||null):(q===null?null:Math.round(q*10)/10),
+      meteo:FS.meteo||null,commentaire:((FS.filtre?'[filtre] ':'')+(FS.com||'')).trim()||null,
+      source:'terrain',agent:user.email});
+  }
+  document.getElementById('bs').disabled=true;
+  enqueue({del:FS.del,rows});
+  toast(navigator.onLine?'Enregistré ✓':'Enregistré sur le téléphone, envoi au retour du réseau');
+  FS=null;history.back();sync();
+}
+function supprimer(){
+  if(!confirm('Supprimer le relevé de ce captage pour ce mois ?'))return;
+  // relevés encore en attente : on les retire de la file ; relevés envoyés : suppression en base
+  const pend=new Set(REF.points.filter(p=>p.site_id===FS.sid).map(p=>p.id));
+  LS.set('jg-queue',queue().map(op=>({...op,rows:op.rows.filter(r=>!(pend.has(r.point_id)&&r.date_mesure.slice(0,7)===moisCour))})).filter(op=>op.rows.length||(op.del&&op.del.length)));
+  if(FS.del.length)enqueue({del:FS.del,rows:[]});
+  REF.recent=REF.recent.filter(m=>!FS.del.includes(m.id));LS.set('jg-ref',REF);
+  toast('Relevé supprimé');FS=null;history.back();sync();
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800);}
+start().catch(e=>{view.innerHTML=`<div class="loading">Chargement impossible : ${e.message}</div>`;});
+</script>
+</body>
+</html>
