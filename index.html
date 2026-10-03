@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Portail Eau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-soft:#FBE9DC;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.ic{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+
+/* Charpente (identique à jaugeages.html) */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center;flex:none}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute)}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav .ic{width:28px;height:28px;margin:-4px;stroke-width:4.5;flex:none}
+.who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0;max-width:1180px}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.1rem;font-weight:700}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;font-weight:600;font-size:.88rem;color:var(--ink)}
+.btn-l.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;margin:26px 0 12px}
+.sec-h a{color:var(--acc);font-weight:600;font-size:.88rem;text-decoration:none}
+
+/* Alertes ressource */
+.alerts{padding:6px 0}
+.al{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.al:last-child{border-bottom:none}.al:hover{background:#FBF8F4}
+.al b{font-weight:600}.al small{color:var(--mute);font-size:.8rem;display:block}
+.al .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}.b-bad{background:var(--bad-soft);color:var(--bad)}
+.empty{padding:18px;color:var(--mute);font-size:.9rem}
+
+/* Grille de modules */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.tile{position:relative;display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;text-align:left;color:inherit;text-decoration:none}
+.tile:hover{border-color:#D9C9B8}
+.tile .ico{width:52px;height:52px;border-radius:14px;flex:none}
+.tile .ico .ic{stroke-width:2.6;color:var(--acc)}
+.tile b{font-size:.95rem;font-weight:600;line-height:1.2}
+.tile small{font-size:.78rem;color:var(--mute);line-height:1.3}
+.tile.hid{opacity:.4}
+.soon{position:absolute;top:12px;right:12px;font-size:.68rem;font-weight:600;color:var(--mute);background:#EFEBE5;padding:2px 8px;border-radius:999px}
+.ctrl{display:none;gap:4px;margin-top:2px}
+.editing .ctrl{display:flex}
+.ctrl button{border:1px solid var(--line);background:#fff;border-radius:8px;width:30px;height:28px;font-size:.8rem;color:var(--ink)}
+.editing .tile .ico{animation:w .35s ease-in-out infinite alternate}
+@keyframes w{from{transform:rotate(-2deg)}to{transform:rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.editing .tile .ico{animation:none}}
+
+/* Mobile */
+.mtop,.bnav,.dens{display:none}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}.side{display:none}
+  main{padding:0 16px calc(96px + env(safe-area-inset-bottom,0))}
+  .mtop{display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top,0)) 0 12px;border-bottom:2px solid var(--acc);margin:0 -16px 18px;padding-left:16px;padding-right:16px;background:var(--card)}
+  .avatar{width:40px;height:40px;border-radius:50%;background:#EFEBE5;display:grid;place-items:center;font-weight:700;font-size:.85rem;border:none;color:var(--ink)}
+  h1{font-size:1.6rem}
+  .dens{display:block;margin:4px 0 16px}
+  .dens p{font-size:.78rem;font-weight:600;margin-bottom:6px}
+  .dens button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;font-weight:600;margin-right:6px}
+  .dens button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .grid{grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:20px 12px}
+  .tile{background:none;border:none;padding:0;align-items:center;text-align:center;gap:8px}
+  .tile .ico{width:100%;height:auto;aspect-ratio:1;border-radius:24%}
+  .tile small{display:none}
+  .tile b{font-size:var(--fs,.85rem)}
+  .soon{top:-6px;right:-2px;background:#fff;border:1px solid var(--line)}
+  .al{grid-template-columns:1fr auto;padding:12px 14px}
+  .al .v{display:none}
+  .tile b{word-break:break-word;hyphens:auto}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}
+  .bnav .ic{width:32px;height:32px;margin:-4px;stroke-width:4.5}
+}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login p{color:var(--mute);font-size:.88rem;margin:4px 0 16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:.88rem;font-weight:500;transition:.2s;z-index:60;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+<symbol id="ic-home" viewBox="0 0 96 96"><path d="M26 46 48 28l22 18v24H56V56H40v14H26z"/></symbol>
+<symbol id="ic-releves" viewBox="0 0 96 96"><path d="M38 24h20v8H38zM34 28h-6v44h40V28h-6M38 46h20M38 56h20M38 66h12"/></symbol>
+<symbol id="ic-maintenance" viewBox="0 0 96 96"><path d="M57 26a13 13 0 0 0-12 17L27 61a5.5 5.5 0 0 0 8 8l18-18a13 13 0 0 0 17-12l-8 5-7-7z"/></symbol>
+<symbol id="ic-afaire" viewBox="0 0 96 96"><path d="M28 34l5 5 9-10M28 54l5 5 9-10M50 35h18M50 55h18"/></symbol>
+<symbol id="ic-donnees" viewBox="0 0 96 96"><path d="M26 70h44M32 62V50M44 62V36M56 62V44M68 62V28"/></symbol>
+<symbol id="ic-docs" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38"/></symbol>
+<symbol id="ic-projets" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z"/></symbol>
+<symbol id="ic-planning" viewBox="0 0 96 96"><path d="M26 32h44v38H26zM26 42h44M36 26v10M60 26v10M34 52h6M46 52h6M58 52h6M34 61h6M46 61h6"/></symbol>
+<symbol id="ic-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
+<symbol id="ic-antibelier" viewBox="0 0 96 96"><path d="M40 30h16a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8V38a8 8 0 0 1 8-8zM48 30v-6M42 24h12M48 68v4M26 72h44M38 46h20"/></symbol>
+<symbol id="ic-visite" viewBox="0 0 96 96"><path d="M28 70V42l20-14 20 14v28zM42 70V56h12v14M24 70h48"/></symbol>
+<symbol id="ic-filtres" viewBox="0 0 96 96"><path d="M26 28h44L54 48v18l-12 6V48z"/></symbol>
+<symbol id="ic-pi" viewBox="0 0 96 96"><path d="M40 34h16v-4a8 8 0 0 0-16 0zM36 34h24v6H36zM40 40h16v26H40zM34 48h6M56 48h6M36 66h24v6H36z"/></symbol>
+<symbol id="ic-debits" viewBox="0 0 96 96"><path d="M24 40h36M52 32l8 8-8 8M24 60c6-6 10-6 16 0s10 6 16 0 10-6 16 0"/></symbol>
+<symbol id="ic-nappes" viewBox="0 0 96 96"><path d="M24 38h48M24 52c6-5 10-5 16 0s10 5 16 0 10-5 16 0M24 66h48M48 22v24"/></symbol>
+<symbol id="ic-qnuit" viewBox="0 0 96 96"><path d="M62 58a20 20 0 1 1-20-30 16 16 0 0 0 20 30z"/></symbol>
+<symbol id="ic-conso" viewBox="0 0 96 96"><path d="M28 38h22v9H28zM50 41h10a8 8 0 0 1 8 8v5M39 30v8M33 30h12M68 62c0 3-2 5-3 5s-3-2-3-5 3-6 3-6 3 3 3 6z"/></symbol>
+<symbol id="ic-qualite" viewBox="0 0 96 96"><path d="M48 24s16 18 16 30a16 16 0 0 1-32 0c0-12 16-30 16-30zM41 56l5 5 9-10"/></symbol>
+<symbol id="ic-plans" viewBox="0 0 96 96"><path d="M26 32l14-6 16 6 14-6v38l-14 6-16-6-14 6zM40 26v38M56 32v38"/></symbol>
+<symbol id="ic-schemas" viewBox="0 0 96 96"><path d="M28 28h16v12H28zM52 28h16v12H52zM52 58h16v12H52zM36 40v24h16M60 40v18"/></symbol>
+<symbol id="ic-notices" viewBox="0 0 96 96"><path d="M32 24h22l10 10v38H32zM54 24v10h10M38 46h20M38 54h20M38 62h12"/></symbol>
+<symbol id="ic-procedures" viewBox="0 0 96 96"><path d="M28 32h4M28 48h4M28 64h4M40 32h28M40 48h28M40 64h28"/></symbol>
+<symbol id="ic-ouvrages" viewBox="0 0 96 96"><path d="M26 50V28h22l22 22-22 22zM37 36a2 2 0 1 0 0 .1"/></symbol>
+<symbol id="ic-chlore" viewBox="0 0 96 96"><path d="M36.766 24H59.234M40.5106 24V40L25.5319 62.6667C21.7872 68.8889 24.9078 72 34.8936 72H61.1064C71.0922 72 74.2128 68.8889 70.4681 62.6667L55.4894 40V24M33.0213 56H62.9787M40.5106 62.6667H55.4894"/></symbol>
+<symbol id="ic-compteur" viewBox="0 0 96 96"><path d="M24 41.4545H32.7273M24 54.5455H32.7273M63.2727 41.4545H72M63.2727 54.5455H72M43.6364 39.2727V45.8182M48 39.2727V45.8182M52.3636 39.2727V45.8182M43.6364 61.0909H52.3636M32.7273 24H63.2727V72H32.7273V24ZM39.2727 34.9091H56.7273V50.1818H39.2727V34.9091Z"/></symbol>
+<symbol id="ic-jaugeage" viewBox="0 0 96 96"><path d="M24 54.5455C28 48.7273 32 48.7273 36 54.5455C40 60.3636 44 60.3636 48 54.5455C52 48.7273 56 48.7273 60 54.5455C64 60.3636 68 60.3636 72 54.5455M24 67.6364C28 61.8182 32 61.8182 36 67.6364C40 73.4545 44 73.4545 48 67.6364C52 61.8182 56 61.8182 60 67.6364C64 73.4545 68 73.4545 72 67.6364M24 34.1818H51.6M44.4 42.9091L51.6 34.1818L44.4 25.4545M61.2 24V47.2727M61.2 28.3636H68.4M61.2 37.0909H66M61.2 45.8182H68.4"/></symbol>
+<symbol id="ic-piezo" viewBox="0 0 96 96"><path d="M24 38.6667H42M54 38.6667H72M46.8 28V61.3333M46.8 49.3333H52.8M24 60C28 55.5556 32 55.5556 36 60M57.6 60C61.6 55.5556 66.4 55.5556 72 60M24 72C28.8 67.5556 33.6 67.5556 38.4 72M57.6 72C62.4 67.5556 67.2 67.5556 72 72M42 24H54V68H42V24Z"/></symbol>
+<symbol id="ic-lampe_uv" viewBox="0 0 96 96"><path d="M40.9412 32H55.0588M40.9412 64H55.0588M48 36.8V59.2M26.8235 33.6L32.4706 38.4M24 48H32.4706M26.8235 62.4L32.4706 57.6M69.1765 33.6L63.5294 38.4M72 48H63.5294M69.1765 62.4L63.5294 57.6M40.9412 24H55.0588V72H40.9412V24Z"/></symbol>
+</svg>
+
+<div class="login off" id="login"><div class="card">
+  <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+  <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="btn" id="bl" onclick="login()">Se connecter</button><div class="err" id="er"></div>
+</div></div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>Portail Eau</b><small>Eau potable</small></div></div>
+    <nav class="nav" id="sidenav"></nav>
+    <div class="who"><span id="who"></span><br><button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+  <main id="main">
+    <div class="mtop">
+      <div class="logo" style="width:44px;height:44px;border-radius:12px"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <button class="avatar" id="avatar" onclick="logout()" aria-label="Se déconnecter"></button>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<nav class="bnav" id="bnav"></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+
+/* ── Catalogue : url = écran existant ; items = dossier ; sinon « bientôt » ── */
+const M={
+  root:{items:['releves','maintenance','afaire','donnees','docs','projets','planning','contacts']},
+  releves:{ic:'releves',label:'Relevés',desc:'Saisie terrain',items:['r_chlore','r_jaugeage','r_piezo','r_compteur','r_uv']},
+  r_chlore:{ic:'chlore',label:'Chlore / dioxyde',desc:'Tournée traitement'},
+  r_jaugeage:{ic:'jaugeage',label:'Jaugeages',desc:'Débit des captages'},
+  r_piezo:{ic:'piezo',label:'Piézomètres',desc:'Niveau de nappe'},
+  r_compteur:{ic:'compteur',label:'Index compteurs',desc:'Lecture d\'index'},
+  r_uv:{ic:'lampe_uv',label:'Lampes UV',desc:'Heures, état des lampes'},
+  maintenance:{ic:'maintenance',label:'Maintenance',desc:'Contrôles périodiques',items:['m_antibelier','m_visite','m_filtres','m_pi']},
+  m_antibelier:{ic:'antibelier',label:'Anti-béliers',desc:'Contrôle annuel'},
+  m_visite:{ic:'visite',label:'Visites d\'ouvrages',desc:'Réservoirs, stations'},
+  m_filtres:{ic:'filtres',label:'Filtres',desc:'Nettoyage, changement'},
+  m_pi:{ic:'pi',label:'Poteaux incendie',desc:'Contrôle des PI'},
+  afaire:{ic:'afaire',label:'À faire',desc:'Échéances de la semaine'},
+  donnees:{ic:'donnees',label:'Données',desc:'Consultation et analyse',items:['d_jaugeages','d_nappes','d_debits','d_qnuit','d_conso','d_qualite']},
+  d_jaugeages:{ic:'jaugeage',label:'Jaugeages',desc:'Débits, normales, étiages',url:'jaugeages.html'},
+  d_nappes:{ic:'nappes',label:'Niveaux de nappes',desc:'Piézomètres'},
+  d_debits:{ic:'debits',label:'Débits / volumes',desc:'Production'},
+  d_qnuit:{ic:'qnuit',label:'Débits de nuit',desc:'Recherche de fuites'},
+  d_conso:{ic:'conso',label:'Consommations',desc:'Par secteur'},
+  d_qualite:{ic:'qualite',label:'Qualité de l\'eau',desc:'Chlore, turbidité'},
+  docs:{ic:'docs',label:'Documentation',desc:'Plans, notices, procédures',items:['k_plans','k_schemas','k_notices','k_proc','k_ouvrages']},
+  k_plans:{ic:'plans',label:'Plans',desc:'Réseaux et ouvrages'},
+  k_schemas:{ic:'schemas',label:'Schémas',desc:'Synoptiques'},
+  k_notices:{ic:'notices',label:'Notices',desc:'Équipements'},
+  k_proc:{ic:'procedures',label:'Procédures',desc:'Modes opératoires'},
+  k_ouvrages:{ic:'ouvrages',label:'Fiches ouvrages',desc:'Carte d\'identité'},
+  projets:{ic:'projets',label:'Fiches projets',desc:'Suivi des projets',url:'fiches.html'},
+  planning:{ic:'planning',label:'Planning',desc:'Équipe et astreinte'},
+  contacts:{ic:'contacts',label:'Contacts',desc:'Annuaire utile'}
+};
+const SIDE=['root','releves','donnees','maintenance','docs','projets','planning','contacts'];
+const BOTTOM=[['root','home','Accueil'],['releves','releves','Relevés'],['donnees','donnees','Données'],['afaire','afaire','À faire']];
+
+let user=null,cfg={order:{},hidden:[],density:9},level='root',editing=false,alertes=null,saveT;
+const ic=(n,cls='')=>`<svg class="ic ${cls}" viewBox="0 0 96 96"><use href="#ic-${n}"/></svg>`;
+
+/* ── Connexion ── */
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user; document.getElementById('login').classList.add('off');
+  document.getElementById('who').textContent=user.email;
+  const n=prenom(); document.getElementById('avatar').textContent=n.slice(0,2).toUpperCase();
+  await loadCfg(); route(); chargerAlertes();
+}
+function prenom(){const p=(user.email.split('@')[0].split(/[._-]/)[0]||'');return p.charAt(0).toUpperCase()+p.slice(1);}
+async function login(){er.textContent='';bl.disabled=true;
+  const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;
+  if(error){er.textContent='Email ou mot de passe incorrect.';return;} start();}
+async function logout(){if(!confirm('Se déconnecter ?'))return;await db.auth.signOut();location.hash='';location.reload();}
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+
+/* ── Préférences (même table qu'avant) ── */
+async function loadCfg(){
+  try{const c=localStorage.getItem('portail-cfg-'+user.id);if(c)cfg={...cfg,...JSON.parse(c)};}catch(e){}
+  try{const {data}=await db.from('preferences').select('config').eq('user_id',user.id).maybeSingle();if(data&&data.config)cfg={...cfg,...data.config};}catch(e){}
+  if(![9,12,15].includes(cfg.density))cfg.density=9;
+}
+function saveCfg(){
+  try{localStorage.setItem('portail-cfg-'+user.id,JSON.stringify(cfg));}catch(e){}
+  clearTimeout(saveT);saveT=setTimeout(()=>db.from('preferences').upsert({user_id:user.id,config:cfg,updated_at:new Date().toISOString()}),600);
+}
+
+/* ── Navigation ── */
+window.addEventListener('hashchange',route);
+function route(){const h=location.hash.slice(1);level=(M[h]&&M[h].items)?h:'root';render();}
+function itemsOf(lv){const b=M[lv].items,s=cfg.order[lv]||[];return [...s.filter(i=>b.includes(i)),...b.filter(i=>!s.includes(i))];}
+function go(id){
+  const m=M[id]; if(editing&&!m.items)return;
+  if(m.items){location.hash=id;return;}
+  if(m.url){location.href=m.url;return;}
+  toast(m.label+' : bientôt disponible');
+}
+
+/* ── Rendu ── */
+function render(){
+  document.getElementById('sidenav').innerHTML=SIDE.map(k=>{const m=k==='root'?{ic:'home',label:'Accueil'}:M[k];
+    const href=M[k].url||('#'+(k==='root'?'':k));return `<a href="${href}" class="${level===k?'on':''}">${ic(m.ic)}${m.label}</a>`;}).join('');
+  document.getElementById('bnav').innerHTML=BOTTOM.map(([k,i,l])=>`<a href="#${k==='root'?'':k}" class="${level===k?'on':''}" ${M[k].items||k==='root'?'':`onclick="event.preventDefault();go('${k}')"`}>${ic(i)}${l}</a>`).join('');
+  const isRoot=level==='root', d=cfg.density;
+  const cols={9:3,12:4,15:5}[d], fs={9:'.85rem',12:'.74rem',15:'.66rem'}[d];
+  const ids=itemsOf(level).filter(i=>editing||!cfg.hidden.includes(i));
+  const tiles=ids.map(id=>{const m=M[id],hid=cfg.hidden.includes(id),ready=m.url||m.items;
+    return `<div class="tile ${hid?'hid':''}" role="button" tabindex="0" onclick="go('${id}')" onkeydown="if(event.key==='Enter')go('${id}')">
+      <svg class="ico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><g class="ic"><use href="#ic-${m.ic}"/></g></svg>
+      <div><b>${m.label}</b><br><small>${m.desc||''}</small></div>
+      ${!ready&&!editing?'<span class="soon">bientôt</span>':''}
+      <div class="ctrl" onclick="event.stopPropagation()"><button onclick="move('${id}',-1)" aria-label="Avancer">‹</button><button onclick="hide('${id}')" aria-label="Masquer ou afficher">${hid?'○':'●'}</button><button onclick="move('${id}',1)" aria-label="Reculer">›</button></div>
+    </div>`;}).join('');
+  const date=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  view.innerHTML=`
+  <div class="crumb">${isRoot?date.charAt(0).toUpperCase()+date.slice(1):'<a href="#" style="color:inherit">Accueil</a> › '+M[level].label}</div>
+  <div class="head"><div><h1>${isRoot?'Bonjour '+prenom():M[level].label}</h1>
+    <div class="sub">${isRoot?'Le terrain et la ressource, en un coup d\'œil':M[level].desc}</div></div>
+    <button class="btn-l ${editing?'on':''}" onclick="toggleEdit()">${editing?'Terminer':'Personnaliser'}</button></div>
+  ${isRoot?`<div class="sec-h" style="margin-top:0"><h2>Ressource en alerte</h2><a href="jaugeages.html">Tous les captages ›</a></div>
+    <div class="card alerts" id="alertes">${alertesHTML()}</div>`:''}
+  <div class="dens"><p>Icônes par écran</p>${[9,12,15].map(n=>`<button class="${d===n?'on':''}" onclick="setDens(${n})">${n}</button>`).join('')}</div>
+  ${isRoot?'<div class="sec-h"><h2>Modules</h2></div>':''}
+  <div class="grid ${editing?'editing':''}" style="--cols:${cols};--fs:${fs}">${tiles}</div>
+  ${editing?'<p class="sub" style="margin-top:14px">‹ › pour déplacer, ● / ○ pour afficher ou masquer. Chaque agent a sa propre disposition.</p>':''}`;
+}
+function toggleEdit(){editing=!editing;render();}
+function setDens(n){cfg.density=n;saveCfg();render();}
+function move(id,d){const l=itemsOf(level),i=l.indexOf(id),j=i+d;if(j<0||j>=l.length)return;[l[i],l[j]]=[l[j],l[i]];cfg.order[level]=l;saveCfg();render();}
+function hide(id){cfg.hidden=cfg.hidden.includes(id)?cfg.hidden.filter(x=>x!==id):[...cfg.hidden,id];saveCfg();render();}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200);}
+
+/* ── Alertes ressource : même calcul que l'écran Jaugeages ── */
+function alertesHTML(){
+  if(alertes===null)return '<div class="empty">Analyse des derniers jaugeages…</div>';
+  if(alertes.err)return `<div class="empty">Alertes indisponibles : ${alertes.err}</div>`;
+  if(!alertes.length)return '<div class="empty">Aucun captage suivi n\'est sous −30 % de sa normale. ✓</div>';
+  return alertes.map(a=>`<a class="al" href="jaugeages.html#site=${a.id}"><div><b>${a.nom}</b><small>${a.commune} · ${a.mois}</small></div>
+    <div class="v">${Math.round(a.val).toLocaleString('fr-FR')} l/min</div>${a.badge}</a>`).join('');
+}
+async function toutes(q){let o=[],f=0;while(true){const {data,error}=await q().range(f,f+999);if(error)throw error;o=o.concat(data);if(data.length<1000)break;f+=1000;}return o;}
+async function chargerAlertes(){
+  try{
+    const [sites,points]=await Promise.all([toutes(()=>db.from('sites').select('id,commune,nom,actif').eq('actif',true)),
+      toutes(()=>db.from('points').select('id,site_id,dans_total').eq('famille','jaugeage').eq('dans_total',true))]);
+    const mes=await toutes(()=>db.from('mesures').select('point_id,date_mesure,valeur,statut').in('point_id',points.map(p=>p.id)));
+    const P=Object.fromEntries(points.map(p=>[p.id,p])),acc={};
+    for(const m of mes){const p=P[m.point_id];let v=m.statut==='mesure'?m.valeur:m.statut==='sec'?0:m.statut==='plafond'?m.valeur:null;
+      if(v==null)continue;const k=p.site_id+'|'+m.date_mesure.slice(0,7);const a=acc[k]??={pts:{},plaf:false};
+      (a.pts[p.id]??=[]).push(+v);if(m.statut==='plafond')a.plaf=true;}
+    const MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    const out=[];
+    for(const s of sites){
+      const ser=Object.keys(acc).filter(k=>+k.split('|')[0]===s.id).map(k=>{const a=acc[k];const vals=Object.values(a.pts).map(l=>l.reduce((x,y)=>x+y,0)/l.length);
+        return {ym:k.split('|')[1],n:vals.length,tot:vals.reduce((x,y)=>x+y,0),plaf:a.plaf};}).sort((a,b)=>a.ym<b.ym?-1:1);
+      if(!ser.length)continue;
+      const yr={};ser.forEach(x=>{yr[x.ym.slice(0,4)]=Math.max(yr[x.ym.slice(0,4)]||0,x.n)});
+      ser.forEach(x=>x.partiel=x.n<yr[x.ym.slice(0,4)]);
+      const ok=ser.filter(x=>!x.partiel&&!x.plaf),last=ser[ser.length-1];
+      if(last.partiel||last.plaf||+last.ym.slice(0,4)<new Date().getFullYear()-1)continue;
+      const same=ok.filter(x=>x.ym.slice(5)===last.ym.slice(5)&&x.ym!==last.ym).map(x=>x.tot);
+      if(same.length<3)continue;
+      const norm=same.reduce((a,b)=>a+b,0)/same.length,ec=(last.tot-norm)/norm*100,minT=Math.min(...ok.map(x=>x.tot));
+      const record=last.tot<=minT;
+      if(ec>-30&&!record)continue;
+      out.push({id:s.id,nom:s.nom,commune:s.commune,val:last.tot,ec,mois:MO[+last.ym.slice(5)-1]+' '+last.ym.slice(0,4),
+        badge:record?'<span class="badge b-bad">Plus bas historique</span>':`<span class="badge b-bad">${Math.round(ec)} % vs normale</span>`,rec:record});
+    }
+    out.sort((a,b)=>(b.rec-a.rec)||(a.ec-b.ec)); alertes=out;
+  }catch(e){alertes={err:e.message};}
+  const el=document.getElementById('alertes'); if(el)el.innerHTML=alertesHTML();
+}
+start();
+</script>
+</body>
+</html>
