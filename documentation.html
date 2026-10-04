@@ -270,8 +270,9 @@ const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhb
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const ADMIN='jeremy.bellec@paysvoironnais.com';
 const CATS={technique:'Documentation technique',procedure:'Procédures',plan:'Schémas et plans'};
-const TYPES={captage:'captage',reservoir:'réservoir',dioxyde:'point dioxyde',piezometre:'piézomètres'};
-let user=null,admin=false,DOCS=[],FAM=[],SITES=[],LIENS=[],cat='',famSel=null,siteSel=null,rech='',file=[],treeOpen=false;
+const TYPES={captage:'captage',reservoir:'réservoir',station:'station',chambre:'chambre de vannes',forage:'forage',dioxyde:'point dioxyde',piezometre:'piézomètres',autre:'autre ouvrage'};
+const TYPES_NOUV=['captage','reservoir','station','chambre','forage','autre'];
+let user=null,admin=false,DOCS=[],FAM=[],SITES=[],LIENS=[],cat=localStorage.getItem('doc-cat')||'plan',SEL=new Set(),famSel=null,siteSel=null,rech='',file=[],treeOpen=false;
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
 const taille=o=>o==null?'':o>1048576?(o/1048576).toFixed(1).replace('.',',')+' Mo':Math.max(1,Math.round(o/1024))+' Ko';
@@ -290,11 +291,12 @@ pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 async function toutes(q){let o=[],a=0;while(true){const {data,error}=await q().range(a,a+999);if(error)throw error;o=o.concat(data);if(data.length<1000)break;a+=1000;}return o;}
 async function charger(){
   try{[DOCS,FAM,SITES,LIENS]=await Promise.all([toutes(()=>db.from('documents').select('*').order('titre')),toutes(()=>db.from('doc_familles').select('*').order('ordre')),
-      toutes(()=>db.from('sites').select('id,commune,nom,type,actif').order('nom')),toutes(()=>db.from('document_sites').select('*'))]);}
+      toutes(()=>db.from('sites').select('id,commune,nom,type,actif,alias,zone').order('nom')),toutes(()=>db.from('document_sites').select('*'))]);}
   catch(e){view.innerHTML=`<div class="card loading">Chargement impossible : ${esc(e.message)}<br><small>Le script 11_documentation.sql a-t-il été lancé ?</small></div>`;throw e;}
 }
 const famNom=id=>{const f=FAM.find(x=>x.id===id);if(!f)return '';const p=FAM.find(x=>x.id===f.parent_id);return p?p.nom+' › '+f.nom:f.nom;};
 const sousFam=id=>[id,...FAM.filter(f=>f.parent_id===id).map(f=>f.id)];
+const famCat=c=>FAM.filter(f=>(f.categorie||'technique')===c);
 const siteLab=s=>`${s.nom} (${TYPES[s.type]||s.type}, ${s.commune})`;
 const sitesDoc=d=>LIENS.filter(l=>l.document_id===d.id).map(l=>SITES.find(s=>s.id===l.site_id)).filter(Boolean);
 
@@ -302,40 +304,82 @@ window.addEventListener('hashchange',route);
 function route(){const h=location.hash;
   if(h==='#deposer'&&admin)return deposer();
   if(h==='#familles'&&admin)return familles();
+  if(h==='#ouvrages'&&admin)return ouvrages();
   let m;if(m=h.match(/^#modifier=(\d+)/))return admin?modifier(+m[1]):liste();
   liste();}
 const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-doc" style="color:var(--acc)"/></svg>`;
 
 /* ── Consultation ── */
 function liste(){
-  let L=DOCS;
-  if(cat)L=L.filter(d=>d.categorie===cat);
-  if(famSel)L=L.filter(d=>sousFam(famSel).includes(d.famille_id));
+  let L=DOCS.filter(d=>d.categorie===cat);
+  if(famSel===-1)L=L.filter(d=>!d.famille_id);else if(famSel)L=L.filter(d=>sousFam(famSel).includes(d.famille_id));
   if(siteSel)L=L.filter(d=>LIENS.some(l=>l.document_id===d.id&&l.site_id===siteSel));
   if(rech){const r=norm(rech);L=L.filter(d=>norm([d.titre,d.fabricant,d.modele,d.description,famNom(d.famille_id),...sitesDoc(d).map(s=>s.nom+' '+s.commune)].join(' ')).includes(r));}
-  const nb=c=>DOCS.filter(d=>!c||d.categorie===c).length;
+  const nb=c=>DOCS.filter(d=>d.categorie===c).length;
   const sitesAvec=[...new Set(LIENS.map(l=>l.site_id))].map(id=>SITES.find(s=>s.id===id)).filter(Boolean).sort((a,b)=>a.nom.localeCompare(b.nom));
   const vol=DOCS.reduce((a,d)=>a+(d.taille||0),0);
-  const racines=FAM.filter(f=>!f.parent_id);
-  const cpt=id=>DOCS.filter(d=>sousFam(id).includes(d.famille_id)&&(!cat||d.categorie===cat)).length;
+  const racines=famCat(cat).filter(f=>!f.parent_id);
+  const cpt=id=>DOCS.filter(d=>sousFam(id).includes(d.famille_id)&&d.categorie===cat).length;
+  const sansFam=DOCS.filter(d=>d.categorie===cat&&!d.famille_id).length;
   view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Documentation</div>
   <div class="head"><div class="head-l">${ico}<div><h1>Documentation</h1><div class="sub">${DOCS.length} document${DOCS.length>1?'s':''}${admin?' · '+taille(vol)+' utilisés sur 1 Go':''}</div></div></div>
-    ${admin?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-l" onclick="location.hash='familles'">Gérer les familles</button><button class="btn-a" onclick="location.hash='deposer'">+ Déposer des documents</button></div>`:''}</div>
-  <div class="cats">${[['','Tout'],...Object.entries(CATS)].map(([k,l])=>`<button class="chip ${cat===k?'on':''}" onclick="cat='${k}';liste()">${l} (${nb(k)})</button>`).join('')}</div>
+    ${admin?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-l" onclick="location.hash='ouvrages'">Gérer les ouvrages</button><button class="btn-l" onclick="location.hash='familles'">Gérer les familles</button><button class="btn-a" onclick="location.hash='deposer'">+ Déposer des documents</button></div>`:''}</div>
+  <div class="cats">${Object.entries(CATS).map(([k,l])=>`<button class="chip ${cat===k?'on':''}" onclick="cat='${k}';famSel=null;SEL.clear();localStorage.setItem('doc-cat','${k}');liste()">${l} (${nb(k)})</button>`).join('')}</div>
   <div class="tools"><input class="search" id="rch" placeholder="Rechercher : titre, fabricant, modèle, ouvrage…" value="${esc(rech)}" oninput="rech=this.value;liste();const i=document.getElementById('rch');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
     <select class="search" style="flex:0 1 280px" onchange="siteSel=+this.value||null;liste()"><option value="">Tous les ouvrages</option>${sitesAvec.map(s=>`<option value="${s.id}" ${siteSel===s.id?'selected':''}>${esc(siteLab(s))}</option>`).join('')}</select>
     <button class="chip" style="display:none" id="tb" onclick="treeOpen=!treeOpen;document.querySelector('.tree').classList.toggle('open')">Familles</button></div>
   <div class="layout">
-    <div class="card tree ${treeOpen?'open':''}"><button class="${!famSel?'on':''}" onclick="famSel=null;liste()">Toutes les familles</button>
+    <div class="card tree ${treeOpen?'open':''}"><button class="${!famSel?'on':''}" onclick="famSel=null;liste()">Toutes les familles</button>${sansFam?`<button class="${famSel===-1?'on':''}" onclick="famSel=-1;liste()">Sans famille <small>${sansFam}</small></button>`:''}
+      ${!racines.length?`<div class="site-c" style="padding:8px 10px">Aucune famille dans cette catégorie${admin?' : crée-les dans « Gérer les familles »':''}.</div>`:''}
       ${racines.map(r=>`<button class="${famSel===r.id?'on':''}" onclick="famSel=${r.id};liste()">${esc(r.nom)} <small>${cpt(r.id)}</small></button>`+
         FAM.filter(f=>f.parent_id===r.id).map(f=>`<button class="sub ${famSel===f.id?'on':''}" onclick="famSel=${f.id};liste()">${esc(f.nom)} <small>${cpt(f.id)}</small></button>`).join('')).join('')}</div>
-    <div>${L.length?L.map(d=>{const S=sitesDoc(d);return `<div class="card doc"><div class="pdf">PDF</div>
+    <div>${admin&&L.length?barreSel(L):''}${L.length?L.map(d=>{const S=sitesDoc(d);return `<div class="card doc" style="${admin?'grid-template-columns:22px 44px 1fr auto':''}">${admin?`<input type="checkbox" ${SEL.has(d.id)?'checked':''} onchange="this.checked?SEL.add(${d.id}):SEL.delete(${d.id});majBarre()" aria-label="Sélectionner" style="width:18px;height:18px">`:''}<div class="pdf">PDF</div>
       <div><div class="t">${esc(d.titre)}</div><div class="m">${CATS[d.categorie]}${d.famille_id?' · '+esc(famNom(d.famille_id)):''}${d.fabricant||d.modele?' · '+esc([d.fabricant,d.modele].filter(Boolean).join(' ')):''} · ${taille(d.taille)}</div>
         <div>${S.map(s=>`<span class="tag s">${esc(s.nom)}</span>`).join('')}</div></div>
       <div class="acts"><button class="btn-a" onclick="ouvrir(${d.id},false)">Ouvrir</button><button class="btn-l" onclick="ouvrir(${d.id},true)">Télécharger</button>${admin?`<button class="btn-l" onclick="location.hash='modifier=${d.id}'">Modifier</button>`:''}</div></div>`;}).join('')
       :`<div class="card loading">${DOCS.length?'Aucun document pour ces critères.':admin?'Aucun document pour l\'instant. Clique sur « Déposer des documents ».':'Aucun document pour l\'instant.'}</div>`}</div>
   </div>`;
+  L_courante=L;majBarre();
   if(matchMedia('(max-width:860px)').matches)document.getElementById('tb').style.display='';
+}
+function barreSel(L){
+  return `<div class="card" id="bsel" style="padding:10px 14px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <label style="display:flex;gap:8px;align-items:center;font-weight:600;font-size:.88rem"><input type="checkbox" id="tous" style="width:18px;height:18px" onchange="L_courante.forEach(d=>this.checked?SEL.add(d.id):SEL.delete(d.id));liste()"> Tout sélectionner</label>
+    <span id="nsel" class="site-c"></span><span style="flex:1"></span>
+    <span id="acts" style="display:none;gap:6px;flex-wrap:wrap">
+      <select class="mini" onchange="grouper('categorie',this.value);this.value=''"><option value="">Changer de catégorie…</option>${Object.entries(CATS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select>
+      <select class="mini" onchange="grouper('famille_id',this.value);this.value=''"><option value="">Changer de famille…</option><option value="0">(aucune famille)</option>${famCat(cat).map(f=>`<option value="${f.id}">${esc(famNom(f.id))}</option>`).join('')}</select>
+      <select class="mini" onchange="grouperSite(+this.value);this.value=''"><option value="">Ajouter un ouvrage…</option>${SITES.map(s=>`<option value="${s.id}">${esc(siteLab(s))}</option>`).join('')}</select>
+      <button class="mini" onclick="retirerSites()">Retirer les ouvrages</button>
+      <button class="mini" style="color:var(--bad)" onclick="supprimerSel()">Supprimer</button></span></div>`;
+}
+let L_courante=[];
+function majBarre(){const n=SEL.size,a=document.getElementById('acts');if(!a)return;a.style.display=n?'flex':'none';document.getElementById('nsel').textContent=n?n+' sélectionné'+(n>1?'s':''):'';
+  const t=document.getElementById('tous');if(t)t.checked=L_courante.length&&L_courante.every(d=>SEL.has(d.id));}
+async function grouper(champ,v){
+  if(!v||!SEL.size)return;const ids=[...SEL];
+  const maj=champ==='categorie'?{categorie:v,famille_id:null}:{famille_id:+v||null};
+  if(!confirm(`Modifier ${ids.length} document(s) ?`))return;
+  const {error}=await db.from('documents').update({...maj,updated_at:new Date().toISOString()}).in('id',ids);
+  if(error)return toast('Erreur : '+error.message);
+  SEL.clear();await charger();toast(ids.length+' document(s) modifié(s) ✓');liste();
+}
+async function grouperSite(sid){
+  if(!sid||!SEL.size)return;const rows=[...SEL].filter(id=>!LIENS.some(l=>l.document_id===id&&l.site_id===sid)).map(id=>({document_id:id,site_id:sid}));
+  if(rows.length){const {error}=await db.from('document_sites').insert(rows);if(error)return toast('Erreur : '+error.message);}
+  await charger();toast('Ouvrage ajouté à '+SEL.size+' document(s) ✓');liste();
+}
+async function retirerSites(){
+  if(!SEL.size||!confirm(`Retirer tous les ouvrages de ${SEL.size} document(s) ?`))return;
+  const {error}=await db.from('document_sites').delete().in('document_id',[...SEL]);if(error)return toast('Erreur : '+error.message);
+  await charger();toast('Ouvrages retirés ✓');liste();
+}
+async function supprimerSel(){
+  const D=DOCS.filter(d=>SEL.has(d.id));if(!D.length)return;
+  if(!confirm(`Supprimer définitivement ${D.length} document(s) ?\nLes PDF seront effacés du stockage.`))return;
+  const r=await db.storage.from('documents').remove(D.map(d=>d.fichier));if(r.error)return toast('Erreur : '+r.error.message);
+  const {error}=await db.from('documents').delete().in('id',D.map(d=>d.id));if(error)return toast('Erreur : '+error.message);
+  SEL.clear();await charger();toast(D.length+' document(s) supprimé(s)');liste();
 }
 async function ouvrir(id,dl){
   const d=DOCS.find(x=>x.id===id),w=dl?null:window.open('','_blank');
@@ -358,19 +402,27 @@ async function lirePdf(f){
 async function proposer(f){
   const nomF=f.name.replace(/\.[^.]+$/,''),texte=await lirePdf(f),N=' '+norm(nomF+' '+texte)+' ',NF=' '+norm(nomF)+' ';
   const p={titre:'',categorie:'technique',famille_id:null,fabricant:'',modele:'',sites:[],why:[]};
-  // ouvrages : nom présent dans le nom du fichier ou le texte ; la commune départage les homonymes
-  const cand=SITES.filter(s=>norm(s.nom).length>=4&&N.includes(' '+norm(s.nom)+' '));
-  if(cand.length){const avecC=cand.filter(s=>N.includes(norm(s.commune)));const best=(avecC.length?avecC:cand);
-    const pref=best.filter(s=>(/RESERVOIR/.test(N)&&s.type==='reservoir')||(/CAPTAGE|SOURCE/.test(N)&&s.type==='captage'));
-    p.sites=(pref.length?pref:best).slice(0,3).map(s=>s.id);p.why.push('ouvrage reconnu');}
+  // ouvrages : nom ou nom alternatif présent ; la commune et le type d'ouvrage départagent
+  // le nom du fichier prime ; le texte du PDF ne sert que si le nom ne donne rien. Les noms génériques sont ignorés.
+  const GEN=new Set(['RESERVOIR','CAPTAGE','STATION','SOURCE','RESEAU','FORAGE','PUITS','CHAMBRE','REGARD','DISTRIBUTION','ADDUCTION']);
+  const trouve=T=>SITES.filter(s=>[s.nom,...(s.alias||[])].some(n=>{const k=norm(n);return k.length>=4&&!GEN.has(k)&&T.includes(' '+k+' ');}));
+  let cand=trouve(NF);if(!cand.length&&!/RESERVOIR|CAPTAGE|STATION|CHAMBRE|FORAGE|PUITS|SOURCE/.test(NF))cand=trouve(N);   // si le nom annonce un ouvrage inconnu, on ne devine pas à partir du texte
+  if(cand.length){
+    const typeVoulu=/RESERVOIR/.test(NF)?'reservoir':/CAPTAGE|SOURCE/.test(NF)?'captage':/STATION/.test(NF)?'station':/CHAMBRE|REGARD/.test(NF)?'chambre':/FORAGE|PUITS/.test(NF)?'forage':null;
+    let best=cand;
+    if(typeVoulu){const t=best.filter(s=>s.type===typeVoulu);if(t.length)best=t;else p.why.push('⚠ aucun '+(TYPES[typeVoulu]||typeVoulu)+' de ce nom : vérifie ou crée l\'ouvrage');}
+    const c=best.filter(s=>communeDans(N,s.commune));if(c.length)best=c;
+    p.sites=best.slice(0,3).map(s=>s.id);p.why.unshift('ouvrage reconnu');}
+  else if(/RESERVOIR|CAPTAGE|STATION|CHAMBRE|FORAGE|PUITS/.test(NF))p.why.push('⚠ ouvrage non trouvé dans la base : crée-le avec « + Nouvel ouvrage »');
   for(const [m,fam] of MOTS)if(N.includes(m.startsWith(' ')?m:' '+m)||N.includes(m)){const fa=FAM.find(x=>x.nom===fam);if(fa){p.famille_id=fa.id;p.why.push('famille « '+fam+' »');break;}}
   const fab=FABS.find(x=>N.includes(norm(x)));if(fab){p.fabricant=fab;}
-  const ouvrageDansNom=/RESERVOIR|CAPTAGE|STATION|CHAMBRE|REGARD|FORAGE|PUITS/.test(NF)&&p.sites.length;
+  const ouvrageDansNom=/RESERVOIR|CAPTAGE|STATION|CHAMBRE|REGARD|FORAGE|PUITS/.test(NF);
   if(/PROCEDURE|MODE OPERATOIRE|CONSIGNE|FICHE REFLEXE|INSTRUCTION/.test(N))p.categorie='procedure';
   else if(/SCHEMA|PLAN|SYNOPTIQUE|IMPLANTATION/.test(NF)||ouvrageDansNom||(p.sites.length&&!fab&&!/NOTICE|MANUEL|FICHE TECHNIQUE|DOCUMENTATION/.test(N)))p.categorie='plan';
   if(/ARMOIRE|SCHEMA ELECTRIQUE/.test(N))p.categorie='plan';
   // un plan d'ouvrage cite des équipements sans en être la notice : on ne garde ni famille ni fabricant
   if(p.categorie==='plan'&&!/ARMOIRE|SCHEMA ELECTRIQUE/.test(N)){p.famille_id=null;p.fabricant='';p.why=p.why.filter(w=>!w.startsWith('famille'));p.why.push('plan d\'ouvrage');}
+  if(p.famille_id&&(FAM.find(f=>f.id===p.famille_id)?.categorie||'technique')!==p.categorie)p.famille_id=null;
   const s0=SITES.find(s=>s.id===p.sites[0]);
   p.titre=p.categorie==='plan'&&s0?`${s0.type==='reservoir'?'Réservoir':s0.type==='captage'?'Captage':''} ${s0.nom} – ${s0.commune}`.trim()
     :nomF.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().replace(/^./,c=>c.toUpperCase());
@@ -378,14 +430,28 @@ async function proposer(f){
 }
 
 /* ── Dépôt (administrateur) ── */
-function selFam(v,on){return `<select onchange="${on}"><option value="">—</option>${FAM.filter(f=>!f.parent_id).map(r=>`<optgroup label="${esc(r.nom)}"><option value="${r.id}" ${v===r.id?'selected':''}>${esc(r.nom)} (général)</option>${FAM.filter(f=>f.parent_id===r.id).map(f=>`<option value="${f.id}" ${v===f.id?'selected':''}>${esc(f.nom)}</option>`).join('')}</optgroup>`).join('')}</select>`;}
-function selSites(ids,i){return `<div>${ids.map(id=>{const s=SITES.find(x=>x.id===id);return `<span class="tag s">${esc(s.nom)} <a href="#" onclick="event.preventDefault();file[${i}].p.sites=file[${i}].p.sites.filter(x=>x!==${id});dessinerDepot()" aria-label="Retirer" style="color:inherit">✕</a></span>`;}).join('')}</div>
-  <select onchange="if(+this.value){file[${i}].p.sites.push(+this.value);dessinerDepot()}"><option value="">+ Ajouter un ouvrage</option>${SITES.filter(s=>!ids.includes(s.id)).map(s=>`<option value="${s.id}">${esc(siteLab(s))}</option>`).join('')}</select>`;}
+const VIDES=new Set(['DE','DU','DES','LA','LE','LES','L','D','SUR','EN']);
+const tok=c=>norm(c).replace(/\bSAINTE?\b/g,'ST').split(' ').filter(w=>w&&!VIDES.has(w));
+function communeDans(N,commune){const n=' '+N.replace(/\bSAINTE?\b/g,'ST')+' ';const t=tok(commune);return t.length&&t.every(w=>n.includes(' '+w+' '));}
+function selFam(v,on,c){return `<select onchange="${on}"><option value="">—</option>${famCat(c||'technique').filter(f=>!f.parent_id).map(r=>`<optgroup label="${esc(r.nom)}"><option value="${r.id}" ${v===r.id?'selected':''}>${esc(r.nom)} (général)</option>${FAM.filter(f=>f.parent_id===r.id).map(f=>`<option value="${f.id}" ${v===f.id?'selected':''}>${esc(f.nom)}</option>`).join('')}</optgroup>`).join('')}</select>`;}
+function selSites(ids,i){return `<div>${ids.map(id=>{const s=SITES.find(x=>x.id===id);return `<span class="tag s">${esc(s.nom)} <a href="#" onclick="event.preventDefault();file[${i}].p.sites=file[${i}].p.sites.filter(x=>x!==${id});file[${i}].edit=1;dessinerDepot()" aria-label="Retirer" style="color:inherit">✕</a></span>`;}).join('')}</div>
+  <select onchange="if(+this.value){file[${i}].p.sites.push(+this.value);file[${i}].edit=1;dessinerDepot()}"><option value="">+ Ajouter un ouvrage</option>${SITES.filter(s=>!ids.includes(s.id)).map(s=>`<option value="${s.id}">${esc(siteLab(s))}</option>`).join('')}</select>`;}
 function deposer(){
   file=[];
   view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Documentation</button>
   <div class="head"><div class="head-l">${ico}<div><h1>Déposer des documents</h1><div class="sub">PDF de 50 Mo maximum. Un classement est proposé pour chaque fichier : vérifie-le avant d'enregistrer.</div></div></div></div>
   <label class="drop" id="drop" for="fin">Glisse tes PDF ici, ou clique pour les choisir</label><input type="file" id="fin" accept="application/pdf,.pdf" multiple style="display:none" onchange="ajouter(this.files)">
+  <div class="card sec" id="outils" style="display:none"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button class="btn-l" onclick="document.getElementById('nouv').style.display='grid'">+ Nouvel ouvrage</button>
+    <button class="btn-l" onclick="relancer()">Relancer les propositions</button>
+    <span class="site-c">Crée les ouvrages manquants, puis relance : les fichiers que tu as déjà corrigés à la main ne sont pas modifiés.</span></div>
+    <div id="nouv" style="display:none;grid-template-columns:1.2fr 1.2fr 1fr 1.6fr auto;gap:8px;margin-top:12px;align-items:end">
+      <div class="fl" style="margin:0"><label>Commune</label><input id="nc" list="communes"></div>
+      <div class="fl" style="margin:0"><label>Nom de l'ouvrage</label><input id="nn"></div>
+      <div class="fl" style="margin:0"><label>Type</label><select id="nt">${TYPES_NOUV.map(t=>`<option value="${t}">${TYPES[t]}</option>`).join('')}</select></div>
+      <div class="fl" style="margin:0"><label>Autres noms (séparés par des virgules)</label><input id="na" placeholder="facultatif"></div>
+      <button class="btn-a" onclick="creerOuvrage()">Créer</button></div>
+    <datalist id="communes">${[...new Set(SITES.map(s=>s.commune))].sort().map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
   <div id="liste"></div><div class="foot" id="ft" style="display:none"><button class="btn-l" onclick="location.hash=''">Annuler</button><button class="btn-a" id="bgo" onclick="envoyer()">Enregistrer</button></div>`;
   const dr=document.getElementById('drop');
   ['dragover','dragenter'].forEach(e=>dr.addEventListener(e,ev=>{ev.preventDefault();dr.classList.add('over')}));
@@ -401,12 +467,13 @@ async function ajouter(fs){
 }
 function dessinerDepot(){
   document.getElementById('ft').style.display=file.length?'flex':'none';
+  const o=document.getElementById('outils');if(o)o.style.display=file.length?'block':'none';
   document.getElementById('bgo').textContent=`Enregistrer ${file.length} document${file.length>1?'s':''}`;
   document.getElementById('liste').innerHTML=file.map(({f,p},i)=>`<div class="card up"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:10px"><b>${esc(f.name)}</b><span class="site-c">${taille(f.size)} <a href="#" onclick="event.preventDefault();file.splice(${i},1);dessinerDepot()" style="color:var(--bad)">retirer</a></span></div>
    ${!p?'<div class="site-c">Lecture du document…</div>':`
-   <div class="row2"><div class="fl"><label>Titre</label><input value="${esc(p.titre)}" oninput="file[${i}].p.titre=this.value"></div>
-     <div class="fl"><label>Catégorie</label><select onchange="file[${i}].p.categorie=this.value">${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${p.categorie===k?'selected':''}>${l}</option>`).join('')}</select></div>
-     <div class="fl"><label>Famille</label>${selFam(p.famille_id,`file[${i}].p.famille_id=+this.value||null`)}</div></div>
+   <div class="row2"><div class="fl"><label>Titre</label><input value="${esc(p.titre)}" oninput="file[${i}].p.titre=this.value;file[${i}].edit=1"></div>
+     <div class="fl"><label>Catégorie</label><select onchange="file[${i}].p.categorie=this.value;file[${i}].p.famille_id=null;file[${i}].edit=1;dessinerDepot()">${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${p.categorie===k?'selected':''}>${l}</option>`).join('')}</select></div>
+     <div class="fl"><label>Famille</label>${selFam(p.famille_id,`file[${i}].p.famille_id=+this.value||null;file[${i}].edit=1`,p.categorie)}</div></div>
    <div class="row3"><div class="fl"><label>Fabricant</label><input value="${esc(p.fabricant)}" oninput="file[${i}].p.fabricant=this.value"></div>
      <div class="fl"><label>Modèle</label><input value="${esc(p.modele)}" oninput="file[${i}].p.modele=this.value"></div>
      <div class="fl"><label>Ouvrages concernés</label>${selSites(p.sites,i)}</div></div>
@@ -429,6 +496,45 @@ async function envoyer(){
   }
   await charger();toast(ok+' document(s) enregistré(s)');
   if(file.length){b.disabled=false;dessinerDepot();}else location.hash='';
+}
+
+async function relancer(){
+  let n=0;for(const x of file){if(x.edit||x.id)continue;x.p=await proposer(x.f);n++;}
+  dessinerDepot();toast(n+' proposition(s) recalculée(s)');
+}
+async function creerOuvrage(){
+  const c=nc.value.trim(),n=nn.value.trim(),t=nt.value,al=na.value.split(',').map(x=>x.trim()).filter(Boolean);
+  if(!c||!n){toast('Indique la commune et le nom');return;}
+  const {data,error}=await db.from('sites').insert({commune:c,nom:n,type:t,alias:al,actif:true}).select().single();
+  if(error){toast(error.message.includes('duplicate')?'Cet ouvrage existe déjà':'Erreur : '+error.message);return;}
+  SITES.push(data);SITES.sort((a,b)=>a.nom.localeCompare(b.nom));nn.value='';na.value='';
+  toast(`« ${n} » créé ✓ — clique sur « Relancer les propositions »`);dessinerDepot();
+}
+
+/* ── Gestion des ouvrages (administrateur) ── */
+let ouvF='';
+function ouvrages(){
+  const L=SITES.filter(s=>!ouvF||norm(s.nom+' '+s.commune+' '+(s.alias||[]).join(' ')).includes(norm(ouvF)));
+  view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Documentation</button>
+  <div class="head"><div class="head-l">${ico}<div><h1>Ouvrages</h1><div class="sub">${SITES.length} ouvrages. Les « autres noms » servent à reconnaître les documents (ex. Chatelonnière pour la Chaîne du Marais).</div></div></div></div>
+  <div class="card sec"><h2>Nouvel ouvrage</h2><div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1.6fr auto;gap:8px;align-items:end">
+    <div class="fl" style="margin:0"><label>Commune</label><input id="nc" list="communes"></div><div class="fl" style="margin:0"><label>Nom</label><input id="nn"></div>
+    <div class="fl" style="margin:0"><label>Type</label><select id="nt">${TYPES_NOUV.map(t=>`<option value="${t}">${TYPES[t]}</option>`).join('')}</select></div>
+    <div class="fl" style="margin:0"><label>Autres noms (virgules)</label><input id="na"></div><button class="btn-a" onclick="creerOuvrage().then(ouvrages)">Créer</button></div>
+    <datalist id="communes">${[...new Set(SITES.map(s=>s.commune))].sort().map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+  <div class="tools"><input class="search" id="of" placeholder="Filtrer les ouvrages" value="${esc(ouvF)}" oninput="ouvF=this.value;ouvrages();const i=document.getElementById('of');i.focus();i.setSelectionRange(i.value.length,i.value.length)"></div>
+  <div class="card pts-wrap"><table><thead><tr><th>Nom</th><th>Commune</th><th>Type</th><th>Autres noms</th><th></th></tr></thead><tbody>
+  ${L.map(s=>`<tr><td><input class="search" style="min-width:150px" value="${esc(s.nom)}" id="on${s.id}"></td><td><input class="search" style="min-width:150px" value="${esc(s.commune)}" id="oc${s.id}" list="communes"></td>
+    <td>${TYPES[s.type]||s.type}</td><td><input class="search" style="min-width:180px" value="${esc((s.alias||[]).join(', '))}" id="oa${s.id}"></td>
+    <td><button class="mini" onclick="majOuvrage(${s.id})">Enregistrer</button></td></tr>`).join('')}</tbody></table></div>
+  <p class="note">Attention : renommer un ouvrage le renomme partout (jaugeages, tournées, piézos). Pour un simple surnom, utilise plutôt « Autres noms ».</p>`;
+}
+async function majOuvrage(id){
+  const nom=document.getElementById('on'+id).value.trim(),commune=document.getElementById('oc'+id).value.trim(),alias=document.getElementById('oa'+id).value.split(',').map(x=>x.trim()).filter(Boolean);
+  if(!nom||!commune){toast('Nom et commune obligatoires');return;}
+  const {error}=await db.from('sites').update({nom,commune,alias}).eq('id',id);
+  if(error){toast('Erreur : '+error.message);return;}
+  Object.assign(SITES.find(s=>s.id===id),{nom,commune,alias});toast('Ouvrage enregistré ✓');
 }
 
 /* ── Modifier / supprimer un document ── */
@@ -454,8 +560,9 @@ async function supprimerDoc(id){
 }
 
 /* ── Gestion des familles (administrateur) ── */
+let famCatSel='technique';
 function familles(){
-  const racines=FAM.filter(f=>!f.parent_id);
+  const racines=famCat(famCatSel).filter(f=>!f.parent_id);
   const ligne=f=>{const n=DOCS.filter(d=>d.famille_id===f.id).length,enf=FAM.filter(x=>x.parent_id===f.id).length;
     return `<div class="fam-row" style="${f.parent_id?'padding-left:28px':''}"><input value="${esc(f.nom)}" onchange="renommer(${f.id},this.value)" aria-label="Nom de la famille">
       ${f.parent_id?`<select onchange="deplacer(${f.id},+this.value)" aria-label="Famille parente">${racines.map(r=>`<option value="${r.id}" ${r.id===f.parent_id?'selected':''}>${esc(r.nom)}</option>`).join('')}</select>`:''}
@@ -464,13 +571,14 @@ function familles(){
       <button class="mini" style="color:var(--bad)" ${n||enf?'disabled title="Vide-la d\'abord"':''} onclick="supprFam(${f.id})">Supprimer</button></div>`;};
   view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Documentation</button>
   <div class="head"><div class="head-l">${ico}<div><h1>Familles</h1><div class="sub">Renommer : modifie le nom puis clique ailleurs. Les documents suivent automatiquement.</div></div></div><button class="btn-a" onclick="creer(null)">+ Nouvelle famille</button></div>
-  <div class="card sec">${racines.map(r=>ligne(r)+FAM.filter(f=>f.parent_id===r.id).map(ligne).join('')).join('')}</div>
+  <div class="cats">${Object.entries(CATS).map(([k,l])=>`<button class="chip ${famCatSel===k?'on':''}" onclick="famCatSel='${k}';familles()">${l}</button>`).join('')}</div>
+  <div class="card sec">${racines.length?racines.map(r=>ligne(r)+FAM.filter(f=>f.parent_id===r.id).map(ligne).join('')).join(''):'<div class="site-c">Aucune famille dans cette catégorie.</div>'}</div>
   <p class="note">Une famille ne peut être supprimée que si elle ne contient ni document ni sous-famille.</p>`;
 }
 async function renommer(id,v){v=v.trim();if(!v)return familles();const {error}=await db.from('doc_familles').update({nom:v}).eq('id',id);if(error)return toast('Erreur : '+error.message);await charger();toast('Renommée ✓');}
 async function deplacer(id,p){const {error}=await db.from('doc_familles').update({parent_id:p}).eq('id',id);if(error)return toast('Erreur : '+error.message);await charger();familles();}
 async function creer(parent){const n=prompt(parent?'Nom de la sous-famille :':'Nom de la nouvelle famille :');if(!n||!n.trim())return;
-  const {error}=await db.from('doc_familles').insert({nom:n.trim(),parent_id:parent,ordre:99});if(error)return toast('Erreur : '+error.message);await charger();familles();}
+  const {error}=await db.from('doc_familles').insert({nom:n.trim(),parent_id:parent,ordre:99,categorie:famCatSel});if(error)return toast('Erreur : '+error.message);await charger();familles();}
 async function supprFam(id){if(!confirm('Supprimer cette famille ?'))return;const {error}=await db.from('doc_familles').delete().eq('id',id);if(error)return toast('Erreur : '+error.message);await charger();familles();}
 start();
 </script>
