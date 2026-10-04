@@ -61,7 +61,8 @@ ol{padding-left:20px;color:var(--mute);font-size:.9rem}ol li{margin-bottom:4px}
     <h2>Bonne pratique</h2>
     <ol><li>Une sauvegarde par mois, après la tournée de jaugeage.</li>
       <li>Ranger le fichier dans un dossier dédié du serveur (PVDRIVE), sans l'écraser : garder au moins les 12 derniers mois.</li>
-      <li>Les photos des fiches projets ne sont que dans le .json (trop lourdes pour Calc).</li></ol>
+      <li>Les photos des fiches projets ne sont que dans le .json (trop lourdes pour Calc).</li>
+      <li>Les PDF de la documentation ne sont pas dans la sauvegarde : garde les originaux sur ton serveur.</li></ol>
   </div>
 </div>
 <script>
@@ -73,7 +74,10 @@ const TABLES=[
   {t:'points',lab:'Points de mesure'},
   {t:'mesures',lab:'Mesures (jaugeages, piézos)'},
   {t:'releves_traitement',lab:'Relevés chlore / dioxyde'},
-  {t:'fiches',lab:'Fiches projets',lourd:['photos']}
+  {t:'fiches',lab:'Fiches projets',lourd:['photos']},
+  {t:'doc_familles',lab:'Familles de documents'},
+  {t:'documents',lab:'Documents (fiches descriptives, sans les PDF)'},
+  {t:'document_sites',lab:'Rattachement documents / ouvrages'}
 ];
 const d=new Date(),stamp=d.toISOString().slice(0,10);
 

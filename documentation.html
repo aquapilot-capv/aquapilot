@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-2:#C2410C; --acc-soft:#FBE9DC; --acc-soft2:#F3D0B5;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:env(safe-area-inset-top,0)}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;min-height:100%}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ── Charpente ── */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute);letter-spacing:.02em}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav svg{width:28px;height:28px;margin:-4px;flex:none}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.side .who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.side .who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+.crumb a{color:var(--mute);text-decoration:none}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;align-items:flex-end;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px}
+.head-l{display:flex;gap:14px;align-items:center}
+.hico{width:56px;height:56px;border-radius:14px;flex:none}
+.bnav{display:none}
+
+/* ── Cartes ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font:inherit}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:500;color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.unit-sw{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.unit-sw button{border:none;background:none;padding:8px 12px;font-size:.83rem;font-weight:600;color:var(--mute)}
+.unit-sw button.on{background:var(--acc);color:#fff}
+
+/* Tableau bureau */
+table{width:100%;border-collapse:collapse}
+th{font-size:.75rem;font-weight:600;color:var(--mute);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);background:#FBF9F6}
+th:first-child{border-top-left-radius:14px}th:last-child{border-top-right-radius:14px}
+td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:.9rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.site-n{font-weight:600}.site-c{font-size:.8rem;color:var(--mute)}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}.b-mute{background:#EFEBE5;color:var(--mute)}
+.list-m{display:none}
+
+/* Détail */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:16px 18px}
+.kpi .l{font-size:.78rem;color:var(--mute);font-weight:500}
+.kpi .v{font-size:1.6rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.8rem;color:var(--mute);margin-top:2px}
+.chart-card{padding:18px 18px 10px;margin-bottom:16px}
+.chart-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chart-top h2{font-size:1rem}
+.pan{display:inline-flex;gap:6px;align-items:center}
+.pan button{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:32px}
+.pan span{font-size:.85rem;font-weight:600;min-width:110px;text-align:center;font-variant-numeric:tabular-nums}
+.chart-box{position:relative;height:340px}
+.legend-note{font-size:.78rem;color:var(--mute);padding:6px 2px 4px}
+.pts td:first-child{font-weight:500}
+.back{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem;margin-bottom:14px}
+.note{font-size:.8rem;color:var(--mute);margin-top:12px}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+
+/* ── Mobile ── */
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  main{padding:calc(16px + env(safe-area-inset-top,0)) 16px calc(90px + env(safe-area-inset-bottom,0))}
+  h1{font-size:1.4rem}.hico{width:46px;height:46px}
+  .table-d{display:none}
+  .list-m{display:flex;flex-direction:column;gap:10px}
+  .mcard{padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;cursor:pointer}
+  .mcard .big{font-size:1.25rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .mcard .meta{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--mute)}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:12px 14px}.kpi .v{font-size:1.25rem}
+  .chart-box{height:260px}
+  .pts-wrap{overflow-x:auto}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}
+  .bnav svg{width:32px;height:32px;margin:-4px}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.btn-a{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:600;font-size:.9rem}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:.88rem;color:var(--ink)}
+.btn-d{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:.88rem;color:var(--bad)}
+.sec{padding:18px 20px;margin-bottom:14px}
+.sec h2{font-size:1rem;margin-bottom:12px;color:var(--acc)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.fl label{display:block;font-size:.8rem;font-weight:600;margin-bottom:5px}
+.fl input,.fl textarea,.fl select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+.fl textarea{min-height:76px;resize:vertical}
+.fl input:focus,.fl textarea:focus,.fl select:focus{outline:none;border-color:var(--acc)}
+.fl{margin-bottom:12px}
+.req{color:var(--bad)}
+.dt{display:grid;grid-template-columns:200px 1fr;gap:6px 16px;font-size:.92rem}
+@media (max-width:860px){.dt{grid-template-columns:1fr}.dt dt{margin-top:8px}}
+.dt dt{color:var(--mute);font-weight:500}.dt dd{white-space:pre-wrap}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.photos .ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#EFEAE3}
+.photos img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.photos .x{position:absolute;top:6px;right:6px;border:none;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:26px;height:26px}
+.add{border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center;aspect-ratio:1;color:var(--mute);font-weight:600;font-size:.85rem;cursor:pointer;background:#fff;text-align:center;padding:8px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:70}
+.lb.on{display:flex}.lb img{max-width:94vw;max-height:90vh;border-radius:8px}
+.foot{position:sticky;bottom:0;background:var(--bg);padding:12px 0;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+@media (max-width:860px){.foot{bottom:calc(64px + env(safe-area-inset-bottom,0));flex-wrap:nowrap}.foot button{flex:1;padding:12px 8px}}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,30px);opacity:0;background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;font-size:.9rem;font-weight:500;transition:.2s;z-index:80;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1}
+@media print{.side,.bnav,.back,.head button,.foot{display:none!important}.shell{display:block}main{padding:0}.card{break-inside:avoid;border-color:#ccc}body{background:#fff}}
+.cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.layout{display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:1fr}.tree{display:none}.tree.open{display:block}}
+.tree{padding:10px}
+.tree button{display:block;width:100%;text-align:left;border:none;background:none;padding:7px 10px;border-radius:8px;font-size:.88rem;color:var(--ink)}
+.tree button.sub{padding-left:24px;font-size:.84rem;color:#4b443e}
+.tree button.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.tree button small{color:var(--mute);float:right}
+.doc{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 14px;margin-bottom:8px}
+.pdf{width:44px;height:52px;border-radius:6px;background:#FDE7E4;color:#B42318;display:grid;place-items:center;font-size:.7rem;font-weight:700}
+.doc .t{font-weight:600;line-height:1.25}.doc .m{font-size:.8rem;color:var(--mute);margin-top:2px}
+.doc .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:620px){.doc{grid-template-columns:40px 1fr}.doc .acts{grid-column:1/-1;justify-content:flex-start}}
+.tag{display:inline-block;background:#EFEBE5;color:#5C534C;border-radius:999px;padding:2px 9px;font-size:.74rem;font-weight:500;margin:3px 4px 0 0}
+.tag.s{background:#E3EEF7;color:#2F6F9F}
+.up{padding:16px;margin-bottom:12px}
+.up .row2{display:grid;grid-template-columns:2fr 1fr 1.4fr;gap:10px}
+.up .row3{display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px;margin-top:10px}
+@media (max-width:860px){.up .row2,.up .row3{grid-template-columns:1fr}}
+.up .fl{margin:0}.sugg{font-size:.76rem;color:var(--ok);margin-top:6px}
+.drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--mute);background:#fff;cursor:pointer;margin-bottom:14px}
+.drop.over{border-color:var(--acc);background:var(--acc-soft)}
+.fam-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.fam-row input{flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.fam-row select{padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;max-width:180px}
+.mini{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:.8rem;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- Icônes (tracés au trait, même règle que les icônes Figma) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-releves" viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 5.5H5v15h14v-15h-1M8.5 12h7M8.5 16h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-donnees" viewBox="0 0 24 24"><path d="M4 19h16M6 15l4-5 3 3 5-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-maint" viewBox="0 0 24 24"><path d="M14.5 5.5a4 4 0 0 0 4.6 5.3L12 18a2.1 2.1 0 1 1-3-3l7.2-7.1a4 4 0 0 0-1.7-2.4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-docs" viewBox="0 0 24 24"><path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H12v16H6.5A1.5 1.5 0 0 1 5 18.5zM12 4h5.5A1.5 1.5 0 0 1 19 5.5v13a1.5 1.5 0 0 1-1.5 1.5H12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-afaire" viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-jaug" viewBox="0 0 96 96"><path d="M24 54.5455C28 48.7273 32 48.7273 36 54.5455C40 60.3636 44 60.3636 48 54.5455C52 48.7273 56 48.7273 60 54.5455C64 60.3636 68 60.3636 72 54.5455M24 67.6364C28 61.8182 32 61.8182 36 67.6364C40 73.4545 44 73.4545 48 67.6364C52 61.8182 56 61.8182 60 67.6364C64 73.4545 68 73.4545 72 67.6364M24 34.1818H51.6M44.4 42.9091L51.6 34.1818L44.4 25.4545M61.2 24V47.2727M61.2 28.3636H68.4M61.2 37.0909H66M61.2 45.8182H68.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="ic-home" viewBox="0 0 96 96"><path d="M26 46 48 28l22 18v24H56V56H40v14H26z"/></symbol>
+<symbol id="ic-releves" viewBox="0 0 96 96"><path d="M38 24h20v8H38zM34 28h-6v44h40V28h-6M38 46h20M38 56h20M38 66h12"/></symbol>
+<symbol id="ic-maintenance" viewBox="0 0 96 96"><path d="M57 26a13 13 0 0 0-12 17L27 61a5.5 5.5 0 0 0 8 8l18-18a13 13 0 0 0 17-12l-8 5-7-7z"/></symbol>
+<symbol id="ic-afaire" viewBox="0 0 96 96"><path d="M28 34l5 5 9-10M28 54l5 5 9-10M50 35h18M50 55h18"/></symbol>
+<symbol id="ic-donnees" viewBox="0 0 96 96"><path d="M26 70h44M32 62V50M44 62V36M56 62V44M68 62V28"/></symbol>
+<symbol id="ic-docs" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38"/></symbol>
+<symbol id="ic-projets" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z"/></symbol>
+<symbol id="ic-planning" viewBox="0 0 96 96"><path d="M26 32h44v38H26zM26 42h44M36 26v10M60 26v10M34 52h6M46 52h6M58 52h6M34 61h6M46 61h6"/></symbol>
+<symbol id="ic-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
+<symbol id="ic-antibelier" viewBox="0 0 96 96"><path d="M40 30h16a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8V38a8 8 0 0 1 8-8zM48 30v-6M42 24h12M48 68v4M26 72h44M38 46h20"/></symbol>
+<symbol id="ic-visite" viewBox="0 0 96 96"><path d="M28 70V42l20-14 20 14v28zM42 70V56h12v14M24 70h48"/></symbol>
+<symbol id="ic-filtres" viewBox="0 0 96 96"><path d="M26 28h44L54 48v18l-12 6V48z"/></symbol>
+<symbol id="ic-pi" viewBox="0 0 96 96"><path d="M40 34h16v-4a8 8 0 0 0-16 0zM36 34h24v6H36zM40 40h16v26H40zM34 48h6M56 48h6M36 66h24v6H36z"/></symbol>
+<symbol id="ic-debits" viewBox="0 0 96 96"><path d="M24 40h36M52 32l8 8-8 8M24 60c6-6 10-6 16 0s10 6 16 0 10-6 16 0"/></symbol>
+<symbol id="ic-nappes" viewBox="0 0 96 96"><path d="M24 38h48M24 52c6-5 10-5 16 0s10 5 16 0 10-5 16 0M24 66h48M48 22v24"/></symbol>
+<symbol id="ic-qnuit" viewBox="0 0 96 96"><path d="M62 58a20 20 0 1 1-20-30 16 16 0 0 0 20 30z"/></symbol>
+<symbol id="ic-conso" viewBox="0 0 96 96"><path d="M28 38h22v9H28zM50 41h10a8 8 0 0 1 8 8v5M39 30v8M33 30h12M68 62c0 3-2 5-3 5s-3-2-3-5 3-6 3-6 3 3 3 6z"/></symbol>
+<symbol id="ic-qualite" viewBox="0 0 96 96"><path d="M48 24s16 18 16 30a16 16 0 0 1-32 0c0-12 16-30 16-30zM41 56l5 5 9-10"/></symbol>
+<symbol id="ic-plans" viewBox="0 0 96 96"><path d="M26 32l14-6 16 6 14-6v38l-14 6-16-6-14 6zM40 26v38M56 32v38"/></symbol>
+<symbol id="ic-schemas" viewBox="0 0 96 96"><path d="M28 28h16v12H28zM52 28h16v12H52zM52 58h16v12H52zM36 40v24h16M60 40v18"/></symbol>
+<symbol id="ic-notices" viewBox="0 0 96 96"><path d="M32 24h22l10 10v38H32zM54 24v10h10M38 46h20M38 54h20M38 62h12"/></symbol>
+<symbol id="ic-procedures" viewBox="0 0 96 96"><path d="M28 32h4M28 48h4M28 64h4M40 32h28M40 48h28M40 64h28"/></symbol>
+<symbol id="ic-ouvrages" viewBox="0 0 96 96"><path d="M26 50V28h22l22 22-22 22zM37 36a2 2 0 1 0 0 .1"/></symbol>
+<symbol id="ic-chlore" viewBox="0 0 96 96"><path d="M36.766 24H59.234M40.5106 24V40L25.5319 62.6667C21.7872 68.8889 24.9078 72 34.8936 72H61.1064C71.0922 72 74.2128 68.8889 70.4681 62.6667L55.4894 40V24M33.0213 56H62.9787M40.5106 62.6667H55.4894"/></symbol>
+<symbol id="ic-compteur" viewBox="0 0 96 96"><path d="M24 41.4545H32.7273M24 54.5455H32.7273M63.2727 41.4545H72M63.2727 54.5455H72M43.6364 39.2727V45.8182M48 39.2727V45.8182M52.3636 39.2727V45.8182M43.6364 61.0909H52.3636M32.7273 24H63.2727V72H32.7273V24ZM39.2727 34.9091H56.7273V50.1818H39.2727V34.9091Z"/></symbol>
+<symbol id="ic-jaugeage" viewBox="0 0 96 96"><path d="M24 54.5455C28 48.7273 32 48.7273 36 54.5455C40 60.3636 44 60.3636 48 54.5455C52 48.7273 56 48.7273 60 54.5455C64 60.3636 68 60.3636 72 54.5455M24 67.6364C28 61.8182 32 61.8182 36 67.6364C40 73.4545 44 73.4545 48 67.6364C52 61.8182 56 61.8182 60 67.6364C64 73.4545 68 73.4545 72 67.6364M24 34.1818H51.6M44.4 42.9091L51.6 34.1818L44.4 25.4545M61.2 24V47.2727M61.2 28.3636H68.4M61.2 37.0909H66M61.2 45.8182H68.4"/></symbol>
+<symbol id="ic-piezo" viewBox="0 0 96 96"><path d="M24 38.6667H42M54 38.6667H72M46.8 28V61.3333M46.8 49.3333H52.8M24 60C28 55.5556 32 55.5556 36 60M57.6 60C61.6 55.5556 66.4 55.5556 72 60M24 72C28.8 67.5556 33.6 67.5556 38.4 72M57.6 72C62.4 67.5556 67.2 67.5556 72 72M42 24H54V68H42V24Z"/></symbol>
+<symbol id="ic-lampe_uv" viewBox="0 0 96 96"><path d="M40.9412 32H55.0588M40.9412 64H55.0588M48 36.8V59.2M26.8235 33.6L32.4706 38.4M24 48H32.4706M26.8235 62.4L32.4706 57.6M69.1765 33.6L63.5294 38.4M72 48H63.5294M69.1765 62.4L63.5294 57.6M40.9412 24H55.0588V72H40.9412V24Z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+  <symbol id="i-fp" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+  <symbol id="i-pz" viewBox="0 0 96 96"><path d="M24 38.6667H42M54 38.6667H72M46.8 28V61.3333M46.8 49.3333H52.8M24 60C28 55.5556 32 55.5556 36 60M57.6 60C61.6 55.5556 66.4 55.5556 72 60M24 72C28.8 67.5556 33.6 67.5556 38.4 72M57.6 72C62.4 67.5556 67.2 67.5556 72 72M42 24H54V68H42V24Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+</svg>
+
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>Portail Eau</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav">
+      <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+      <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+      <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+      <a href="index.html#maintenance"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
+      <a href="documentation.html" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
+      <a href="fiches.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
+      <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
+      <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
+    </nav>
+    <div class="who"><span id="who"></span><br><button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+
+  <main>
+    <div id="view"><div class="loading"><div class="spin"></div>Chargement de la documentation…</div></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lbi" alt=""></div>
+<nav class="bnav">
+  <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+  <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+  <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+  <a href="index.html#afaire"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
+</nav>
+
+<script>
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const ADMIN='jeremy.bellec@paysvoironnais.com';
+const CATS={technique:'Documentation technique',procedure:'Procédures',plan:'Schémas et plans'};
+const TYPES={captage:'captage',reservoir:'réservoir',dioxyde:'point dioxyde',piezometre:'piézomètres'};
+let user=null,admin=false,DOCS=[],FAM=[],SITES=[],LIENS=[],cat='',famSel=null,siteSel=null,rech='',file=[],treeOpen=false;
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+const taille=o=>o==null?'':o>1048576?(o/1048576).toFixed(1).replace('.',',')+' Mo':Math.max(1,Math.round(o/1024))+' Ko';
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800);}
+
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user;admin=user.email===ADMIN;
+  document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
+  await charger();route();
+}
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
+async function logout(){await db.auth.signOut();location.reload();}
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+async function toutes(q){let o=[],a=0;while(true){const {data,error}=await q().range(a,a+999);if(error)throw error;o=o.concat(data);if(data.length<1000)break;a+=1000;}return o;}
+async function charger(){
+  try{[DOCS,FAM,SITES,LIENS]=await Promise.all([toutes(()=>db.from('documents').select('*').order('titre')),toutes(()=>db.from('doc_familles').select('*').order('ordre')),
+      toutes(()=>db.from('sites').select('id,commune,nom,type,actif').order('nom')),toutes(()=>db.from('document_sites').select('*'))]);}
+  catch(e){view.innerHTML=`<div class="card loading">Chargement impossible : ${esc(e.message)}<br><small>Le script 11_documentation.sql a-t-il été lancé ?</small></div>`;throw e;}
+}
+const famNom=id=>{const f=FAM.find(x=>x.id===id);if(!f)return '';const p=FAM.find(x=>x.id===f.parent_id);return p?p.nom+' › '+f.nom:f.nom;};
+const sousFam=id=>[id,...FAM.filter(f=>f.parent_id===id).map(f=>f.id)];
+const siteLab=s=>`${s.nom} (${TYPES[s.type]||s.type}, ${s.commune})`;
+const sitesDoc=d=>LIENS.filter(l=>l.document_id===d.id).map(l=>SITES.find(s=>s.id===l.site_id)).filter(Boolean);
+
+window.addEventListener('hashchange',route);
+function route(){const h=location.hash;
+  if(h==='#deposer'&&admin)return deposer();
+  if(h==='#familles'&&admin)return familles();
+  let m;if(m=h.match(/^#modifier=(\d+)/))return admin?modifier(+m[1]):liste();
+  liste();}
+const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-doc" style="color:var(--acc)"/></svg>`;
+
+/* ── Consultation ── */
+function liste(){
+  let L=DOCS;
+  if(cat)L=L.filter(d=>d.categorie===cat);
+  if(famSel)L=L.filter(d=>sousFam(famSel).includes(d.famille_id));
+  if(siteSel)L=L.filter(d=>LIENS.some(l=>l.document_id===d.id&&l.site_id===siteSel));
+  if(rech){const r=norm(rech);L=L.filter(d=>norm([d.titre,d.fabricant,d.modele,d.description,famNom(d.famille_id),...sitesDoc(d).map(s=>s.nom+' '+s.commune)].join(' ')).includes(r));}
+  const nb=c=>DOCS.filter(d=>!c||d.categorie===c).length;
+  const sitesAvec=[...new Set(LIENS.map(l=>l.site_id))].map(id=>SITES.find(s=>s.id===id)).filter(Boolean).sort((a,b)=>a.nom.localeCompare(b.nom));
+  const vol=DOCS.reduce((a,d)=>a+(d.taille||0),0);
+  const racines=FAM.filter(f=>!f.parent_id);
+  const cpt=id=>DOCS.filter(d=>sousFam(id).includes(d.famille_id)&&(!cat||d.categorie===cat)).length;
+  view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Documentation</div>
+  <div class="head"><div class="head-l">${ico}<div><h1>Documentation</h1><div class="sub">${DOCS.length} document${DOCS.length>1?'s':''}${admin?' · '+taille(vol)+' utilisés sur 1 Go':''}</div></div></div>
+    ${admin?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-l" onclick="location.hash='familles'">Gérer les familles</button><button class="btn-a" onclick="location.hash='deposer'">+ Déposer des documents</button></div>`:''}</div>
+  <div class="cats">${[['','Tout'],...Object.entries(CATS)].map(([k,l])=>`<button class="chip ${cat===k?'on':''}" onclick="cat='${k}';liste()">${l} (${nb(k)})</button>`).join('')}</div>
+  <div class="tools"><input class="search" id="rch" placeholder="Rechercher : titre, fabricant, modèle, ouvrage…" value="${esc(rech)}" oninput="rech=this.value;liste();const i=document.getElementById('rch');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
+    <select class="search" style="flex:0 1 280px" onchange="siteSel=+this.value||null;liste()"><option value="">Tous les ouvrages</option>${sitesAvec.map(s=>`<option value="${s.id}" ${siteSel===s.id?'selected':''}>${esc(siteLab(s))}</option>`).join('')}</select>
+    <button class="chip" style="display:none" id="tb" onclick="treeOpen=!treeOpen;document.querySelector('.tree').classList.toggle('open')">Familles</button></div>
+  <div class="layout">
+    <div class="card tree ${treeOpen?'open':''}"><button class="${!famSel?'on':''}" onclick="famSel=null;liste()">Toutes les familles</button>
+      ${racines.map(r=>`<button class="${famSel===r.id?'on':''}" onclick="famSel=${r.id};liste()">${esc(r.nom)} <small>${cpt(r.id)}</small></button>`+
+        FAM.filter(f=>f.parent_id===r.id).map(f=>`<button class="sub ${famSel===f.id?'on':''}" onclick="famSel=${f.id};liste()">${esc(f.nom)} <small>${cpt(f.id)}</small></button>`).join('')).join('')}</div>
+    <div>${L.length?L.map(d=>{const S=sitesDoc(d);return `<div class="card doc"><div class="pdf">PDF</div>
+      <div><div class="t">${esc(d.titre)}</div><div class="m">${CATS[d.categorie]}${d.famille_id?' · '+esc(famNom(d.famille_id)):''}${d.fabricant||d.modele?' · '+esc([d.fabricant,d.modele].filter(Boolean).join(' ')):''} · ${taille(d.taille)}</div>
+        <div>${S.map(s=>`<span class="tag s">${esc(s.nom)}</span>`).join('')}</div></div>
+      <div class="acts"><button class="btn-a" onclick="ouvrir(${d.id},false)">Ouvrir</button><button class="btn-l" onclick="ouvrir(${d.id},true)">Télécharger</button>${admin?`<button class="btn-l" onclick="location.hash='modifier=${d.id}'">Modifier</button>`:''}</div></div>`;}).join('')
+      :`<div class="card loading">${DOCS.length?'Aucun document pour ces critères.':admin?'Aucun document pour l\'instant. Clique sur « Déposer des documents ».':'Aucun document pour l\'instant.'}</div>`}</div>
+  </div>`;
+  if(matchMedia('(max-width:860px)').matches)document.getElementById('tb').style.display='';
+}
+async function ouvrir(id,dl){
+  const d=DOCS.find(x=>x.id===id),w=dl?null:window.open('','_blank');
+  const {data,error}=await db.storage.from('documents').createSignedUrl(d.fichier,600,dl?{download:d.nom_fichier||true}:undefined);
+  if(error){if(w)w.close();toast('Ouverture impossible : '+error.message);return;}
+  if(w)w.location=data.signedUrl;else location.href=data.signedUrl;
+}
+
+/* ── Proposition automatique de classement ── */
+const MOTS=[['STAB','STAB / robinets altimétriques'],['ALTIMETRIQUE','STAB / robinets altimétriques'],['REDUCTEUR','Réducteurs de pression'],['POMPE DOSEUSE','Pompes doseuses'],['DOSEUSE','Pompes doseuses'],
+ ['CHLOROMETRE','Chloromètres et analyseurs'],['ANALYSEUR','Chloromètres et analyseurs'],['TURBIDIMETRE','Chloromètres et analyseurs'],[' UV ','UV'],['ULTRAVIOLET','UV'],
+ ['VENTOUSE','Ventouses'],['VANNE','Vannes'],['ROBINET VANNE','Vannes'],['VIDANGE','Vidanges'],['COMPTEUR','Compteurs'],['WOLT','Compteurs'],['DEBITMETRE','Débitmètres'],
+ ['ARMOIRE','Armoires électriques'],['SCHEMA ELECTRIQUE','Armoires électriques'],['SOFREL','Télégestion (Sofrel…)'],['TELEGESTION','Télégestion (Sofrel…)'],['POTEAU INCENDIE','Poteaux incendie'],['HYDRANT','Poteaux incendie']];
+const FABS=['Bayard','Savy','Cla-Val','Prominent','Grundfos','Seko','Dosatron','Itron','Sensus','Diehl','Sofrel','Lacroix','Endress','Hach','Krohne','Siemens','Pont-à-Mousson','Talis','Socla'];
+async function lirePdf(f){
+  if(!window.pdfjsLib)return '';
+  try{const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let t='';
+    for(let i=1;i<=Math.min(pdf.numPages,2);i++){const c=await(await pdf.getPage(i)).getTextContent();t+=' '+c.items.map(x=>x.str).join(' ');}return t;}catch(e){return '';}
+}
+async function proposer(f){
+  const nomF=f.name.replace(/\.[^.]+$/,''),texte=await lirePdf(f),N=' '+norm(nomF+' '+texte)+' ',NF=' '+norm(nomF)+' ';
+  const p={titre:'',categorie:'technique',famille_id:null,fabricant:'',modele:'',sites:[],why:[]};
+  // ouvrages : nom présent dans le nom du fichier ou le texte ; la commune départage les homonymes
+  const cand=SITES.filter(s=>norm(s.nom).length>=4&&N.includes(' '+norm(s.nom)+' '));
+  if(cand.length){const avecC=cand.filter(s=>N.includes(norm(s.commune)));const best=(avecC.length?avecC:cand);
+    const pref=best.filter(s=>(/RESERVOIR/.test(N)&&s.type==='reservoir')||(/CAPTAGE|SOURCE/.test(N)&&s.type==='captage'));
+    p.sites=(pref.length?pref:best).slice(0,3).map(s=>s.id);p.why.push('ouvrage reconnu');}
+  for(const [m,fam] of MOTS)if(N.includes(m.startsWith(' ')?m:' '+m)||N.includes(m)){const fa=FAM.find(x=>x.nom===fam);if(fa){p.famille_id=fa.id;p.why.push('famille « '+fam+' »');break;}}
+  const fab=FABS.find(x=>N.includes(norm(x)));if(fab){p.fabricant=fab;}
+  const ouvrageDansNom=/RESERVOIR|CAPTAGE|STATION|CHAMBRE|REGARD|FORAGE|PUITS/.test(NF)&&p.sites.length;
+  if(/PROCEDURE|MODE OPERATOIRE|CONSIGNE|FICHE REFLEXE|INSTRUCTION/.test(N))p.categorie='procedure';
+  else if(/SCHEMA|PLAN|SYNOPTIQUE|IMPLANTATION/.test(NF)||ouvrageDansNom||(p.sites.length&&!fab&&!/NOTICE|MANUEL|FICHE TECHNIQUE|DOCUMENTATION/.test(N)))p.categorie='plan';
+  if(/ARMOIRE|SCHEMA ELECTRIQUE/.test(N))p.categorie='plan';
+  // un plan d'ouvrage cite des équipements sans en être la notice : on ne garde ni famille ni fabricant
+  if(p.categorie==='plan'&&!/ARMOIRE|SCHEMA ELECTRIQUE/.test(N)){p.famille_id=null;p.fabricant='';p.why=p.why.filter(w=>!w.startsWith('famille'));p.why.push('plan d\'ouvrage');}
+  const s0=SITES.find(s=>s.id===p.sites[0]);
+  p.titre=p.categorie==='plan'&&s0?`${s0.type==='reservoir'?'Réservoir':s0.type==='captage'?'Captage':''} ${s0.nom} – ${s0.commune}`.trim()
+    :nomF.replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().replace(/^./,c=>c.toUpperCase());
+  return p;
+}
+
+/* ── Dépôt (administrateur) ── */
+function selFam(v,on){return `<select onchange="${on}"><option value="">—</option>${FAM.filter(f=>!f.parent_id).map(r=>`<optgroup label="${esc(r.nom)}"><option value="${r.id}" ${v===r.id?'selected':''}>${esc(r.nom)} (général)</option>${FAM.filter(f=>f.parent_id===r.id).map(f=>`<option value="${f.id}" ${v===f.id?'selected':''}>${esc(f.nom)}</option>`).join('')}</optgroup>`).join('')}</select>`;}
+function selSites(ids,i){return `<div>${ids.map(id=>{const s=SITES.find(x=>x.id===id);return `<span class="tag s">${esc(s.nom)} <a href="#" onclick="event.preventDefault();file[${i}].p.sites=file[${i}].p.sites.filter(x=>x!==${id});dessinerDepot()" aria-label="Retirer" style="color:inherit">✕</a></span>`;}).join('')}</div>
+  <select onchange="if(+this.value){file[${i}].p.sites.push(+this.value);dessinerDepot()}"><option value="">+ Ajouter un ouvrage</option>${SITES.filter(s=>!ids.includes(s.id)).map(s=>`<option value="${s.id}">${esc(siteLab(s))}</option>`).join('')}</select>`;}
+function deposer(){
+  file=[];
+  view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Documentation</button>
+  <div class="head"><div class="head-l">${ico}<div><h1>Déposer des documents</h1><div class="sub">PDF de 50 Mo maximum. Un classement est proposé pour chaque fichier : vérifie-le avant d'enregistrer.</div></div></div></div>
+  <label class="drop" id="drop" for="fin">Glisse tes PDF ici, ou clique pour les choisir</label><input type="file" id="fin" accept="application/pdf,.pdf" multiple style="display:none" onchange="ajouter(this.files)">
+  <div id="liste"></div><div class="foot" id="ft" style="display:none"><button class="btn-l" onclick="location.hash=''">Annuler</button><button class="btn-a" id="bgo" onclick="envoyer()">Enregistrer</button></div>`;
+  const dr=document.getElementById('drop');
+  ['dragover','dragenter'].forEach(e=>dr.addEventListener(e,ev=>{ev.preventDefault();dr.classList.add('over')}));
+  ['dragleave','drop'].forEach(e=>dr.addEventListener(e,ev=>{ev.preventDefault();dr.classList.remove('over')}));
+  dr.addEventListener('drop',ev=>ajouter(ev.dataTransfer.files));
+}
+async function ajouter(fs){
+  for(const f of fs){
+    if(!/pdf$/i.test(f.name)){toast(f.name+' : seuls les PDF sont acceptés');continue;}
+    if(f.size>52428800){toast(f.name+' : plus de 50 Mo');continue;}
+    const i=file.push({f,p:null})-1;dessinerDepot();file[i].p=await proposer(f);dessinerDepot();
+  }
+}
+function dessinerDepot(){
+  document.getElementById('ft').style.display=file.length?'flex':'none';
+  document.getElementById('bgo').textContent=`Enregistrer ${file.length} document${file.length>1?'s':''}`;
+  document.getElementById('liste').innerHTML=file.map(({f,p},i)=>`<div class="card up"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:10px"><b>${esc(f.name)}</b><span class="site-c">${taille(f.size)} <a href="#" onclick="event.preventDefault();file.splice(${i},1);dessinerDepot()" style="color:var(--bad)">retirer</a></span></div>
+   ${!p?'<div class="site-c">Lecture du document…</div>':`
+   <div class="row2"><div class="fl"><label>Titre</label><input value="${esc(p.titre)}" oninput="file[${i}].p.titre=this.value"></div>
+     <div class="fl"><label>Catégorie</label><select onchange="file[${i}].p.categorie=this.value">${Object.entries(CATS).map(([k,l])=>`<option value="${k}" ${p.categorie===k?'selected':''}>${l}</option>`).join('')}</select></div>
+     <div class="fl"><label>Famille</label>${selFam(p.famille_id,`file[${i}].p.famille_id=+this.value||null`)}</div></div>
+   <div class="row3"><div class="fl"><label>Fabricant</label><input value="${esc(p.fabricant)}" oninput="file[${i}].p.fabricant=this.value"></div>
+     <div class="fl"><label>Modèle</label><input value="${esc(p.modele)}" oninput="file[${i}].p.modele=this.value"></div>
+     <div class="fl"><label>Ouvrages concernés</label>${selSites(p.sites,i)}</div></div>
+   ${p.why.length?`<div class="sugg">✓ Proposé automatiquement : ${p.why.join(', ')}</div>`:''}`}</div>`).join('');
+}
+async function envoyer(){
+  if(file.some(x=>!x.p)){toast('Lecture des fichiers en cours, patiente un instant');return;}
+  if(file.some(x=>!x.p.titre.trim())){toast('Chaque document doit avoir un titre');return;}
+  const b=document.getElementById('bgo');b.disabled=true;let ok=0;
+  for(const x of [...file]){
+    b.textContent=`Envoi ${ok+1} / ${file.length}…`;
+    const chemin=`${x.p.categorie}/${Date.now()}_${x.f.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_')}`;
+    const up=await db.storage.from('documents').upload(chemin,x.f,{contentType:'application/pdf'});
+    if(up.error){toast(x.f.name+' : '+up.error.message);continue;}
+    const {data,error}=await db.from('documents').insert({titre:x.p.titre.trim(),categorie:x.p.categorie,famille_id:x.p.famille_id,fabricant:x.p.fabricant||null,modele:x.p.modele||null,
+      fichier:chemin,nom_fichier:x.f.name,taille:x.f.size}).select().single();
+    if(error){await db.storage.from('documents').remove([chemin]);toast(x.f.name+' : '+error.message);continue;}
+    if(x.p.sites.length)await db.from('document_sites').insert(x.p.sites.map(s=>({document_id:data.id,site_id:s})));
+    ok++;file=file.filter(y=>y!==x);
+  }
+  await charger();toast(ok+' document(s) enregistré(s)');
+  if(file.length){b.disabled=false;dessinerDepot();}else location.hash='';
+}
+
+/* ── Modifier / supprimer un document ── */
+function modifier(id){
+  const d=DOCS.find(x=>x.id===id);if(!d)return liste();
+  file=[{f:{name:d.nom_fichier||d.titre,size:d.taille},p:{titre:d.titre,categorie:d.categorie,famille_id:d.famille_id,fabricant:d.fabricant||'',modele:d.modele||'',sites:sitesDoc(d).map(s=>s.id),why:[]},id}];
+  view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Documentation</button><div class="head"><div class="head-l">${ico}<div><h1>Modifier le document</h1></div></div></div>
+   <div id="liste"></div><div class="foot" id="ft"><button class="btn-d" onclick="supprimerDoc(${id})">Supprimer</button><button class="btn-l" onclick="location.hash=''">Annuler</button><button class="btn-a" id="bgo" onclick="majDoc(${id})">Enregistrer</button></div>`;
+  dessinerDepot();document.getElementById('bgo').textContent='Enregistrer';
+}
+async function majDoc(id){
+  const p=file[0].p;if(!p.titre.trim()){toast('Le titre est obligatoire');return;}
+  const {error}=await db.from('documents').update({titre:p.titre.trim(),categorie:p.categorie,famille_id:p.famille_id,fabricant:p.fabricant||null,modele:p.modele||null,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Erreur : '+error.message);return;}
+  await db.from('document_sites').delete().eq('document_id',id);
+  if(p.sites.length)await db.from('document_sites').insert(p.sites.map(s=>({document_id:id,site_id:s})));
+  await charger();toast('Document mis à jour ✓');location.hash='';
+}
+async function supprimerDoc(id){
+  const d=DOCS.find(x=>x.id===id);if(!confirm(`Supprimer définitivement « ${d.titre} » ?`))return;
+  const r=await db.storage.from('documents').remove([d.fichier]);if(r.error){toast('Erreur : '+r.error.message);return;}
+  await db.from('documents').delete().eq('id',id);await charger();toast('Document supprimé');location.hash='';
+}
+
+/* ── Gestion des familles (administrateur) ── */
+function familles(){
+  const racines=FAM.filter(f=>!f.parent_id);
+  const ligne=f=>{const n=DOCS.filter(d=>d.famille_id===f.id).length,enf=FAM.filter(x=>x.parent_id===f.id).length;
+    return `<div class="fam-row" style="${f.parent_id?'padding-left:28px':''}"><input value="${esc(f.nom)}" onchange="renommer(${f.id},this.value)" aria-label="Nom de la famille">
+      ${f.parent_id?`<select onchange="deplacer(${f.id},+this.value)" aria-label="Famille parente">${racines.map(r=>`<option value="${r.id}" ${r.id===f.parent_id?'selected':''}>${esc(r.nom)}</option>`).join('')}</select>`:''}
+      <span class="site-c" style="min-width:60px">${n} doc.</span>
+      ${!f.parent_id?`<button class="mini" onclick="creer(${f.id})">+ sous-famille</button>`:''}
+      <button class="mini" style="color:var(--bad)" ${n||enf?'disabled title="Vide-la d\'abord"':''} onclick="supprFam(${f.id})">Supprimer</button></div>`;};
+  view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Documentation</button>
+  <div class="head"><div class="head-l">${ico}<div><h1>Familles</h1><div class="sub">Renommer : modifie le nom puis clique ailleurs. Les documents suivent automatiquement.</div></div></div><button class="btn-a" onclick="creer(null)">+ Nouvelle famille</button></div>
+  <div class="card sec">${racines.map(r=>ligne(r)+FAM.filter(f=>f.parent_id===r.id).map(ligne).join('')).join('')}</div>
+  <p class="note">Une famille ne peut être supprimée que si elle ne contient ni document ni sous-famille.</p>`;
+}
+async function renommer(id,v){v=v.trim();if(!v)return familles();const {error}=await db.from('doc_familles').update({nom:v}).eq('id',id);if(error)return toast('Erreur : '+error.message);await charger();toast('Renommée ✓');}
+async function deplacer(id,p){const {error}=await db.from('doc_familles').update({parent_id:p}).eq('id',id);if(error)return toast('Erreur : '+error.message);await charger();familles();}
+async function creer(parent){const n=prompt(parent?'Nom de la sous-famille :':'Nom de la nouvelle famille :');if(!n||!n.trim())return;
+  const {error}=await db.from('doc_familles').insert({nom:n.trim(),parent_id:parent,ordre:99});if(error)return toast('Erreur : '+error.message);await charger();familles();}
+async function supprFam(id){if(!confirm('Supprimer cette famille ?'))return;const {error}=await db.from('doc_familles').delete().eq('id',id);if(error)return toast('Erreur : '+error.message);await charger();familles();}
+start();
+</script>
+</body>
+</html>
