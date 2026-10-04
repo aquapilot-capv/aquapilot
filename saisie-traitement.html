@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
 <style>
 :root{--bg:#F4F1EC;--card:#fff;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;--acc:#B84712;--acc-soft:#FBE9DC;
   --ok:#2F7D4F;--ok-soft:#E3F1E8;--warn:#B7791F;--warn-soft:#FCF1DC;--bad:#B42318;--bad-soft:#FDE7E4;--blue:#2F6F9F;--blue-soft:#E3EEF7;
@@ -127,6 +128,8 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user;document.getElementById('login').classList.add('off');
+  await chargerProfil(db,user);
+  if(niv('traitement')<2){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
   await chargerRef();sync();route();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;
@@ -158,7 +161,8 @@ async function sync(){
       if(op.rows.length){const {error}=await db.from('releves_traitement').insert(op.rows);if(error)throw error;}
       LS.set('tr-queue',queue().slice(1));}
     toast('Relevés envoyés ✓');await chargerRef();if(!FS)route();
-  }catch(e){console.warn(e);}
+  }catch(e){console.warn(e);
+    if(refusDroits(e)){LS.set('tr-queue',queue().slice(1));sending=false;toast('Un relevé a été refusé : tes droits ne permettent pas cette modification');return sync();}}
   sending=false;banner();
 }
 window.addEventListener('online',()=>chargerRef().then(()=>{sync();if(!FS)route();}));
@@ -222,7 +226,8 @@ function ouvrir(sid){
   const pts=REF.points.filter(p=>p.site_id===sid);
   const ex=relevesSemaine(sem).filter(m=>pts.some(p=>p.id===m.point_id));
   const [a,b]=semBornes(sem),t=today();
-  FS={sid,variante:ex[0]?.variante||'',date:ex[0]?.date_releve||(t>=a&&t<=b?t:a),obs:ex[0]?.observations||'',del:ex.filter(m=>m.id).map(m=>m.id),edit:ex.length>0,
+  const ro=ex.some(m=>!peutModifier('traitement',m,user));
+  FS={sid,ro,variante:ex[0]?.variante||'',date:ex[0]?.date_releve||(t>=a&&t<=b?t:a),obs:ex[0]?.observations||'',del:ex.filter(m=>m.id).map(m=>m.id),edit:ex.length>0,
     v:Object.fromEntries(pts.map(p=>{const e=ex.find(m=>m.point_id===p.id)||{};const o={statut:e.statut==='arret'?'arret':'mesure',variante:e.variante||'',ok:false};
       for(const [k] of [...CH,...RG])o[k]=e[k]!=null?String(e[k]).replace('.',','):'';return [p.id,o];}))};
   drawForm();
@@ -237,6 +242,7 @@ function drawForm(){
   <p class="note">En grisé dans les champs : la valeur de la semaine précédente. Laisse un lieu vide s'il n'a pas été relevé cette semaine : il ne sera pas enregistré.</p>`;
   foot.style.display='block';
   foot.innerHTML=`<div class="in">${FS.edit?'<button class="btn2" onclick="supprimer()">Supprimer</button>':''}<button class="btn" id="bs" onclick="enregistrer()">${FS.edit?'Mettre à jour':'Enregistrer'}</button></div>`;
+  if(FS.ro)foot.innerHTML='<div class="in" style="justify-content:center;text-align:center;color:#7A7068;font-size:.9rem">Relevé saisi par un autre agent ou il y a plus de 30 jours : seul un chef d\'équipe peut le modifier.</div>';
   pts.forEach(p=>calc(p.id));
 }
 function histo(p,n=4){

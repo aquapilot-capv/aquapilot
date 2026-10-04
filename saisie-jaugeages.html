@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
 <style>
 :root{--bg:#F4F1EC;--card:#fff;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;--acc:#B84712;--acc-soft:#FBE9DC;
   --ok:#2F7D4F;--ok-soft:#E3F1E8;--warn:#B7791F;--warn-soft:#FCF1DC;--bad:#B42318;--bad-soft:#FDE7E4;
@@ -106,6 +107,8 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){login_.classList.remove('off');return;}
   user=session.user; login_.classList.add('off');
+  await chargerProfil(db,user);
+  if(niv('jaugeages')<2){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
   await chargerRef(); sync(); route();
 }
 const login_=document.getElementById('login');
@@ -124,9 +127,9 @@ async function chargerRef(){
     const hist=await toutes(()=>db.from('mesures').select('point_id,date_mesure,valeur,statut').in('point_id',ids).eq('statut','mesure'));
     const norm={};
     for(const m of hist){const k=m.point_id+'|'+(+m.date_mesure.slice(5,7));(norm[k]??=[]).push(+m.valeur);}
-    const normales={};for(const k in norm)if(norm[k].length>=3){const a=norm[k].sort((x,y)=>x-y);normales[k]={moy:a.reduce((x,y)=>x+y,0)/a.length,med:a[Math.floor(a.length/2)]};}
+    const normales={};for(const k in norm)if(norm[k].length>=3){const a=norm[k].sort((x,y)=>x-y);normales[k]={moy:a.reduce((x,y)=>x+y,0)/a.length,med:a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2};}
     const d0=new Date();d0.setMonth(d0.getMonth()-3);
-    const recent=await toutes(()=>db.from('mesures').select('id,point_id,date_mesure,valeur_brute,valeur,statut,meteo,commentaire,agent').in('point_id',ids).gte('date_mesure',d0.toISOString().slice(0,10)));
+    const recent=await toutes(()=>db.from('mesures').select('id,point_id,date_mesure,valeur_brute,valeur,statut,meteo,commentaire,agent,created_by,created_at').in('point_id',ids).gte('date_mesure',d0.toISOString().slice(0,10)));
     const sIds=new Set(points.map(p=>p.site_id));
     REF={sites:sites.filter(s=>sIds.has(s.id)),points,normales,recent,maj:Date.now()};LS.set('jg-ref',REF);
   }catch(e){if(!REF)throw e;}
@@ -147,7 +150,8 @@ async function sync(){
       LS.set('jg-queue',queue().slice(1));
     }
     toast('Mesures envoyées ✓');await chargerRef();if(!FS)route();
-  }catch(e){console.warn(e);}
+  }catch(e){console.warn(e);
+    if(refusDroits(e)){LS.set('jg-queue',queue().slice(1));sending=false;toast('Un relevé a été refusé : tes droits ne permettent pas cette modification');return sync();}}
   sending=false;banner();
 }
 window.addEventListener('online',()=>{chargerRef().then(()=>{sync();if(!FS)route();})});
@@ -206,7 +210,8 @@ function ouvrir(sid){
   const pts=REF.points.filter(p=>p.site_id===sid);
   const exist=mesuresDuMois(moisCour).filter(m=>pts.some(p=>p.id===m.point_id));
   const auj=today(),date=exist[0]?.date_mesure||(auj.slice(0,7)===moisCour?auj:moisCour+'-15');
-  FS={sid,date,meteo:exist[0]?.meteo||'',com:(exist[0]?.commentaire||'').replace(/^\[filtre\] ?/,''),filtre:/^\[filtre\]/.test(exist[0]?.commentaire||''),
+  const ro=exist.some(m=>!peutModifier('jaugeages',m,user));
+  FS={sid,ro,date,meteo:exist[0]?.meteo||'',com:(exist[0]?.commentaire||'').replace(/^\[filtre\] ?/,''),filtre:/^\[filtre\]/.test(exist[0]?.commentaire||''),
     del:exist.filter(m=>m.id).map(m=>m.id),edit:exist.length>0,
     v:Object.fromEntries(pts.map(p=>{const e=exist.find(m=>m.point_id===p.id);
       return [p.id,{statut:e?.statut||'mesure',saisie:e?(p.methode==='deversoir'||p.methode==='volume_temps'?e.valeur_brute:e.valeur):'',ok:false}];}))};
@@ -224,13 +229,14 @@ function drawForm(){
   <div class="fld"><label for="cm">Observation</label><textarea class="inp" id="cm" rows="2" oninput="FS.com=this.value" placeholder="Facultatif">${FS.com}</textarea></div>`;
   foot.style.display='block';
   foot.innerHTML=`<div class="in">${FS.edit?'<button class="btn2" onclick="supprimer()">Supprimer</button>':''}<button class="btn" id="bs" onclick="enregistrer()">${FS.edit?'Mettre à jour':'Enregistrer'}</button></div>`;
+  if(FS.ro)foot.innerHTML='<div class="in" style="justify-content:center;text-align:center;color:#7A7068;font-size:.9rem">Relevé saisi par un autre agent ou il y a plus de 30 jours : seul un chef d\'équipe peut le modifier.</div>';
   pts.forEach(p=>calc(p.id,false));
 }
 function bloc(p,mo){
   const v=FS.v[p.id],unit=p.methode==='deversoir'?'cm':p.methode==='volume_temps'?'s':(p.unite_saisie==='m3/h'?'m³/h':'l/min');
   const lab=p.methode==='deversoir'?'Hauteur sur le seuil':p.methode==='volume_temps'?`Temps de remplissage (${(p.params.volume_l||24000).toLocaleString('fr-FR')} l)`:'Débit';
   const nrm=REF.normales[p.id+'|'+mo];
-  return `<div class="card pt"><h3>${p.nom}<small>${nrm?'normale de '+MOIS[mo-1]+' : '+f(nrm.moy,0)+' l/min':''}</small></h3>
+  return `<div class="card pt"><h3>${p.nom}<small>${nrm?'habituellement en '+MOIS[mo-1]+' : '+f(nrm.med,0)+' l/min':''}</small></h3>
     <div class="seg">${STATUTS.filter(([k])=>k!=='plafond'||p.plafond_lmin||p.methode==='seau').map(([k,l])=>`<button class="${v.statut===k?'on':''}" onclick="setSt(${p.id},'${k}')">${l}${k==='plafond'&&p.plafond_lmin?' (> '+p.plafond_lmin+')':''}</button>`).join('')}</div>
     ${v.statut==='mesure'?`<label class="big"><input inputmode="decimal" id="in${p.id}" value="${v.saisie??''}" placeholder="0" oninput="FS.v[${p.id}].saisie=this.value;FS.v[${p.id}].ok=false;calc(${p.id},true)" aria-label="${lab}"><span>${unit}</span></label>
     <div class="conv" id="cv${p.id}"></div><div id="wn${p.id}"></div>
@@ -259,7 +265,7 @@ function calc(id,typing){
   if(cv)cv.textContent=q===null?'':(p.methode!=='saisie_directe'||p.unite_saisie!=='l/min'?f(q)+' l/min · ':'')+f(q*0.06,2)+' m³/h · '+f(q*1.44,0)+' m³/j';
   const n=REF.normales[id+'|'+(+FS.date.slice(5,7))];
   v.alerte=null;
-  if(q!==null&&n&&n.moy>5&&(q>n.moy*3||q<n.moy/4)&&q>0)v.alerte=`Valeur inhabituelle : la normale de ce mois est de ${f(n.moy,0)} l/min. Vérifie la saisie (virgule, unité).`;
+  if(q!==null&&n&&n.med>5&&(q>n.med*3||q<n.med/4)&&q>0)v.alerte=`Valeur inhabituelle : d'habitude, ce point donne environ ${f(n.med,0)} l/min en ${MOIS[+FS.date.slice(5,7)-1]}. Vérifie la saisie (virgule, unité).`;
   if(p.plafond_lmin&&q>=p.plafond_lmin)v.alerte=`Au-delà de ${p.plafond_lmin} l/min, la mesure au seau n'est plus fiable : préfère « Seau plein ».`;
   if(wn)wn.innerHTML=v.alerte?`<div class="warn">${v.alerte}</div>`:'';
   const t=document.getElementById('tot');

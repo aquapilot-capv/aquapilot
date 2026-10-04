@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#F4F1EC;--card:#fff;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;--acc:#B84712;--acc-soft:#FBE9DC;--ok:#2F7D4F;--ok-soft:#E3F1E8;--bad:#B42318;
@@ -87,6 +88,7 @@ function dl(blob,name){const a=document.createElement('a');a.href=URL.createObje
 async function init(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){location.href='index.html';return;}
+  await chargerProfil(db,session.user);if(!estGestionnaire()){document.querySelector('.wrap').innerHTML=pageSansDroit('La sauvegarde est réservée au super admin et aux chefs d\'équipe.');return;}
   const rows=await Promise.all(TABLES.map(async x=>{const {count,error}=await db.from(x.t).select('*',{count:'exact',head:true});return {...x,n:error?'erreur':count};}));
   tb.innerHTML=rows.map(r=>`<tr><td>${r.lab}</td><td>${r.t}</td><td class="n">${typeof r.n==='number'?r.n.toLocaleString('fr-FR'):r.n}</td></tr>`).join('');
   const l=localStorage.getItem('derniere-sauvegarde');

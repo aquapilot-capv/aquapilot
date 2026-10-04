@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
 <style>
 :root{
   --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
@@ -176,7 +177,7 @@ const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhb
 
 /* ── Catalogue : url = écran existant ; items = dossier ; sinon « bientôt » ── */
 const M={
-  root:{items:['releves','maintenance','afaire','donnees','docs','projets','planning','contacts']},
+  root:{items:['releves','maintenance','afaire','donnees','docs','projets','planning','contacts','utilisateurs']},
   releves:{ic:'releves',label:'Relevés',desc:'Saisie terrain',items:['r_chlore','r_jaugeage','r_piezo','r_compteur','r_uv']},
   r_chlore:{ic:'chlore',label:'Tournée chlore',desc:'Chlore et dioxyde',url:'saisie-traitement.html'},
   r_jaugeage:{ic:'jaugeage',label:'Saisir un jaugeage',desc:'Mesure terrain du débit',url:'saisie-jaugeages.html'},
@@ -205,9 +206,15 @@ const M={
   k_ouvrages:{ic:'ouvrages',label:'Fiches ouvrages',desc:'Carte d\'identité'},
   projets:{ic:'projets',label:'Fiches projets',desc:'Suivi des projets',url:'fiches.html'},
   planning:{ic:'planning',label:'Planning',desc:'Équipe et astreinte'},
-  contacts:{ic:'contacts',label:'Contacts',desc:'Annuaire utile'}
+  contacts:{ic:'contacts',label:'Contacts',desc:'Annuaire utile'},
+  utilisateurs:{ic:'contacts',label:'Utilisateurs',desc:'Rôles et droits',url:'utilisateurs.html'}
 };
-const SIDE=['root','releves','donnees','maintenance','docs','projets','planning','contacts'];
+const SIDE=['root','releves','donnees','maintenance','docs','projets','planning','contacts','utilisateurs'];
+/* Droits nécessaires pour voir chaque tuile (les dossiers apparaissent s'ils contiennent au moins une tuile visible) */
+const DROIT={r_compteur:['jaugeages',2],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
+  docs:['documentation',1],projets:['projets',1],d_sauvegarde:['gestion'],utilisateurs:['super']};
+function visible(id){const m=M[id];if(!m)return false;if(m.items)return m.items.some(visible);const d=DROIT[id];if(!d)return true;
+  if(d[0]==='super')return estSuperAdmin();if(d[0]==='gestion')return estGestionnaire();return niv(d[0])>=d[1];}
 const BOTTOM=[['root','home','Accueil'],['releves','releves','Relevés'],['donnees','donnees','Données'],['afaire','afaire','À faire']];
 
 let user=null,cfg={order:{},hidden:[],density:9},level='root',editing=false,alertes=null,saveT;
@@ -218,9 +225,10 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user; document.getElementById('login').classList.add('off');
+  await chargerProfil(db,user);
   document.getElementById('who').textContent=user.email;
   const n=prenom(); document.getElementById('avatar').textContent=n.slice(0,2).toUpperCase();
-  await loadCfg(); route(); chargerAlertes();
+  await loadCfg(); route(); if(niv('jaugeages')>=1)chargerAlertes();
 }
 function prenom(){const p=(user.email.split('@')[0].split(/[._-]/)[0]||'');return p.charAt(0).toUpperCase()+p.slice(1);}
 async function login(){er.textContent='';bl.disabled=true;
@@ -242,7 +250,7 @@ function saveCfg(){
 
 /* ── Navigation ── */
 window.addEventListener('hashchange',route);
-function route(){const h=location.hash.slice(1);level=(M[h]&&M[h].items)?h:'root';render();}
+function route(){const h=location.hash.slice(1);level=(M[h]&&M[h].items&&visible(h))?h:'root';render();}
 function itemsOf(lv){const b=M[lv].items,s=cfg.order[lv]||[];return [...s.filter(i=>b.includes(i)),...b.filter(i=>!s.includes(i))];}
 function go(id){
   const m=M[id]; if(editing&&!m.items)return;
@@ -253,12 +261,12 @@ function go(id){
 
 /* ── Rendu ── */
 function render(){
-  document.getElementById('sidenav').innerHTML=SIDE.map(k=>{const m=k==='root'?{ic:'home',label:'Accueil'}:M[k];
+  document.getElementById('sidenav').innerHTML=SIDE.filter(k=>k==='root'||visible(k)).map(k=>{const m=k==='root'?{ic:'home',label:'Accueil'}:M[k];
     const href=M[k].url||('#'+(k==='root'?'':k));return `<a href="${href}" class="${level===k?'on':''}">${ic(m.ic)}${m.label}</a>`;}).join('');
   document.getElementById('bnav').innerHTML=BOTTOM.map(([k,i,l])=>`<a href="#${k==='root'?'':k}" class="${level===k?'on':''}" ${M[k].items||k==='root'?'':`onclick="event.preventDefault();go('${k}')"`}>${ic(i)}${l}</a>`).join('');
   const isRoot=level==='root', d=cfg.density;
   const cols={9:3,12:4,15:5}[d], fs={9:'.85rem',12:'.74rem',15:'.66rem'}[d];
-  const ids=itemsOf(level).filter(i=>editing||!cfg.hidden.includes(i));
+  const ids=itemsOf(level).filter(visible).filter(i=>editing||!cfg.hidden.includes(i));
   const tiles=ids.map(id=>{const m=M[id],hid=cfg.hidden.includes(id),ready=m.url||m.items;
     return `<div class="tile ${hid?'hid':''}" role="button" tabindex="0" onclick="go('${id}')" onkeydown="if(event.key==='Enter')go('${id}')">
       <svg class="ico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><g class="ic"><use href="#ic-${m.ic}"/></g></svg>
@@ -272,7 +280,7 @@ function render(){
   <div class="head"><div><h1>${isRoot?'Bonjour '+prenom():M[level].label}</h1>
     <div class="sub">${isRoot?'Le terrain et la ressource, en un coup d\'œil':M[level].desc}</div></div>
     <button class="btn-l ${editing?'on':''}" onclick="toggleEdit()">${editing?'Terminer':'Personnaliser'}</button></div>
-  ${isRoot?`<div class="sec-h" style="margin-top:0"><h2>Ressource en alerte</h2><a href="jaugeages.html">Tous les captages ›</a></div>
+  ${isRoot&&niv('jaugeages')>=1?`<div class="sec-h" style="margin-top:0"><h2>Ressource en alerte</h2><a href="jaugeages.html">Tous les captages ›</a></div>
     <div class="card alerts" id="alertes">${alertesHTML()}</div>`:''}
   <div class="dens"><p>Icônes par écran</p>${[9,12,15].map(n=>`<button class="${d===n?'on':''}" onclick="setDens(${n})">${n}</button>`).join('')}</div>
   ${isRoot?'<div class="sec-h"><h2>Modules</h2></div>':''}

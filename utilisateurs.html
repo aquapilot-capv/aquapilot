@@ -4,12 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F4F1EC">
-<title>Fiches projets</title>
+<title>Utilisateurs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="profil.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
@@ -218,7 +217,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
       <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
       <a href="index.html#maintenance"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
       <a href="documentation.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
-      <a href="fiches.html" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
+      <a href="fiches.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
       <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
       <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
     </nav>
@@ -226,7 +225,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
   </aside>
 
   <main>
-    <div id="view"><div class="loading"><div class="spin"></div>Chargement des fiches…</div></div>
+    <div id="view"><div class="loading"><div class="spin"></div>Chargement des utilisateurs…</div></div>
   </main>
 </div>
 
@@ -241,141 +240,44 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
 
 <script>
 const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
-/* Structure de la fiche : une seule définition pour le formulaire, la fiche et l'export */
-const SECTIONS=[
- ['1. Identification',[['nom_projet','Nom du projet','text',1],['ref_interne','Référence interne'],['service','Service / unité'],['responsable','Responsable du projet'],['date_ouverture','Date d\'ouverture','date'],['statut','Statut','statut']]],
- ['2. Contexte',[['origine_demande','Origine de la demande','area'],['probleme','Problème / besoin identifié','area'],['enjeux','Enjeux (qualité, sécurité, conformité, continuité, environnement)','area']]],
- ['3. Objectifs',[['objectif_principal','Objectif principal','area'],['objectifs_secondaires','Objectifs secondaires','area']]],
- ['4. Portée',[['perimetre_inclus','Périmètre inclus','area'],['perimetre_exclu','Périmètre exclu','area'],['contraintes','Contraintes identifiées','area']]],
- ['5. Parties prenantes',[['parties_internes','Internes','area'],['parties_externes','Externes','area'],['utilisateurs','Utilisateurs impactés','area']]],
- ['6. Livrables attendus',[['livrables','Livrables','area']]],
- ['7. Planning prévisionnel',[['etapes_cles','Étapes clés','area'],['date_fin_estimee','Date de fin estimée','date']]],
- ['8. Ressources nécessaires',[['ressources_mat','Matérielles','area'],['ressources_hum','Humaines','area'],['budget','Budget']]],
- ['9. Analyse des risques',[['risques','Risques identifiés','area'],['impact','Impact','choix',0,['Faible','Modéré','Élevé','Critique']],['probabilite','Probabilité','choix',0,['Faible','Moyenne','Élevée']],['mesures_preventives','Mesures préventives','area']]],
- ['10. Indicateurs de suivi',[['indicateurs','Indicateurs de performance','area'],['frequence_suivi','Fréquence de suivi']]],
- ['11. Validation',[['responsable_validation','Responsable de validation'],['date_validation','Date de validation','date']]]];
-const CHAMPS=SECTIONS.flatMap(s=>s[1]);
-const STATUTS={'En cours':'b-ok','Suspendu':'b-warn','Clôturé':'b-mute'};
-let ME=null,FICHES=[],filtre='En cours',rech='',photos=[],saving=false;
+let user=null,U=[];
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const dfr=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'–';
-const ph=f=>{try{return f.photos?JSON.parse(f.photos):[]}catch(e){return []}};
-const peutEditer=f=>niv('projets')>=3||(niv('projets')>=2&&f.created_by===ME.id);
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2600);}
-
 async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
-  document.getElementById('login').classList.add('off');document.getElementById('who').textContent=session.user.email;
-  ME=session.user;await chargerProfil(db,ME);if(niv('projets')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès aux fiches projets.');return;}
-  await charger();route();
+  user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
+  await chargerProfil(db,user);
+  if(!estSuperAdmin()){view.innerHTML=pageSansDroit('La gestion des utilisateurs est réservée au super admin.');return;}
+  await charger();afficher();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
 async function logout(){await db.auth.signOut();location.reload();}
 pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
-async function charger(){const {data,error}=await db.from('fiches').select('*').order('date_ouverture',{ascending:false});if(error){view.innerHTML=`<div class="card loading">Chargement impossible : ${esc(error.message)}</div>`;return;}FICHES=data||[];}
-
-window.addEventListener('hashchange',route);
-function route(){const h=location.hash;let m;
-  if(h==='#nouvelle')return formulaire(null);
-  if(m=h.match(/^#modifier=(\d+)/))return formulaire(+m[1]);
-  if(m=h.match(/^#fiche=(\d+)/))return fiche(+m[1]);
-  liste();}
-const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-fp" style="color:var(--acc)"/></svg>`;
-
-/* ── Liste ── */
-function liste(){
-  let L=FICHES.filter(f=>filtre==='Toutes'||f.statut===filtre);
-  if(rech){const r=rech.toLowerCase();L=L.filter(f=>CHAMPS.some(([k])=>String(f[k]??'').toLowerCase().includes(r)));}
-  const n=s=>FICHES.filter(f=>s==='Toutes'||f.statut===s).length;
-  view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Fiches projets</div>
-  <div class="head"><div class="head-l">${ico}<div><h1>Fiches projets</h1><div class="sub">${FICHES.length} fiche${FICHES.length>1?'s':''} · partagées par l'équipe</div></div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-l" onclick="exporter()">Exporter vers Calc</button>${niv('projets')>=2?`<button class="btn-a" onclick="location.hash='nouvelle'">+ Nouvelle fiche</button>`:''}</div></div>
-  <div class="tools"><input class="search" placeholder="Rechercher dans toutes les fiches" value="${esc(rech)}" oninput="rech=this.value;liste();const i=document.querySelector('.search');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
-    ${['En cours','Suspendu','Clôturé','Toutes'].map(s=>`<button class="chip ${filtre===s?'on':''}" onclick="filtre='${s}';liste()">${s} (${n(s)})</button>`).join('')}</div>
-  ${!L.length?`<div class="card loading">Aucune fiche ${filtre!=='Toutes'?'« '+filtre.toLowerCase()+' »':''}${rech?' pour cette recherche':''}.</div>`:`
-  <div class="card table-d"><table><thead><tr><th>Projet</th><th>Responsable</th><th>Ouverture</th><th>Fin estimée</th><th>Statut</th></tr></thead><tbody>
-  ${L.map(f=>`<tr onclick="location.hash='fiche=${f.id}'"><td><div class="site-n">${esc(f.nom_projet)}</div><div class="site-c">${esc([f.ref_interne,f.service].filter(Boolean).join(' · '))}</div></td>
-    <td>${esc(f.responsable||'–')}</td><td>${dfr(f.date_ouverture)}</td><td>${dfr(f.date_fin_estimee)}</td><td><span class="badge ${STATUTS[f.statut]||'b-mute'}">${esc(f.statut)}</span></td></tr>`).join('')}
+async function charger(){const {data,error}=await db.from('profils').select('*').order('email');if(error){view.innerHTML=`<div class="card loading">Chargement impossible : ${esc(error.message)}<br><small>Le script 17_profils.sql a-t-il été lancé ?</small></div>`;throw error;}U=data;}
+function afficher(){
+  const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-fp" style="color:var(--acc)"/></svg>`;
+  view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Utilisateurs</div>
+  <div class="head"><div class="head-l">${ico}<div><h1>Utilisateurs et droits</h1><div class="sub">${U.length} compte${U.length>1?'s':''} · les droits sont appliqués par la base de données</div></div></div></div>
+  <div class="card sec" style="background:#FBF8F4"><b>Ajouter quelqu'un</b><p class="site-c" style="margin-top:4px">1. Supabase → Authentication → Users → Add user (email + mot de passe, « Auto Confirm User »).<br>2. Recharge cette page : la personne apparaît en <b>Consultant</b>. Attribue-lui son rôle ici.</p></div>
+  <div class="card pts-wrap"><table><thead><tr><th>Personne</th><th>Rôle</th>${Object.values(MODULES_DROITS).map(m=>`<th>${m}</th>`).join('')}<th>Actif</th><th></th></tr></thead><tbody>
+  ${U.map(u=>{const moi=u.user_id===user.id;return `<tr><td><input class="search" style="min-width:150px" id="n_${u.user_id}" value="${esc(u.nom||'')}" placeholder="Nom"><div class="site-c" style="margin-top:4px">${esc(u.email)}</div></td>
+    <td><select class="search" id="r_${u.user_id}" ${moi?'disabled title="Tu ne peux pas retirer ton propre rôle"':''} onchange="majDefauts('${u.user_id}')">${Object.entries(ROLES).map(([k,l])=>`<option value="${k}" ${u.role===k?'selected':''}>${l}</option>`).join('')}</select></td>
+    ${Object.keys(MODULES_DROITS).map(m=>{const v=u.modules&&u.modules[m]!=null?String(u.modules[m]):'';return `<td><select class="search" id="m_${u.user_id}_${m}" ${moi?'disabled':''}><option value="" ${v===''?'selected':''}>Défaut (${NIVEAUX[niveauParDefaut(u.role,m)]})</option>${NIVEAUX.map((l,i)=>`<option value="${i}" ${v===String(i)?'selected':''}>${l}</option>`).join('')}</select></td>`;}).join('')}
+    <td><input type="checkbox" id="a_${u.user_id}" ${u.actif?'checked':''} ${moi?'disabled':''} style="width:18px;height:18px"></td>
+    <td><button class="btn-a" onclick="enregistrer('${u.user_id}')">Enregistrer</button></td></tr>`;}).join('')}
   </tbody></table></div>
-  <div class="list-m">${L.map(f=>`<div class="card mcard" onclick="location.hash='fiche=${f.id}'"><div><div class="site-n">${esc(f.nom_projet)}</div><div class="site-c">${esc(f.responsable||'')}</div></div>
-    <div><span class="badge ${STATUTS[f.statut]||'b-mute'}">${esc(f.statut)}</span></div><div class="meta">${esc(f.ref_interne||'')} ${f.date_ouverture?'· ouvert le '+dfr(f.date_ouverture):''}</div></div>`).join('')}</div>`}`;
+  <p class="note">« Défaut » suit le rôle. Saisie = ajouter des relevés et corriger les siens pendant 30 jours (ses propres fiches pour les projets). Gestion = tout modifier. Un compte désactivé ne voit plus rien. Ton propre rôle est verrouillé pour éviter de perdre l'accès.</p>`;
 }
-
-/* ── Consultation ── */
-function fiche(id){
-  const f=FICHES.find(x=>x.id===id);if(!f)return liste();
-  const P=ph(f);
-  view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Toutes les fiches</button>
-  <div class="crumb">Fiches projets</div>
-  <div class="head"><div class="head-l">${ico}<div><h1>${esc(f.nom_projet)}</h1><div class="sub"><span class="badge ${STATUTS[f.statut]||'b-mute'}">${esc(f.statut)}</span> ${esc(f.ref_interne||'')} · mise à jour le ${dfr((f.updated_at||'').slice(0,10))}</div></div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${peutEditer(f)?`<button class="btn-d" onclick="supprimer(${f.id})">Supprimer</button>`:''}<button class="btn-l" onclick="window.print()">Imprimer</button>${peutEditer(f)?`<button class="btn-a" onclick="location.hash='modifier=${f.id}'">Modifier</button>`:''}</div></div>
-  ${P.length?`<div class="card sec"><h2>Photos</h2><div class="photos">${P.map(p=>`<div class="ph"><img src="${p}" alt="Photo du projet" onclick="lbi.src=this.src;lb.classList.add('on')"></div>`).join('')}</div></div>`:''}
-  ${SECTIONS.map(([t,ch])=>{const rows=ch.filter(([k])=>f[k]!=null&&f[k]!=='');if(!rows.length)return '';
-    return `<div class="card sec"><h2>${t}</h2><dl class="dt">${rows.map(([k,l,ty])=>`<dt>${l}</dt><dd>${ty==='date'?dfr(f[k]):esc(f[k])}</dd>`).join('')}</dl></div>`;}).join('')}`;
-}
-
-/* ── Formulaire ── */
-function champ([k,l,ty,req,opts],v){
-  const id='f_'+k,val=esc(v??'');
-  let inp;
-  if(ty==='area')inp=`<textarea id="${id}">${val}</textarea>`;
-  else if(ty==='date')inp=`<input id="${id}" type="date" value="${val}">`;
-  else if(ty==='statut')inp=`<select id="${id}">${Object.keys(STATUTS).map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('')}</select>`;
-  else if(ty==='choix')inp=`<select id="${id}"><option value="">—</option>${opts.map(s=>`<option ${v===s?'selected':''}>${s}</option>`).join('')}</select>`;
-  else inp=`<input id="${id}" value="${val}">`;
-  return `<div class="fl"><label for="${id}">${l}${req?' <span class="req">*</span>':''}</label>${inp}</div>`;
-}
-function formulaire(id){
-  if(id?!peutEditer(FICHES.find(x=>x.id===id)||{}):niv('projets')<2){view.innerHTML=pageSansDroit('Tu ne peux pas modifier cette fiche.');return;}
-  const f=id?FICHES.find(x=>x.id===id):{statut:'En cours',date_ouverture:new Date().toISOString().slice(0,10)};
-  if(id&&!f)return liste();
-  photos=ph(f);
-  view.innerHTML=`<button class="back" onclick="history.back()">‹ Annuler</button>
-  <div class="crumb">Fiches projets</div><div class="head"><div class="head-l">${ico}<div><h1>${id?'Modifier la fiche':'Nouvelle fiche projet'}</h1><div class="sub">${id?esc(f.nom_projet):'Seul le nom du projet est obligatoire'}</div></div></div></div>
-  <div class="card sec"><h2>Photos (3 maximum)</h2><div class="photos" id="phs"></div>
-    <input type="file" id="pin" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this)"></div>
-  ${SECTIONS.map(([t,ch])=>`<div class="card sec"><h2>${t}</h2><div class="${ch.length>2&&ch.every(c=>c[2]!=='area')?'grid2':''}">${ch.map(c=>champ(c,f[c[0]])).join('')}</div></div>`).join('')}
-  <div class="foot"><button class="btn-l" onclick="history.back()">Annuler</button><button class="btn-a" id="bsv" onclick="enregistrer(${id||'null'})">${id?'Enregistrer les modifications':'Créer la fiche'}</button></div>`;
-  dessinerPhotos();
-}
-function dessinerPhotos(){
-  phs.innerHTML=photos.map((p,i)=>`<div class="ph"><img src="${p}" alt="Photo ${i+1}" onclick="lbi.src=this.src;lb.classList.add('on')"><button class="x" onclick="photos.splice(${i},1);dessinerPhotos()" aria-label="Retirer la photo">✕</button></div>`).join('')
-    +(photos.length<3?`<label class="add" for="pin">+ Ajouter<br>une photo</label>`:'');
-}
-function ajouterPhotos(inp){
-  const fs=[...inp.files].slice(0,3-photos.length);
-  fs.forEach(file=>{const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{const M=900;let w=im.width,h=im.height;if(w>M||h>M){const k=M/Math.max(w,h);w*=k;h*=k;}
-    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);photos.push(c.toDataURL('image/jpeg',0.7));dessinerPhotos();};im.src=e.target.result;};r.readAsDataURL(file);});
-  inp.value='';
-}
+function majDefauts(id){const r=document.getElementById('r_'+id).value;for(const m in MODULES_DROITS){const s=document.getElementById(`m_${id}_${m}`);s.options[0].text=`Défaut (${NIVEAUX[niveauParDefaut(r,m)]})`;}}
 async function enregistrer(id){
-  if(saving)return;
-  const d={};for(const [k,,ty] of CHAMPS){let v=document.getElementById('f_'+k).value;v=typeof v==='string'?v.trim():v;d[k]=v===''?null:v;}
-  if(!d.nom_projet){toast('Le nom du projet est obligatoire');document.getElementById('f_nom_projet').focus();return;}
-  d.photos=JSON.stringify(photos);d.updated_at=new Date().toISOString();
-  saving=true;bsv.disabled=true;bsv.textContent='Enregistrement…';
-  const r=id?await db.from('fiches').update(d).eq('id',id).select():await db.from('fiches').insert([d]).select();
-  saving=false;
-  if(r.error){bsv.disabled=false;bsv.textContent='Réessayer';toast('Erreur : '+r.error.message);return;}
-  await charger();toast(id?'Fiche mise à jour ✓':'Fiche créée ✓');location.hash='fiche='+(id||r.data[0].id);
-}
-async function supprimer(id){
-  const f=FICHES.find(x=>x.id===id);
-  if(!confirm(`Supprimer définitivement la fiche « ${f.nom_projet} » ?`))return;
-  const {error}=await db.from('fiches').delete().eq('id',id);
+  const moi=id===user.id,modules={};
+  for(const m in MODULES_DROITS){const v=document.getElementById(`m_${id}_${m}`).value;if(v!=='')modules[m]=+v;}
+  const maj={nom:document.getElementById('n_'+id).value.trim()||null};
+  if(!moi){maj.role=document.getElementById('r_'+id).value;maj.modules=modules;maj.actif=document.getElementById('a_'+id).checked;}
+  const {error}=await db.from('profils').update(maj).eq('user_id',id);
   if(error){toast('Erreur : '+error.message);return;}
-  await charger();toast('Fiche supprimée');location.hash='';
-}
-/* ── Export Calc : une ligne par projet, une colonne par rubrique ── */
-function exporter(){
-  if(!FICHES.length){toast('Aucune fiche à exporter');return;}
-  const rows=FICHES.map(f=>{const o={};for(const [k,l,ty] of CHAMPS)o[l]=ty==='date'?(f[k]||''):(f[k]??'');o['Nombre de photos']=ph(f).length;o['Mise à jour']=(f.updated_at||'').slice(0,10);return o;});
-  const wb=XLSX.utils.book_new(),ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.min(40,Math.max(12,k.length+2))}));
-  XLSX.utils.book_append_sheet(wb,ws,'Fiches projets');
-  XLSX.writeFile(wb,`fiches-projets-${new Date().toISOString().slice(0,10)}.ods`,{bookType:'ods'});
-  toast(FICHES.length+' fiche(s) exportée(s)');
+  await charger();afficher();toast('Droits enregistrés ✓');
 }
 start();
 </script>

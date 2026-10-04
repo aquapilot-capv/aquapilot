@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
 <style>
 :root{--bg:#F4F1EC;--card:#fff;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;--acc:#B84712;--acc-soft:#FBE9DC;
   --ok:#2F7D4F;--ok-soft:#E3F1E8;--warn:#B7791F;--warn-soft:#FCF1DC;--bad:#B42318;--bad-soft:#FDE7E4;
@@ -106,6 +107,8 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){login_.classList.remove('off');return;}
   user=session.user; login_.classList.add('off');
+  await chargerProfil(db,user);
+  if(niv('piezos')<2){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
   await chargerRef(); sync(); route();
 }
 const login_=document.getElementById('login');
@@ -126,7 +129,7 @@ async function chargerRef(){
     for(const m of hist){if(m.valeur_brute==null)continue;const k=m.point_id+'|'+(+m.date_mesure.slice(5,7));(norm[k]??=[]).push(+m.valeur_brute);}
     const normales={};for(const k in norm)if(norm[k].length>=3){const a=norm[k].sort((x,y)=>x-y);normales[k]={min:a[0],max:a[a.length-1],moy:a.reduce((x,y)=>x+y,0)/a.length,med:a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2};}
     const d0=new Date();d0.setMonth(d0.getMonth()-3);
-    const recent=await toutes(()=>db.from('mesures').select('id,point_id,date_mesure,valeur_brute,valeur,statut,meteo,commentaire,agent').in('point_id',ids).gte('date_mesure',d0.toISOString().slice(0,10)));
+    const recent=await toutes(()=>db.from('mesures').select('id,point_id,date_mesure,valeur_brute,valeur,statut,meteo,commentaire,agent,created_by,created_at').in('point_id',ids).gte('date_mesure',d0.toISOString().slice(0,10)));
     const sIds=new Set(points.map(p=>p.site_id));
     REF={sites:sites.filter(s=>sIds.has(s.id)),points,normales,recent,maj:Date.now()};LS.set('pz-ref',REF);
   }catch(e){if(!REF)throw e;}
@@ -147,7 +150,8 @@ async function sync(){
       LS.set('pz-queue',queue().slice(1));
     }
     toast('Mesures envoyées ✓');await chargerRef();if(!FS)route();
-  }catch(e){console.warn(e);}
+  }catch(e){console.warn(e);
+    if(refusDroits(e)){LS.set('pz-queue',queue().slice(1));sending=false;toast('Un relevé a été refusé : tes droits ne permettent pas cette modification');return sync();}}
   sending=false;banner();
 }
 window.addEventListener('online',()=>{chargerRef().then(()=>{sync();if(!FS)route();})});
@@ -206,7 +210,8 @@ function ouvrir(sid){
   const pts=REF.points.filter(p=>p.site_id===sid);
   const exist=mesuresDuMois(moisCour).filter(m=>pts.some(p=>p.id===m.point_id));
   const auj=today(),date=exist[0]?.date_mesure||(auj.slice(0,7)===moisCour?auj:moisCour+'-15');
-  FS={sid,date,meteo:exist[0]?.meteo||'',com:(exist[0]?.commentaire||'').replace(/^\[filtre\] ?/,''),filtre:/^\[filtre\]/.test(exist[0]?.commentaire||''),
+  const ro=exist.some(m=>!peutModifier('piezos',m,user));
+  FS={sid,ro,date,meteo:exist[0]?.meteo||'',com:(exist[0]?.commentaire||'').replace(/^\[filtre\] ?/,''),filtre:/^\[filtre\]/.test(exist[0]?.commentaire||''),
     del:exist.filter(m=>m.id).map(m=>m.id),edit:exist.length>0,
     v:Object.fromEntries(pts.map(p=>{const e=exist.find(m=>m.point_id===p.id);
       return [p.id,{statut:e?.statut||'mesure',saisie:e&&e.valeur_brute!=null?String(e.valeur_brute).replace('.',','):'',ok:false}];}))};
@@ -224,6 +229,7 @@ function drawForm(){
   <div class="fld"><label for="cm">Observation</label><textarea class="inp" id="cm" rows="2" oninput="FS.com=this.value" placeholder="Facultatif">${FS.com}</textarea></div>`;
   foot.style.display='block';
   foot.innerHTML=`<div class="in">${FS.edit?'<button class="btn2" onclick="supprimer()">Supprimer</button>':''}<button class="btn" id="bs" onclick="enregistrer()">${FS.edit?'Mettre à jour':'Enregistrer'}</button></div>`;
+  if(FS.ro)foot.innerHTML='<div class="in" style="justify-content:center;text-align:center;color:#7A7068;font-size:.9rem">Relevé saisi par un autre agent ou il y a plus de 30 jours : seul un chef d\'équipe peut le modifier.</div>';
   pts.forEach(p=>calc(p.id,false));
 }
 function bloc(p,mo){

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
@@ -282,7 +283,8 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
-  user=session.user;admin=user.email===ADMIN;
+  user=session.user;await chargerProfil(db,user);admin=niv('documentation')>=3;
+  if(niv('documentation')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à la documentation.');return;}
   document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
   await charger();route();
 }
@@ -308,7 +310,7 @@ window.addEventListener('hashchange',route);
 function route(){const h=location.hash;
   if(h==='#deposer'&&admin)return deposer();
   if(h==='#familles'&&admin)return familles();
-  if(h==='#ouvrages'&&admin)return ouvrages();
+  if(h==='#ouvrages'&&estGestionnaire())return ouvrages();
   let m;if(m=h.match(/^#modifier=(\d+)/))return admin?modifier(+m[1]):liste();
   liste();}
 const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-doc" style="color:var(--acc)"/></svg>`;
@@ -329,7 +331,7 @@ function liste(){
   const sansFam=DOCS.filter(d=>d.categorie===cat&&!d.famille_id).length;
   view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Documentation</div>
   <div class="head"><div class="head-l">${ico}<div><h1>Documentation</h1><div class="sub">${DOCS.length} document${DOCS.length>1?'s':''}${admin?' · '+taille(vol)+' utilisés sur 1 Go':''}</div></div></div>
-    ${admin?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-l" onclick="location.hash='ouvrages'">Gérer les ouvrages</button><button class="btn-l" onclick="location.hash='familles'">Gérer les familles</button><button class="btn-a" onclick="location.hash='deposer'">+ Déposer des documents</button></div>`:''}</div>
+    ${admin?`<div style="display:flex;gap:8px;flex-wrap:wrap">${estGestionnaire()?`<button class="btn-l" onclick="location.hash='ouvrages'">Gérer les ouvrages</button>`:''}<button class="btn-l" onclick="location.hash='familles'">Gérer les familles</button><button class="btn-a" onclick="location.hash='deposer'">+ Déposer des documents</button></div>`:''}</div>
   <div class="cats">${Object.entries(CATS).map(([k,l])=>`<button class="chip ${cat===k?'on':''}" onclick="cat='${k}';famSel=null;udSel=null;siteSel=null;SEL.clear();localStorage.setItem('doc-cat','${k}');liste()">${l} (${nb(k)})</button>`).join('')}</div>
   <div class="tools"><input class="search" id="rch" placeholder="Rechercher : titre, fabricant, modèle, ouvrage…" value="${esc(rech)}" oninput="rech=this.value;liste();const i=document.getElementById('rch');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
     <select class="search" style="flex:0 1 280px" onchange="siteSel=+this.value||null;liste()"><option value="">Tous les ouvrages</option>${optSites(sitesAvec,siteSel)}</select>
