@@ -253,7 +253,7 @@ function entete(t,sub,crumb){return `<div class="crumb">${crumb}</div><div class
 
 /* ── Liste : dernier relevé et part des 8 dernières semaines dans la cible ── */
 function liste(){
-  const L=SITES.filter(s=>s.actif&&(!zoneF||s.zone===zoneF)).sort((a,b)=>(a.zone||9)-(b.zone||9)||a.type.localeCompare(b.type)||a.nom.localeCompare(b.nom));
+  const L=SITES.filter(s=>s.actif&&PTS.some(p=>p.site_id===s.id)&&(!zoneF||s.zone===zoneF)).sort((a,b)=>(a.zone||9)-(b.zone||9)||a.type.localeCompare(b.type)||a.nom.localeCompare(b.nom));
   const d8=new Date();d8.setDate(d8.getDate()-56);const lim=d8.toISOString().slice(0,10);
   const row=s=>{const P=PTS.filter(p=>p.site_id===s.id),la=P.map(lastOf).filter(Boolean),dl=la.map(m=>m.date_releve).sort().pop();
     let n=0,c={vert:0,orange:0,rouge:0,bleu:0};
