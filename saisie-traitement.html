@@ -70,6 +70,15 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .toast.on{transform:translate(-50%,0);opacity:1}
 .loading{padding:50px;text-align:center;color:var(--mute)}
 .note{font-size:.8rem;color:var(--mute);margin-top:14px}
+.f input::placeholder{color:#B9AFA6;font-weight:500}
+.hist{margin-top:12px;overflow-x:auto}
+.hist table{border-collapse:collapse;width:100%;font-size:.82rem;font-variant-numeric:tabular-nums}
+.hist th{font-size:.7rem;color:var(--mute);font-weight:600;text-align:right;padding:4px 6px;white-space:nowrap}
+.hist th:first-child,.hist td:first-child{text-align:left}
+.hist td{padding:5px 6px;border-top:1px solid var(--line);text-align:right;white-space:nowrap;color:#5C534C}
+.hist .chip{padding:1px 7px}
+.hist caption{text-align:left;font-size:.75rem;font-weight:600;color:var(--mute);padding-bottom:4px}
+.up{color:var(--bad)}.dn{color:var(--blue)}
 </style>
 </head>
 <body>
@@ -131,7 +140,7 @@ async function chargerRef(){
   try{
     const [sites,points]=await Promise.all([toutes(()=>db.from('sites').select('id,commune,nom,type,zone,actif').in('type',['reservoir','dioxyde']).eq('actif',true)),
       toutes(()=>db.from('points').select('id,site_id,nom,famille,params,ordre').in('famille',['chlore','dioxyde']).eq('actif',true).order('ordre'))]);
-    const d0=new Date();d0.setDate(d0.getDate()-28);
+    const d0=new Date();d0.setDate(d0.getDate()-70);   // 10 semaines d'historique gardées sur le téléphone
     const recent=await toutes(()=>db.from('releves_traitement').select('*').in('point_id',points.map(p=>p.id)).gte('date_releve',d0.toISOString().slice(0,10)));
     const rang=n=>n==='Réseau'?2:n==='Station'?1:0;points.sort((a,b)=>rang(a.nom)-rang(b.nom));
     REF={sites,points,recent,maj:Date.now()};LS.set('tr-ref',REF);
@@ -225,22 +234,41 @@ function drawForm(){
   ${(()=>{const vs=varSite(pts);return vs?`<div class="fld"><span class="lab">Lieu de prélèvement</span><div class="seg">${vs.map(x=>`<button class="${FS.variante===x?'on':''}" onclick="FS.variante=FS.variante==='${x}'?'':'${x}';drawForm()">${x}</button>`).join('')}</div></div>`:''})()}
   ${pts.map(bloc).join('')}
   <div class="fld"><label for="ob">Observations</label><textarea class="inp" id="ob" rows="2" oninput="FS.obs=this.value" placeholder="Ex : PID sur stop, 4 contacts…">${FS.obs}</textarea></div>
-  <p class="note">Laisse un lieu vide s'il n'a pas été relevé cette semaine : il ne sera pas enregistré.</p>`;
+  <p class="note">En grisé dans les champs : la valeur de la semaine précédente. Laisse un lieu vide s'il n'a pas été relevé cette semaine : il ne sera pas enregistré.</p>`;
   foot.style.display='block';
   foot.innerHTML=`<div class="in">${FS.edit?'<button class="btn2" onclick="supprimer()">Supprimer</button>':''}<button class="btn" id="bs" onclick="enregistrer()">${FS.edit?'Mettre à jour':'Enregistrer'}</button></div>`;
   pts.forEach(p=>calc(p.id));
+}
+function histo(p,n=4){
+  const [a]=semBornes(sem),del=new Set(queue().flatMap(op=>op.del||[]));
+  const pend=queue().flatMap(op=>op.rows);
+  return [...REF.recent.filter(m=>!del.has(m.id)),...pend].filter(m=>m.point_id===p.id&&m.date_releve<a&&m.statut!=='douteux')
+    .sort((x,y)=>y.date_releve.localeCompare(x.date_releve)).slice(0,n);
+}
+function tableHisto(p,H){
+  if(!H.length)return '<div class="note" style="margin-top:10px">Pas de relevé les semaines précédentes.</div>';
+  const dx=p.famille==='dioxyde',rg=p.params.reglages;
+  const evo=(i,k)=>{const a=H[i]?.[k],b=H[i+1]?.[k];if(a==null||b==null||a==b)return '';return a>b?' <span class="up">↑</span>':' <span class="dn">↓</span>';};
+  const c=(m)=>{const v=dx?m.clo2:m.chlore_libre,pl=palier(p,v);return v==null?'–':`<span class="chip c-${pl?pl.c:'todo'}">${f(v)}</span>`;};
+  return `<div class="hist"><table><caption>Semaines précédentes</caption><thead><tr><th>Semaine</th><th>${dx?'ClO₂':'Cl libre'}</th>${rg?'<th>%</th><th>Réglage</th><th>Fréq.</th>':''}${dx?'':'<th>Cl total</th>'}<th>Turb.</th><th>T °C</th>${rg?'<th>Javel</th>':''}</tr></thead><tbody>
+  ${H.map((m,i)=>{const w=isoWeek(new Date(m.date_releve));return `<tr><td>S${w.w} <span style="color:var(--mute)">${m.date_releve.slice(8)}/${m.date_releve.slice(5,7)}</span></td>
+    ${m.statut==='arret'?`<td colspan="${(dx?3:4)+(rg?4:0)}" style="text-align:left">Traitement à l'arrêt</td>`:`<td>${c(m)}</td>${rg?`<td><b>${m.pourcentage!=null?m.pourcentage+evo(i,'pourcentage'):'–'}</b></td><td>${m.reglage||'–'}</td><td>${m.frequence!=null?m.frequence+evo(i,'frequence'):'–'}</td>`:''}${dx?'':`<td>${f(m.chlore_total)}</td>`}<td>${f(m.turbidite)}</td><td>${f(m.temperature,1)}</td>${rg?`<td>${m.vol_javel??'–'}</td>`:''}`}</tr>`;}).join('')}
+  </tbody></table></div>`;
 }
 function varSite(pts){const v=pts.find(p=>p.params.variantes)?.params.variantes;if(!v)return null;if(v.join()==='Réservoir,Réseau'&&pts.length>1)return null;return v;}
 function bloc(p){
   const v=FS.v[p.id],dx=p.famille==='dioxyde',vars=null;
   const champs=dx?CH.filter(([k])=>k!=='chlore_total'):CH;
+  const H=histo(p),prev=H.find(m=>m.statut==='mesure')||{};
+  const ph=k=>prev[k]!=null?String(prev[k]).replace('.',','):'–';
   return `<div class="card pt"><h3>${p.nom}<span class="seg"><button class="${v.statut==='mesure'?'on':''}" onclick="FS.v[${p.id}].statut='mesure';drawForm()">Relevé</button><button class="${v.statut==='arret'?'on':''}" onclick="FS.v[${p.id}].statut='arret';drawForm()">Arrêt</button></span></h3>
     ${vars?`<div class="seg" style="margin-bottom:10px">${vars.map(x=>`<button class="${v.variante===x?'on':''}" onclick="FS.v[${p.id}].variante=FS.v[${p.id}].variante==='${x}'?'':'${x}';drawForm()">${x}</button>`).join('')}</div>`:''}
     ${v.statut==='arret'?'<div class="skip">Traitement à l\'arrêt : le relevé sera enregistré comme tel.</div>':`
-    <div class="g4">${champs.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${dx&&k==='chlore_libre'?'Chlore libre mesuré':l}</label><input id="i${p.id}${k}" inputmode="decimal" value="${v[k]}" placeholder="–" oninput="FS.v[${p.id}]['${k}']=this.value;FS.v[${p.id}].ok=false;calc(${p.id})"><div class="u" id="u${p.id}${k}">${u}</div></div>`).join('')}</div>
+    <div class="g4">${champs.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${dx&&k==='chlore_libre'?'Chlore libre mesuré':l}</label><input id="i${p.id}${k}" inputmode="decimal" value="${v[k]}" placeholder="${ph(k)}" oninput="FS.v[${p.id}]['${k}']=this.value;FS.v[${p.id}].ok=false;calc(${p.id})"><div class="u" id="u${p.id}${k}">${u}</div></div>`).join('')}</div>
     ${dx?`<div class="clo2" id="cl${p.id}"></div>`:''}
-    ${p.params.reglages?`<div class="g5">${RG.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${l}</label><input id="i${p.id}${k}" ${k==='reglage'?'':'inputmode="decimal"'} value="${v[k]}" placeholder="–" oninput="FS.v[${p.id}]['${k}']=this.value"><div class="u">${u}</div></div>`).join('')}</div>`:''}
+    ${p.params.reglages?`<div class="g5">${RG.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${l}</label><input id="i${p.id}${k}" ${k==='reglage'?'':'inputmode="decimal"'} value="${v[k]}" placeholder="${ph(k)}" oninput="FS.v[${p.id}]['${k}']=this.value"><div class="u">${u}</div></div>`).join('')}</div>`:''}
     <div id="w${p.id}"></div>`}
+    ${tableHisto(p,H)}
   </div>`;
 }
 function calc(id){
