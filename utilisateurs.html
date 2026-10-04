@@ -170,6 +170,8 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
 <symbol id="ic-docs" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38"/></symbol>
 <symbol id="ic-projets" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z"/></symbol>
 <symbol id="ic-planning" viewBox="0 0 96 96"><path d="M26 32h44v38H26zM26 42h44M36 26v10M60 26v10M34 52h6M46 52h6M58 52h6M34 61h6M46 61h6"/></symbol>
+<symbol id="ic-utilisateur" viewBox="0 0 96 96"><path d="M59 36a11 11 0 1 1-22 0a11 11 0 1 1 22 0zM26 73c0-13 10-21 22-21s22 8 22 21z"/></symbol>
+<symbol id="ic-utilisateurs" viewBox="0 0 96 96"><path d="M50 38a10 10 0 1 1-20 0a10 10 0 1 1 20 0zM20 74c0-12 9-19 20-19s20 7 20 19zM58 29a9 9 0 1 1 4 17M66 55c8 2 12 8 12 17"/></symbol>
 <symbol id="ic-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
 <symbol id="ic-antibelier" viewBox="0 0 96 96"><path d="M40 30h16a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8V38a8 8 0 0 1 8-8zM48 30v-6M42 24h12M48 68v4M26 72h44M38 46h20"/></symbol>
 <symbol id="ic-visite" viewBox="0 0 96 96"><path d="M28 70V42l20-14 20 14v28zM42 70V56h12v14M24 70h48"/></symbol>
@@ -221,7 +223,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
       <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
       <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
     </nav>
-    <div class="who"><span id="who"></span><br><button onclick="logout()">Se déconnecter</button></div>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
   </aside>
 
   <main>
@@ -256,7 +258,7 @@ async function logout(){await db.auth.signOut();location.reload();}
 pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 async function charger(){const {data,error}=await db.from('profils').select('*').order('email');if(error){view.innerHTML=`<div class="card loading">Chargement impossible : ${esc(error.message)}<br><small>Le script 17_profils.sql a-t-il été lancé ?</small></div>`;throw error;}U=data;}
 function afficher(){
-  const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-fp" style="color:var(--acc)"/></svg>`;
+  const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><g class="ic" style="color:var(--acc);stroke-width:2.6"><use href="#ic-utilisateurs"/></g></svg>`;
   view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Utilisateurs</div>
   <div class="head"><div class="head-l">${ico}<div><h1>Utilisateurs et droits</h1><div class="sub">${U.length} compte${U.length>1?'s':''} · les droits sont appliqués par la base de données</div></div></div></div>
   <div class="card sec" style="background:#FBF8F4"><b>Ajouter quelqu'un</b><p class="site-c" style="margin-top:4px">1. Supabase → Authentication → Users → Add user (email + mot de passe, « Auto Confirm User »).<br>2. Recharge cette page : la personne apparaît en <b>Consultant</b>. Attribue-lui son rôle ici.</p></div>
