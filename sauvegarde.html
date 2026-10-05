@@ -78,7 +78,10 @@ const TABLES=[
   {t:'fiches',lab:'Fiches projets',lourd:['photos']},
   {t:'doc_familles',lab:'Familles de documents'},
   {t:'documents',lab:'Documents (fiches descriptives, sans les PDF)'},
-  {t:'document_sites',lab:'Rattachement documents / ouvrages'}
+  {t:'document_sites',lab:'Rattachement documents / ouvrages'},
+  {t:'ballons',lab:'Ballons anti-béliers et hydrophores'},
+  {t:'ballon_controles',lab:'Contrôles des ballons'},
+  {t:'ballon_photos',lab:'Photos des ballons (liste, sans les images)'}
 ];
 const d=new Date(),stamp=d.toISOString().slice(0,10);
 
@@ -101,7 +104,7 @@ async function sauvegarder(){
   try{
     for(const x of TABLES){log.textContent='Lecture de '+x.lab+'…';all[x.t]=await toutes(x.t);}
     log.textContent='Création des fichiers…';
-    const json={application:'Portail Eau',date:new Date().toISOString(),tables:all};
+    const json={application:'AquaPilot',date:new Date().toISOString(),tables:all};
     dl(new Blob([JSON.stringify(json)],{type:'application/json'}),`sauvegarde-portail-eau-${stamp}.json`);
     const wb=XLSX.utils.book_new();
     for(const x of TABLES){

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F4F1EC">
-<title>Portail Eau</title>
+<title>AquaPilot</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -158,7 +158,7 @@ h2{font-size:1.1rem;font-weight:700}
 <div class="shell">
   <aside class="side">
     <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
-      <div><b>Portail Eau</b><small>Eau potable</small></div></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div></div>
     <nav class="nav" id="sidenav"></nav>
     <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
   </aside>
@@ -187,7 +187,7 @@ const M={
   r_compteur:{ic:'compteur',label:'Index compteurs',desc:'Lecture d\'index'},
   r_uv:{ic:'lampe_uv',label:'Lampes UV',desc:'Heures, état des lampes'},
   maintenance:{ic:'maintenance',label:'Maintenance',desc:'Contrôles périodiques',items:['m_antibelier','m_visite','m_filtres','m_pi']},
-  m_antibelier:{ic:'antibelier',label:'Anti-béliers',desc:'Contrôle annuel'},
+  m_antibelier:{ic:'antibelier',label:'Ballons',desc:'Anti-béliers et hydrophores',url:'ballons.html'},
   m_visite:{ic:'visite',label:'Visites d\'ouvrages',desc:'Réservoirs, stations'},
   m_filtres:{ic:'filtres',label:'Filtres',desc:'Nettoyage, changement'},
   m_pi:{ic:'pi',label:'Poteaux incendie',desc:'Contrôle des PI'},
@@ -213,7 +213,7 @@ const M={
 };
 const SIDE=['root','releves','donnees','maintenance','docs','projets','planning','contacts','utilisateurs'];
 /* Droits nécessaires pour voir chaque tuile (les dossiers apparaissent s'ils contiennent au moins une tuile visible) */
-const DROIT={r_compteur:['jaugeages',2],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
+const DROIT={m_antibelier:['maintenance',1],r_compteur:['jaugeages',2],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
   docs:['documentation',1],projets:['projets',1],d_sauvegarde:['gestion'],utilisateurs:['super']};
 function visible(id){const m=M[id];if(!m)return false;if(m.items)return m.items.some(visible);const d=DROIT[id];if(!d)return true;
   if(d[0]==='super')return estSuperAdmin();if(d[0]==='gestion')return estGestionnaire();return niv(d[0])>=d[1];}
