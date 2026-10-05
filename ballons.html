@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Ballons – Maintenance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-2:#C2410C; --acc-soft:#FBE9DC; --acc-soft2:#F3D0B5;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:env(safe-area-inset-top,0)}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;min-height:100%}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ── Charpente ── */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute);letter-spacing:.02em}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav svg{width:28px;height:28px;margin:-4px;flex:none}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.side .who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.side .who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+.crumb a{color:var(--mute);text-decoration:none}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;align-items:flex-end;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px}
+.head-l{display:flex;gap:14px;align-items:center}
+.hico{width:56px;height:56px;border-radius:14px;flex:none}
+.bnav{display:none}
+
+/* ── Cartes ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search{flex:1;min-width:200px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font:inherit}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:500;color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.unit-sw{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.unit-sw button{border:none;background:none;padding:8px 12px;font-size:.83rem;font-weight:600;color:var(--mute)}
+.unit-sw button.on{background:var(--acc);color:#fff}
+
+/* Tableau bureau */
+table{width:100%;border-collapse:collapse}
+th{font-size:.75rem;font-weight:600;color:var(--mute);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);background:#FBF9F6}
+th:first-child{border-top-left-radius:14px}th:last-child{border-top-right-radius:14px}
+td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:.9rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.site-n{font-weight:600}.site-c{font-size:.8rem;color:var(--mute)}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}.b-mute{background:#EFEBE5;color:var(--mute)}
+.list-m{display:none}
+
+/* Détail */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:16px 18px}
+.kpi .l{font-size:.78rem;color:var(--mute);font-weight:500}
+.kpi .v{font-size:1.6rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.8rem;color:var(--mute);margin-top:2px}
+.chart-card{padding:18px 18px 10px;margin-bottom:16px}
+.chart-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chart-top h2{font-size:1rem}
+.pan{display:inline-flex;gap:6px;align-items:center}
+.pan button{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:32px}
+.pan span{font-size:.85rem;font-weight:600;min-width:110px;text-align:center;font-variant-numeric:tabular-nums}
+.chart-box{position:relative;height:340px}
+.legend-note{font-size:.78rem;color:var(--mute);padding:6px 2px 4px}
+.pts td:first-child{font-weight:500}
+.back{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem;margin-bottom:14px}
+.note{font-size:.8rem;color:var(--mute);margin-top:12px}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+
+/* ── Mobile ── */
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  main{padding:calc(16px + env(safe-area-inset-top,0)) 16px calc(90px + env(safe-area-inset-bottom,0))}
+  h1{font-size:1.4rem}.hico{width:46px;height:46px}
+  .table-d{display:none}
+  .list-m{display:flex;flex-direction:column;gap:10px}
+  .mcard{padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;cursor:pointer}
+  .mcard .big{font-size:1.25rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .mcard .meta{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--mute)}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:12px 14px}.kpi .v{font-size:1.25rem}
+  .chart-box{height:260px}
+  .pts-wrap{overflow-x:auto}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}
+  .bnav svg{width:32px;height:32px;margin:-4px}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.btn-a{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:600;font-size:.9rem}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:.88rem;color:var(--ink)}
+.btn-d{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:.88rem;color:var(--bad)}
+.sec{padding:18px 20px;margin-bottom:14px}
+.sec h2{font-size:1rem;margin-bottom:12px;color:var(--acc)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.fl label{display:block;font-size:.8rem;font-weight:600;margin-bottom:5px}
+.fl input,.fl textarea,.fl select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+.fl textarea{min-height:76px;resize:vertical}
+.fl input:focus,.fl textarea:focus,.fl select:focus{outline:none;border-color:var(--acc)}
+.fl{margin-bottom:12px}
+.req{color:var(--bad)}
+.dt{display:grid;grid-template-columns:200px 1fr;gap:6px 16px;font-size:.92rem}
+@media (max-width:860px){.dt{grid-template-columns:1fr}.dt dt{margin-top:8px}}
+.dt dt{color:var(--mute);font-weight:500}.dt dd{white-space:pre-wrap}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.photos .ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#EFEAE3}
+.photos img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.photos .x{position:absolute;top:6px;right:6px;border:none;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:26px;height:26px}
+.add{border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center;aspect-ratio:1;color:var(--mute);font-weight:600;font-size:.85rem;cursor:pointer;background:#fff;text-align:center;padding:8px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:70}
+.lb.on{display:flex}.lb img{max-width:94vw;max-height:90vh;border-radius:8px}
+.foot{position:sticky;bottom:0;background:var(--bg);padding:12px 0;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+@media (max-width:860px){.foot{bottom:calc(64px + env(safe-area-inset-bottom,0));flex-wrap:nowrap}.foot button{flex:1;padding:12px 8px}}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,30px);opacity:0;background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;font-size:.9rem;font-weight:500;transition:.2s;z-index:80;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1}
+@media print{.side,.bnav,.back,.head button,.foot{display:none!important}.shell{display:block}main{padding:0}.card{break-inside:avoid;border-color:#ccc}body{background:#fff}}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kv div{background:#FBF8F4;border-radius:10px;padding:10px 12px}.kv small{display:block;color:var(--mute);font-size:.74rem}.kv b{font-size:1.05rem}
+.calc{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.res{background:var(--acc-soft);border-radius:12px;padding:14px 16px;margin:6px 0 10px}.res b{font-size:1.5rem;color:var(--acc)}
+.b-blue{background:#E3EEF7;color:#2F6F9F}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.gal .ph{position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:#EFEAE3}
+.gal img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.gal .x{position:absolute;top:6px;right:6px;border:none;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:26px;height:26px}
+.warn2{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:.86rem;margin:8px 0}
+</style>
+</head>
+<body>
+
+<!-- Icônes (tracés au trait, même règle que les icônes Figma) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-releves" viewBox="0 0 24 24"><path d="M8 4h8v3H8zM6 5.5H5v15h14v-15h-1M8.5 12h7M8.5 16h5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-donnees" viewBox="0 0 24 24"><path d="M4 19h16M6 15l4-5 3 3 5-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-maint" viewBox="0 0 24 24"><path d="M14.5 5.5a4 4 0 0 0 4.6 5.3L12 18a2.1 2.1 0 1 1-3-3l7.2-7.1a4 4 0 0 0-1.7-2.4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-docs" viewBox="0 0 24 24"><path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H12v16H6.5A1.5 1.5 0 0 1 5 18.5zM12 4h5.5A1.5 1.5 0 0 1 19 5.5v13a1.5 1.5 0 0 1-1.5 1.5H12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-afaire" viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-jaug" viewBox="0 0 96 96"><path d="M24 54.5455C28 48.7273 32 48.7273 36 54.5455C40 60.3636 44 60.3636 48 54.5455C52 48.7273 56 48.7273 60 54.5455C64 60.3636 68 60.3636 72 54.5455M24 67.6364C28 61.8182 32 61.8182 36 67.6364C40 73.4545 44 73.4545 48 67.6364C52 61.8182 56 61.8182 60 67.6364C64 73.4545 68 73.4545 72 67.6364M24 34.1818H51.6M44.4 42.9091L51.6 34.1818L44.4 25.4545M61.2 24V47.2727M61.2 28.3636H68.4M61.2 37.0909H66M61.2 45.8182H68.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="ic-home" viewBox="0 0 96 96"><path d="M26 46 48 28l22 18v24H56V56H40v14H26z"/></symbol>
+<symbol id="ic-releves" viewBox="0 0 96 96"><path d="M38 24h20v8H38zM34 28h-6v44h40V28h-6M38 46h20M38 56h20M38 66h12"/></symbol>
+<symbol id="ic-maintenance" viewBox="0 0 96 96"><path d="M57 26a13 13 0 0 0-12 17L27 61a5.5 5.5 0 0 0 8 8l18-18a13 13 0 0 0 17-12l-8 5-7-7z"/></symbol>
+<symbol id="ic-afaire" viewBox="0 0 96 96"><path d="M28 34l5 5 9-10M28 54l5 5 9-10M50 35h18M50 55h18"/></symbol>
+<symbol id="ic-donnees" viewBox="0 0 96 96"><path d="M26 70h44M32 62V50M44 62V36M56 62V44M68 62V28"/></symbol>
+<symbol id="ic-docs" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38"/></symbol>
+<symbol id="ic-projets" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z"/></symbol>
+<symbol id="ic-planning" viewBox="0 0 96 96"><path d="M26 32h44v38H26zM26 42h44M36 26v10M60 26v10M34 52h6M46 52h6M58 52h6M34 61h6M46 61h6"/></symbol>
+<symbol id="ic-utilisateur" viewBox="0 0 96 96"><path d="M59 36a11 11 0 1 1-22 0a11 11 0 1 1 22 0zM26 73c0-13 10-21 22-21s22 8 22 21z"/></symbol>
+<symbol id="ic-utilisateurs" viewBox="0 0 96 96"><path d="M50 38a10 10 0 1 1-20 0a10 10 0 1 1 20 0zM20 74c0-12 9-19 20-19s20 7 20 19zM58 29a9 9 0 1 1 4 17M66 55c8 2 12 8 12 17"/></symbol>
+<symbol id="ic-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
+<symbol id="ic-antibelier" viewBox="0 0 96 96"><path d="M40 30h16a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8V38a8 8 0 0 1 8-8zM48 30v-6M42 24h12M48 68v4M26 72h44M38 46h20"/></symbol>
+<symbol id="ic-visite" viewBox="0 0 96 96"><path d="M28 70V42l20-14 20 14v28zM42 70V56h12v14M24 70h48"/></symbol>
+<symbol id="ic-filtres" viewBox="0 0 96 96"><path d="M26 28h44L54 48v18l-12 6V48z"/></symbol>
+<symbol id="ic-pi" viewBox="0 0 96 96"><path d="M40 34h16v-4a8 8 0 0 0-16 0zM36 34h24v6H36zM40 40h16v26H40zM34 48h6M56 48h6M36 66h24v6H36z"/></symbol>
+<symbol id="ic-debits" viewBox="0 0 96 96"><path d="M24 40h36M52 32l8 8-8 8M24 60c6-6 10-6 16 0s10 6 16 0 10-6 16 0"/></symbol>
+<symbol id="ic-nappes" viewBox="0 0 96 96"><path d="M24 38h48M24 52c6-5 10-5 16 0s10 5 16 0 10-5 16 0M24 66h48M48 22v24"/></symbol>
+<symbol id="ic-qnuit" viewBox="0 0 96 96"><path d="M62 58a20 20 0 1 1-20-30 16 16 0 0 0 20 30z"/></symbol>
+<symbol id="ic-conso" viewBox="0 0 96 96"><path d="M28 38h22v9H28zM50 41h10a8 8 0 0 1 8 8v5M39 30v8M33 30h12M68 62c0 3-2 5-3 5s-3-2-3-5 3-6 3-6 3 3 3 6z"/></symbol>
+<symbol id="ic-qualite" viewBox="0 0 96 96"><path d="M48 24s16 18 16 30a16 16 0 0 1-32 0c0-12 16-30 16-30zM41 56l5 5 9-10"/></symbol>
+<symbol id="ic-plans" viewBox="0 0 96 96"><path d="M26 32l14-6 16 6 14-6v38l-14 6-16-6-14 6zM40 26v38M56 32v38"/></symbol>
+<symbol id="ic-schemas" viewBox="0 0 96 96"><path d="M28 28h16v12H28zM52 28h16v12H52zM52 58h16v12H52zM36 40v24h16M60 40v18"/></symbol>
+<symbol id="ic-notices" viewBox="0 0 96 96"><path d="M32 24h22l10 10v38H32zM54 24v10h10M38 46h20M38 54h20M38 62h12"/></symbol>
+<symbol id="ic-procedures" viewBox="0 0 96 96"><path d="M28 32h4M28 48h4M28 64h4M40 32h28M40 48h28M40 64h28"/></symbol>
+<symbol id="ic-ouvrages" viewBox="0 0 96 96"><path d="M26 50V28h22l22 22-22 22zM37 36a2 2 0 1 0 0 .1"/></symbol>
+<symbol id="ic-chlore" viewBox="0 0 96 96"><path d="M36.766 24H59.234M40.5106 24V40L25.5319 62.6667C21.7872 68.8889 24.9078 72 34.8936 72H61.1064C71.0922 72 74.2128 68.8889 70.4681 62.6667L55.4894 40V24M33.0213 56H62.9787M40.5106 62.6667H55.4894"/></symbol>
+<symbol id="ic-compteur" viewBox="0 0 96 96"><path d="M24 41.4545H32.7273M24 54.5455H32.7273M63.2727 41.4545H72M63.2727 54.5455H72M43.6364 39.2727V45.8182M48 39.2727V45.8182M52.3636 39.2727V45.8182M43.6364 61.0909H52.3636M32.7273 24H63.2727V72H32.7273V24ZM39.2727 34.9091H56.7273V50.1818H39.2727V34.9091Z"/></symbol>
+<symbol id="ic-jaugeage" viewBox="0 0 96 96"><path d="M24 54.5455C28 48.7273 32 48.7273 36 54.5455C40 60.3636 44 60.3636 48 54.5455C52 48.7273 56 48.7273 60 54.5455C64 60.3636 68 60.3636 72 54.5455M24 67.6364C28 61.8182 32 61.8182 36 67.6364C40 73.4545 44 73.4545 48 67.6364C52 61.8182 56 61.8182 60 67.6364C64 73.4545 68 73.4545 72 67.6364M24 34.1818H51.6M44.4 42.9091L51.6 34.1818L44.4 25.4545M61.2 24V47.2727M61.2 28.3636H68.4M61.2 37.0909H66M61.2 45.8182H68.4"/></symbol>
+<symbol id="ic-piezo" viewBox="0 0 96 96"><path d="M24 38.6667H42M54 38.6667H72M46.8 28V61.3333M46.8 49.3333H52.8M24 60C28 55.5556 32 55.5556 36 60M57.6 60C61.6 55.5556 66.4 55.5556 72 60M24 72C28.8 67.5556 33.6 67.5556 38.4 72M57.6 72C62.4 67.5556 67.2 67.5556 72 72M42 24H54V68H42V24Z"/></symbol>
+<symbol id="ic-lampe_uv" viewBox="0 0 96 96"><path d="M40.9412 32H55.0588M40.9412 64H55.0588M48 36.8V59.2M26.8235 33.6L32.4706 38.4M24 48H32.4706M26.8235 62.4L32.4706 57.6M69.1765 33.6L63.5294 38.4M72 48H63.5294M69.1765 62.4L63.5294 57.6M40.9412 24H55.0588V72H40.9412V24Z"/></symbol>
+  <symbol id="i-fp" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+  <symbol id="i-pz" viewBox="0 0 96 96"><path d="M24 38.6667H42M54 38.6667H72M46.8 28V61.3333M46.8 49.3333H52.8M24 60C28 55.5556 32 55.5556 36 60M57.6 60C61.6 55.5556 66.4 55.5556 72 60M24 72C28.8 67.5556 33.6 67.5556 38.4 72M57.6 72C62.4 67.5556 67.2 67.5556 72 72M42 24H54V68H42V24Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+</svg>
+
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav">
+      <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+      <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+      <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+      <a href="index.html#maintenance" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
+      <a href="documentation.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
+      <a href="fiches.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
+      <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
+      <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
+    </nav>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+
+  <main>
+    <div id="view"><div class="loading"><div class="spin"></div>Chargement des ballons…</div></div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lbi" alt=""></div>
+<nav class="bnav">
+  <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+  <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+  <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+  <a href="index.html#afaire"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
+</nav>
+
+<script>
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+const FONCTIONS={anti_belier_refoulement:'Anti-bélier refoulement',anti_belier_surpression:'Anti-bélier surpression',hydrophore:'Hydrophore',a_preciser:'Fonction à préciser'};
+const SOURCES={fabricant:'Fabricant',formation:'Estimation (règle de formation)',calcul_hydrophore:'Calcul pressostat',manuel:'Saisie manuelle'};
+let user=null,B=[],C=[],PH=[],SITES=[],filtre='tous',rech='',aCtrl=false;
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nb=v=>v===''||v==null?null:Number(String(v).replace(',','.'));
+const f=(x,d=2)=>x==null||isNaN(x)?'–':Number(x).toLocaleString('fr-FR',{maximumFractionDigits:d});
+const dfr=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'–';
+const today=()=>new Date().toISOString().slice(0,10);
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800);}
+
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
+  await chargerProfil(db,user);
+  if(niv('maintenance')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à la maintenance.');return;}
+  await charger();route();
+}
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
+async function logout(){await db.auth.signOut();location.reload();}
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+async function charger(){
+  const r=await Promise.all([db.from('ballons').select('*').order('site_libelle'),db.from('ballon_controles').select('*').order('date_controle'),
+    db.from('ballon_photos').select('*').order('created_at'),db.from('sites').select('id,nom,commune,type').order('nom')]);
+  const e=r.find(x=>x.error);if(e){view.innerHTML=`<div class="card loading">Chargement impossible : ${esc(e.error.message)}<br><small>Le script 19_ballons.sql a-t-il été lancé ?</small></div>`;throw e.error;}
+  [B,C,PH,SITES]=r.map(x=>x.data||[]);
+}
+
+/* ── Conformité : tolérance ±10 % avec un minimum de 0,2 bar ── */
+const tol=ref=>Math.max(0.2,0.1*ref);
+function conformite(mes,ref){
+  if(mes==null||ref==null)return {c:'b-mute',l:'Pas de référence'};
+  const d=mes-ref,t=tol(ref);
+  if(Math.abs(d)<=t)return {c:'b-ok',l:'Conforme'};
+  return d<0?{c:'b-bad',l:`Sous-gonflé (${f(d,2)} bar)`}:{c:'b-warn',l:`Sur-gonflé (+${f(d,2)} bar)`};
+}
+const dernier=id=>C.filter(c=>c.ballon_id===id).slice(-1)[0];
+function aControler(b){const d=dernier(b.id);if(!d)return true;if((Date.now()-Date.parse(d.date_controle))>365*864e5)return true;
+  const v=d.regonfle&&d.pression_apres!=null?d.pression_apres:d.pression_mesuree;return conformite(v,d.pression_reference??b.pression_preconisee).c==='b-bad';}
+
+window.addEventListener('hashchange',route);
+function route(){const m=location.hash.match(/b=(\d+)/);m?fiche(+m[1]):liste();}
+const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><g class="ic" style="color:var(--acc);stroke-width:2.6"><use href="#ic-antibelier"/></g></svg>`;
+
+/* ── Liste ── */
+function liste(){
+  let L=B.filter(b=>b.actif!==false&&(filtre==='tous'||b.fonction===filtre));
+  if(aCtrl)L=L.filter(aControler);
+  if(rech){const r=rech.toLowerCase();L=L.filter(b=>[b.site_libelle,b.commune,b.marque,b.numero_serie].join(' ').toLowerCase().includes(r));}
+  const n=k=>B.filter(b=>k==='tous'||b.fonction===k).length;
+  view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › <a href="index.html#maintenance">Maintenance</a> › Ballons</div>
+  <div class="head"><div class="head-l">${ico}<div><h1>Ballons</h1><div class="sub">${B.length} ballons · anti-béliers et hydrophores · ${B.filter(aControler).length} à contrôler</div></div></div></div>
+  <div class="tools"><input class="search" id="rch" placeholder="Rechercher un site, une commune, un n° de série" value="${esc(rech)}" oninput="rech=this.value;liste();const i=document.getElementById('rch');i.focus();i.setSelectionRange(i.value.length,i.value.length)">
+    <button class="chip ${aCtrl?'on':''}" onclick="aCtrl=!aCtrl;liste()">À contrôler</button></div>
+  <div class="tools">${[['tous','Tous'],...Object.entries(FONCTIONS)].map(([k,l])=>`<button class="chip ${filtre===k?'on':''}" onclick="filtre='${k}';liste()">${l} (${n(k)})</button>`).join('')}</div>
+  <div class="card table-d"><table><thead><tr><th>Site</th><th>Fonction</th><th class="num">Volume</th><th class="num">Gonflage préconisé</th><th>Dernier contrôle</th><th class="num">Photos</th></tr></thead><tbody>
+  ${L.map(b=>{const d=dernier(b.id),v=d?(d.regonfle&&d.pression_apres!=null?d.pression_apres:d.pression_mesuree):null,co=d?conformite(d.pression_mesuree,d.pression_reference??b.pression_preconisee):null;
+    return `<tr onclick="location.hash='b=${b.id}'"><td><div class="site-n">${esc(b.site_libelle)}${b.repere&&b.repere!=='1'?' · '+esc(b.repere):''}</div><div class="site-c">${esc(b.commune||'')} · ${esc(b.marque||'')} ${esc(b.numero_serie||'')}</div></td>
+    <td><span class="badge ${b.fonction==='a_preciser'?'b-warn':'b-mute'}">${FONCTIONS[b.fonction]}</span></td><td class="num">${f(b.volume_l,0)} l</td>
+    <td class="num">${b.pression_preconisee!=null?'<b>'+f(b.pression_preconisee)+' bar</b><div class="site-c">'+(b.source_preconisation==='fabricant'?'fabricant':b.source_preconisation==='formation'?'estimation':SOURCES[b.source_preconisation]||'')+'</div>':'<span class="site-c">à définir</span>'}</td>
+    <td>${d?`${dfr(d.date_controle)} · ${f(d.pression_mesuree)} bar <span class="badge ${co.c}">${co.l}</span>`:'<span class="badge b-warn">Jamais contrôlé</span>'}</td>
+    <td class="num">${PH.filter(p=>p.ballon_id===b.id).length||'–'}</td></tr>`;}).join('')}
+  </tbody></table></div>
+  <div class="list-m">${L.map(b=>{const d=dernier(b.id),co=d?conformite(d.pression_mesuree,d.pression_reference??b.pression_preconisee):null;
+    return `<div class="card mcard" onclick="location.hash='b=${b.id}'"><div><div class="site-n">${esc(b.site_libelle)}</div><div class="site-c">${esc(b.commune||'')} · ${f(b.volume_l,0)} l</div></div>
+    <div class="big" style="font-size:1rem">${b.pression_preconisee!=null?f(b.pression_preconisee)+' bar':'–'}</div>
+    <div class="meta">${d?dfr(d.date_controle)+' <span class="badge '+co.c+'">'+co.l+'</span>':'<span class="badge b-warn">Jamais contrôlé</span>'}</div></div>`;}).join('')}</div>
+  <p class="note">« À contrôler » : jamais contrôlé, dernier contrôle de plus d'un an, ou ballon trouvé sous-gonflé. Tolérance : ± 10 % de la pression préconisée, avec un minimum de 0,2 bar.</p>`;
+}
+
+/* ── Fiche d'un ballon ── */
+async function fiche(id){
+  const b=B.find(x=>x.id===id);if(!b)return liste();
+  const site=SITES.find(s=>s.id===b.site_id),gest=niv('maintenance')>=3,saisie=niv('maintenance')>=2;
+  const H=C.filter(c=>c.ballon_id===id).slice().reverse(),P=PH.filter(p=>p.ballon_id===id);
+  const psv=b.ps_bar&&b.volume_l?b.ps_bar*b.volume_l:null;
+  view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Tous les ballons</button>
+  <div class="crumb">Maintenance › Ballons</div>
+  <div class="head"><div class="head-l">${ico}<div><h1>${esc(b.site_libelle)}${b.repere&&b.repere!=='1'?' · '+esc(b.repere):''}</h1><div class="sub">${esc(b.commune||'')}${site?' · ouvrage : '+esc(site.nom):''} · <span class="badge ${b.fonction==='a_preciser'?'b-warn':'b-mute'}">${FONCTIONS[b.fonction]}</span></div></div></div>
+    ${gest?`<button class="btn-l" onclick="editer(${id})">Modifier la fiche</button>`:''}</div>
+
+  <div class="card sec"><h2>Identité</h2><div class="kv">
+    ${[['Marque',b.marque],['N° de série',b.numero_serie],['Volume',b.volume_l!=null?f(b.volume_l,0)+' l':null],['Pression maxi (PS)',b.ps_bar!=null?f(b.ps_bar)+' bar':null],['Pression d\'épreuve',b.pt_bar!=null?f(b.pt_bar)+' bar':null],
+      ['Pression de service',b.pression_service!=null?f(b.pression_service)+' bar':null],...(b.fonction==='hydrophore'?[['Pressostat bas / haut',b.pressostat_bas!=null?f(b.pressostat_bas)+' / '+f(b.pressostat_haut)+' bar':null]]:[]),
+      ['Gaz',b.gaz],['Mise en service',b.annee_service],['Épreuve',dfr(b.date_epreuve)],['Catégorie',b.categorie_desp],['PS × V',psv?f(psv,0)+' bar·l':null],['Prochaine échéance',b.prochaine_echeance?dfr(b.prochaine_echeance):null]]
+      .map(([k,v])=>`<div><small>${k}</small><b>${v==null||v===''||v==='–'?'<span class="site-c">non renseigné</span>':esc(v)}</b></div>`).join('')}</div>
+    ${b.commentaires?`<p class="note">${esc(b.commentaires)}</p>`:''}
+    ${b.fonction==='a_preciser'?'<div class="warn2">La fonction de ce ballon est à préciser : elle détermine la façon de calculer son gonflage.</div>':''}</div>
+
+  <div class="card sec"><h2>Gonflage préconisé</h2>
+    <div class="res"><small class="site-c">À mesurer ballon vidé côté eau</small><br><b>${b.pression_preconisee!=null?f(b.pression_preconisee)+' bar':'non défini'}</b>
+      ${b.source_preconisation?`<span class="badge ${b.source_preconisation==='fabricant'?'b-ok':'b-warn'}" style="margin-left:8px">${SOURCES[b.source_preconisation]}</span>`:''}
+      ${b.pression_preconisee!=null?`<div class="site-c">Conforme entre ${f(b.pression_preconisee-tol(b.pression_preconisee))} et ${f(b.pression_preconisee+tol(b.pression_preconisee))} bar</div>`:''}</div>
+    ${outilCalcul(b,gest)}</div>
+
+  ${saisie?`<div class="card sec"><h2>Nouveau contrôle</h2><div class="grid2">
+    <div class="fl"><label for="c_d">Date</label><input id="c_d" type="date" value="${today()}" max="${today()}"></div>
+    <div class="fl"><label for="c_m">Pression mesurée (bar), ballon vidé</label><input id="c_m" inputmode="decimal" oninput="apercu(${id})"></div>
+    <div class="fl"><label><input type="checkbox" id="c_r" style="width:auto;margin-right:6px" onchange="document.getElementById('c_ap').style.display=this.checked?'block':'none'"> Ballon regonflé</label><div id="c_ap" style="display:none;margin-top:6px"><input id="c_a" inputmode="decimal" placeholder="Pression après regonflage"></div></div>
+    <div class="fl"><label for="c_v">État de la vessie</label><select id="c_v"><option value="">—</option><option value="ok">Bon</option><option value="a_surveiller">À surveiller</option><option value="hs">Hors service</option></select></div></div>
+    <div id="c_ok"></div>
+    <div class="fl"><label for="c_o">Observations</label><textarea id="c_o" placeholder="Fuite à la valve, manomètre HS…"></textarea></div>
+    <button class="btn-a" id="c_b" onclick="controler(${id})">Enregistrer le contrôle</button></div>`:''}
+
+  <div class="card sec"><h2>Historique des contrôles</h2>${H.length?`<div class="pts-wrap"><table><thead><tr><th>Date</th><th class="num">Mesurée</th><th>Résultat</th><th class="num">Après</th><th>Vessie</th><th>Agent</th><th>Observations</th><th></th></tr></thead><tbody>
+    ${H.map(c=>{const co=conformite(c.pression_mesuree,c.pression_reference??b.pression_preconisee);return `<tr><td>${dfr(c.date_controle)}</td><td class="num">${f(c.pression_mesuree)} bar</td><td><span class="badge ${co.c}">${co.l}</span></td>
+      <td class="num">${c.regonfle?f(c.pression_apres)+' bar':'–'}</td><td>${{ok:'Bon',a_surveiller:'À surveiller',hs:'HS'}[c.etat_vessie]||'–'}</td><td>${esc((c.agent||'').split('@')[0])}</td><td>${esc(c.observations||'')}</td>
+      <td>${peutModifier('maintenance',c,user)?`<button class="mini" onclick="supprCtrl(${c.id},${id})" aria-label="Supprimer">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`:'<p class="site-c">Aucun contrôle enregistré.</p>'}</div>
+
+  <div class="card sec"><h2>Photos</h2>
+    ${saisie?`<input type="file" id="pin" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this,${id})"><label class="btn-l" for="pin" style="display:inline-block;margin-bottom:12px;cursor:pointer">+ Ajouter des photos</label><span class="site-c" id="pst" style="margin-left:10px">Compressées automatiquement (environ 300 Ko chacune)</span>`:''}
+    <div class="gal" id="gal">${P.length?'<span class="site-c">Chargement…</span>':'<span class="site-c">Aucune photo.</span>'}</div></div>`;
+  if(P.length)galerie(P,gest);
+  if(document.getElementById('k_s'))calcA();else if(document.getElementById('k_b'))calcH();
+}
+
+/* ── Outil de calcul ── */
+function outilCalcul(b,gest){
+  if(b.fonction==='hydrophore')return `<p class="site-c" style="margin-bottom:10px">Hydrophore : gonflage = pression de démarrage de la pompe − 0,2 bar (ballon vide d'eau).</p>
+    <div class="calc"><div class="fl"><label>Démarrage pompe (bar)</label><input id="k_b" inputmode="decimal" value="${b.pressostat_bas??''}" oninput="calcH(${b.volume_l||0})"></div>
+    <div class="fl"><label>Arrêt pompe (bar)</label><input id="k_h" inputmode="decimal" value="${b.pressostat_haut??''}" oninput="calcH(${b.volume_l||0})"></div>
+    <div class="fl"><label>Volume du ballon (l)</label><input id="k_v" inputmode="decimal" value="${b.volume_l??''}" oninput="calcH()"></div></div>
+    <div id="k_r"></div>${gest?`<button class="btn-l" onclick="retenir(${b.id},'calcul_hydrophore')">Retenir comme gonflage préconisé</button>`:''}`;
+  return `<p class="site-c" style="margin-bottom:10px">Anti-bélier : la valeur de référence est celle de l'étude du fabricant. À défaut, règle de formation : (pression de service + 1) / 3.</p>
+    <div class="calc"><div class="fl"><label>Pression de service (bar)</label><input id="k_s" inputmode="decimal" value="${b.pression_service??''}" oninput="calcA()"></div>
+    <div class="fl"><label>Volume du ballon (l)</label><input id="k_v" inputmode="decimal" value="${b.volume_l??''}" oninput="calcA()"></div></div>
+    <div id="k_r"></div>
+    ${gest?`<div class="tools"><button class="btn-l" onclick="retenir(${b.id},'formation')">Retenir l'estimation</button><input id="k_f" class="search" style="max-width:160px" inputmode="decimal" placeholder="Valeur fabricant"><button class="btn-l" onclick="retenir(${b.id},'fabricant')">Retenir la valeur fabricant</button></div>`:''}`;
+}
+let calcVal=null;
+function calcH(){const bas=nb(k_b.value),haut=nb(k_h.value),V=nb(k_v.value);calcVal=null;
+  if(bas==null){k_r.innerHTML='';return;}
+  const p0=Math.max(0,bas-0.2);calcVal=Math.round(p0*100)/100;
+  let vu='';if(haut!=null&&V&&haut>bas){const v=V*(p0+1)*(1/(bas+1)-1/(haut+1));vu=`<div class="site-c">Volume d'eau utilisable entre démarrage et arrêt : <b>${f(v,1)} l</b> (loi de Mariotte, pressions absolues)</div>`;}
+  k_r.innerHTML=`<div class="res"><small class="site-c">Gonflage calculé</small><br><b>${f(calcVal)} bar</b>${vu}</div>`;}
+function calcA(){const ps=nb(k_s.value),V=nb(k_v.value);calcVal=null;
+  if(ps==null||ps<=0){k_r.innerHTML='<div class="warn2">Renseigne la pression de service pour obtenir une estimation.</div>';return;}
+  calcVal=Math.round((ps+1)/3*100)/100;
+  let w='';if(V){const air=V*(calcVal+1)/(ps+1);w=`<div class="site-c">À la pression de service, le ballon contient environ <b>${f(V-air,0)} l d'eau</b> et ${f(air,0)} l de gaz (loi de Mariotte).</div>`;}
+  k_r.innerHTML=`<div class="res"><small class="site-c">Estimation, règle de formation</small><br><b>${f(calcVal)} bar</b>${w}</div><div class="warn2">Estimation à confirmer : seule l'étude de coup de bélier du fabricant fait référence.</div>`;}
+async function retenir(id,src){
+  let v=src==='fabricant'?nb(k_f.value):calcVal;
+  if(v==null||isNaN(v)){toast(src==='fabricant'?'Saisis la valeur du fabricant':'Fais d\'abord le calcul');return;}
+  const maj={pression_preconisee:v,source_preconisation:src};
+  if(src!=='fabricant'){const s=document.getElementById('k_s'),b=document.getElementById('k_b'),h=document.getElementById('k_h');
+    if(s&&nb(s.value)!=null)maj.pression_service=nb(s.value);if(b&&nb(b.value)!=null)maj.pressostat_bas=nb(b.value);if(h&&nb(h.value)!=null)maj.pressostat_haut=nb(h.value);}
+  const {error}=await db.from('ballons').update(maj).eq('id',id);if(error)return toast('Erreur : '+error.message);
+  Object.assign(B.find(x=>x.id===id),maj);toast('Gonflage préconisé enregistré ✓');fiche(id);
+}
+
+/* ── Contrôle ── */
+function apercu(id){const b=B.find(x=>x.id===id),m=nb(c_m.value);if(m==null||isNaN(m)){c_ok.innerHTML='';return;}
+  const co=conformite(m,b.pression_preconisee);c_ok.innerHTML=`<p style="margin-bottom:10px"><span class="badge ${co.c}">${co.l}</span>${b.pression_preconisee!=null&&co.c!=='b-ok'?` <span class="site-c">préconisé : ${f(b.pression_preconisee)} bar</span>`:''}</p>`;}
+async function controler(id){
+  const b=B.find(x=>x.id===id),m=nb(c_m.value),reg=c_r.checked,a=nb(c_a.value);
+  if(!c_d.value||c_d.value>today())return toast('Date invalide');
+  if(m==null||isNaN(m))return toast('Saisis la pression mesurée');
+  if(b.ps_bar&&m>b.ps_bar)return toast('Pression supérieure à la pression maxi du ballon : vérifie la saisie');
+  if(reg&&(a==null||isNaN(a)))return toast('Saisis la pression après regonflage');
+  c_b.disabled=true;
+  const {data,error}=await db.from('ballon_controles').insert({ballon_id:id,date_controle:c_d.value,pression_mesuree:m,pression_reference:b.pression_preconisee,regonfle:reg,pression_apres:reg?a:null,
+    etat_vessie:c_v.value||null,observations:c_o.value.trim()||null,agent:user.email}).select().single();
+  c_b.disabled=false;
+  if(error)return toast(refusDroits(error)?'Tes droits ne permettent pas cette saisie':'Erreur : '+error.message);
+  C.push(data);toast('Contrôle enregistré ✓');fiche(id);
+}
+async function supprCtrl(cid,id){if(!confirm('Supprimer ce contrôle ?'))return;const {error}=await db.from('ballon_controles').delete().eq('id',cid);
+  if(error)return toast('Erreur : '+error.message);C=C.filter(c=>c.id!==cid);fiche(id);}
+
+/* ── Photos : compression avant envoi ── */
+function compresser(file){return new Promise((ok,ko)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const M=1600,k=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):ko(new Error('compression')),'image/jpeg',0.75);};
+  im.onerror=()=>ko(new Error('image illisible'));im.src=u;});}
+async function ajouterPhotos(inp,id){
+  const fs=[...inp.files];inp.value='';let ok=0,av=0,ap=0;
+  for(const [i,fl] of fs.entries()){
+    pst.textContent=`Compression et envoi ${i+1} / ${fs.length}…`;
+    try{const blob=await compresser(fl);av+=fl.size;ap+=blob.size;
+      const chemin=`ballons/${id}/${Date.now()}_${i}.jpg`;
+      const up=await db.storage.from('photos').upload(chemin,blob,{contentType:'image/jpeg'});if(up.error)throw up.error;
+      const {data,error}=await db.from('ballon_photos').insert({ballon_id:id,chemin,taille:blob.size,legende:fl.name}).select().single();if(error)throw error;
+      PH.push(data);ok++;
+    }catch(e){toast(fl.name+' : '+(e.message||e));}
+  }
+  toast(`${ok} photo(s) ajoutée(s) · ${(av/1048576).toFixed(1).replace('.',',')} Mo réduits à ${(ap/1048576).toFixed(1).replace('.',',')} Mo`);fiche(id);
+}
+async function galerie(P,gest){
+  const {data,error}=await db.storage.from('photos').createSignedUrls(P.map(p=>p.chemin),3600);
+  if(error){gal.innerHTML='<span class="site-c">Photos indisponibles : '+esc(error.message)+'</span>';return;}
+  gal.innerHTML=P.map((p,i)=>`<div class="ph"><img src="${data[i].signedUrl}" alt="${esc(p.legende||'Photo du ballon')}" loading="lazy" onclick="lbi.src=this.src;lb.classList.add('on')">${gest?`<button class="x" onclick="supprPhoto(${p.id})" aria-label="Supprimer la photo">✕</button>`:''}</div>`).join('');
+}
+async function supprPhoto(pid){const p=PH.find(x=>x.id===pid);if(!confirm('Supprimer cette photo ?'))return;
+  const r=await db.storage.from('photos').remove([p.chemin]);if(r.error)return toast('Erreur : '+r.error.message);
+  await db.from('ballon_photos').delete().eq('id',pid);PH=PH.filter(x=>x.id!==pid);fiche(p.ballon_id);}
+
+/* ── Modification de la fiche (gestion) ── */
+function editer(id){
+  const b=B.find(x=>x.id===id);
+  const champ=(k,l,t='text')=>`<div class="fl"><label for="e_${k}">${l}</label><input id="e_${k}" ${t==='date'?'type="date"':t==='num'?'inputmode="decimal"':''} value="${esc(b[k]??'')}"></div>`;
+  view.innerHTML=`<button class="back" onclick="fiche(${id})">‹ Annuler</button><div class="head"><div class="head-l">${ico}<div><h1>Modifier la fiche</h1><div class="sub">${esc(b.site_libelle)}</div></div></div></div>
+  <div class="card sec"><div class="grid2">
+    ${champ('site_libelle','Site')}${champ('commune','Commune')}${champ('repere','Repère (1, Amont, Gauche…)')}
+    <div class="fl"><label for="e_fonction">Fonction</label><select id="e_fonction">${Object.entries(FONCTIONS).map(([k,l])=>`<option value="${k}" ${b.fonction===k?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="fl"><label for="e_site_id">Ouvrage rattaché</label><select id="e_site_id"><option value="">—</option>${SITES.map(s=>`<option value="${s.id}" ${b.site_id===s.id?'selected':''}>${esc(s.nom)} (${esc(s.commune)})</option>`).join('')}</select></div>
+    ${champ('marque','Marque')}${champ('numero_serie','N° de série')}${champ('volume_l','Volume (l)','num')}${champ('ps_bar','Pression maxi PS (bar)','num')}${champ('pt_bar','Pression d\'épreuve (bar)','num')}
+    ${champ('pression_service','Pression de service (bar)','num')}${champ('pressostat_bas','Pressostat bas (hydrophore)','num')}${champ('pressostat_haut','Pressostat haut (hydrophore)','num')}
+    ${champ('gaz','Gaz')}${champ('categorie_desp','Catégorie (I à IV)')}${champ('annee_service','Année de mise en service','num')}${champ('date_epreuve','Date d\'épreuve','date')}${champ('prochaine_echeance','Prochaine échéance réglementaire','date')}
+  </div><div class="fl"><label for="e_commentaires">Commentaires</label><textarea id="e_commentaires">${esc(b.commentaires||'')}</textarea></div>
+  <label class="site-c"><input type="checkbox" id="e_actif" style="width:auto" ${b.actif!==false?'checked':''}> Ballon en service</label></div>
+  <div class="foot"><button class="btn-l" onclick="fiche(${id})">Annuler</button><button class="btn-a" onclick="sauver(${id})">Enregistrer</button></div>`;
+}
+async function sauver(id){
+  const NUM=['volume_l','ps_bar','pt_bar','pression_service','pressostat_bas','pressostat_haut','annee_service'],TXT=['site_libelle','commune','repere','marque','numero_serie','gaz','categorie_desp','commentaires','date_epreuve','prochaine_echeance','fonction'];
+  const m={};for(const k of NUM){const v=nb(document.getElementById('e_'+k).value);if(v!=null&&isNaN(v))return toast('Valeur non numérique : '+k);m[k]=v;}
+  for(const k of TXT){const v=document.getElementById('e_'+k).value.trim();m[k]=v||null;}
+  if(!m.site_libelle)return toast('Le site est obligatoire');
+  m.site_id=+e_site_id.value||null;m.actif=e_actif.checked;if(m.annee_service!=null)m.annee_service=Math.round(m.annee_service);
+  const {error}=await db.from('ballons').update(m).eq('id',id);if(error)return toast('Erreur : '+error.message);
+  Object.assign(B.find(x=>x.id===id),m);toast('Fiche enregistrée ✓');location.hash='b='+id;fiche(id);
+}
+start();
+</script>
+</body>
+</html>
