@@ -270,7 +270,23 @@ function afficher(){
   <div class="card sec"><h2>Mes droits</h2>
     <dl class="dt"><dt>Email</dt><dd>${esc(user.email)}</dd><dt>Rôle</dt><dd>${ROLES[PROFIL.role]||PROFIL.role}</dd>
     ${Object.entries(MODULES_DROITS).map(([k,l])=>`<dt>${l}</dt><dd>${NIVEAUX[niv(k)]}</dd>`).join('')}</dl>
-    <p class="note">Les droits sont attribués par le super admin. Saisie : tu peux corriger tes propres relevés pendant 30 jours.</p></div>`;
+    <p class="note">Les droits sont attribués par le super admin. Saisie : tu peux corriger tes propres relevés pendant 30 jours.</p></div>
+  ${estSuperAdmin()?'<div class="card sec"><h2>Espace utilisé</h2><div id="esp" class="site-c">Calcul…</div></div>':''}`;
+  if(estSuperAdmin())espace();
+}
+const LIB={mesures:'Jaugeages et piézos',releves_traitement:'Tournées chlore / dioxyde',fiches:'Fiches projets (avec photos)',documents:'Documentation (fiches)',sites:'Ouvrages',points:'Points de mesure'};
+function mo(o){return o>=1073741824?(o/1073741824).toFixed(2).replace('.',',')+' Go':(o/1048576).toFixed(1).replace('.',',')+' Mo';}
+function jauge(titre,val,max,detail){const p=Math.min(100,val/max*100),c=p>=90?'var(--bad)':p>=70?'var(--warn)':'var(--ok)';
+  return `<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;gap:8px;font-weight:600;color:var(--ink)"><span>${titre}</span><span>${mo(val)} / ${mo(max)}</span></div>
+  <div style="height:12px;background:#EFEAE3;border-radius:99px;overflow:hidden;margin:6px 0"><i style="display:block;height:100%;width:${Math.max(p,1)}%;background:${c}"></i></div>
+  <div>${p.toFixed(1).replace('.',',')} % utilisés${detail?' · '+detail:''}${p>=70?' — <b style="color:'+c+'">pense à faire du ménage ou à passer à un plan supérieur</b>':''}</div></div>`;}
+async function espace(){
+  const {data,error}=await db.rpc('espace_utilise');
+  if(error){esp.innerHTML='Indisponible : '+esc(error.message)+'<br>Le script 18_espace_utilise.sql a-t-il été lancé ?';return;}
+  const T=(data.tables||[]).filter(t=>t.octets>65536).slice(0,6);
+  esp.innerHTML=jauge('Fichiers (PDF de la documentation)',data.fichiers,1073741824,data.nb_fichiers+' fichier(s)')+jauge('Base de données',data.base,524288000,'')+
+   `<div style="margin-top:6px"><b style="color:var(--ink)">Ce qui occupe la base :</b><dl class="dt" style="margin-top:6px">${T.map(t=>`<dt>${LIB[t.table]||t.table}</dt><dd>${mo(t.octets)}</dd>`).join('')}</dl></div>
+   <p class="note">Limites du plan gratuit Supabase : 1 Go de fichiers, 500 Mo de base. La base contient aussi des éléments techniques de Supabase, d'où un total supérieur à la somme des tables.</p>`;
 }
 function force(){const v=p1.value,ok=v.length>=8&&/\d/.test(v);fo.style.color=v?(ok?'var(--ok)':'var(--bad)'):'';fo.textContent=!v?'8 caractères minimum, avec au moins un chiffre.':ok?'✓ Mot de passe valide':'Trop court ou sans chiffre';}
 async function changer(){
