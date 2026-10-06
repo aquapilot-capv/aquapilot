@@ -245,11 +245,16 @@ async function charger(){
   }catch(e){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;}
 }
 const val=(p,m)=>p.famille==='dioxyde'?m.clo2:m.chlore_libre;
+/* Vigipirate (mesure de surchloration) : concentrations MINIMALES en mg/l — sortie de réservoir / tout point du réseau.
+   Chlore libre 0,3 / 0,1 · bioxyde de chlore 0,15 / 0,05. Le niveau « alerte attentat » est plus élevé (arrêté préfectoral) : à ajouter ici si besoin. */
+const VIGI={chlore:{sortie:0.3,reseau:0.1},dioxyde:{sortie:0.15,reseau:0.05}};
+const seuilVigi=p=>(VIGI[p.famille]||VIGI.chlore)[p.nom==='Réseau'?'reseau':'sortie'];
+const sousVigi=(p,v)=>v!=null&&v<seuilVigi(p)-1e-9;
 function palier(p,v){if(v==null)return null;for(const [a,b,c,l] of (p.params.paliers||[]))if(v>=a&&(b==null||v<b))return {c,l};return null;}
 const f=(x,d=2)=>x==null||isNaN(x)?'–':Number(x).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const dfr=d=>d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(2,4);
 function chipV(p,m){if(!m)return `<span class="badge b-mute">${p.nom} –</span>`;if(m.statut==='arret')return '<span class="badge b-mute">Arrêt</span>';
-  const v=val(p,m),pl=palier(p,v);return `<span class="badge ${pl?BADGE[pl.c]:'b-mute'}" title="${pl?pl.l:''}">${p.nom} ${f(v)}</span>`;}
+  const v=val(p,m),pl=palier(p,v),sv=sousVigi(p,v);return `<span class="badge ${pl?BADGE[pl.c]:'b-mute'}" title="${pl?pl.l:''}${sv?' — sous le minimum Vigipirate ('+f(seuilVigi(p))+' mg/l)':''}">${p.nom} ${f(v)}${sv?' ⚠':''}</span>`;}
 const lastOf=p=>RECENT.filter(m=>m.point_id===p.id&&m.statut!=='douteux').pop();
 
 window.addEventListener('hashchange',route);
@@ -275,7 +280,7 @@ function liste(){
   <div class="list-m">${R.map(({s,P,dl,c,n})=>`<div class="card mcard" onclick="location.hash='site=${s.id}'"><div><div class="site-n">${s.nom}</div><div class="site-c">Zone ${s.zone} · ${s.type==='dioxyde'?'ClO₂':'chlore'}</div></div>
     <div class="site-c" style="text-align:right">${dl?dfr(dl):''}</div><div class="meta">${P.map(p=>chipV(p,lastOf(p))).join('')}</div>
     ${n?`<div style="grid-column:1/-1"><div class="bars">${['vert','bleu','orange','rouge'].map(k=>`<i style="width:${c[k]/n*100}%;background:${COL[k]}"></i>`).join('')}</div></div>`:''}</div>`).join('')}</div>
-  <p class="note">Couleurs selon les paliers provisoires (à valider avec l'ARS) : vert = cible, bleu = élevé, orange = à surveiller, rouge = à traiter. Pour le dioxyde, la valeur affichée est le ClO₂.</p>`;
+  <p class="note">Couleurs selon les paliers provisoires (à valider avec l'ARS) : vert = cible, bleu = élevé, orange = à surveiller, rouge = à traiter. ⚠ = sous le minimum Vigipirate (chlore libre 0,3 mg/l en sortie de réservoir et 0,1 mg/l sur le réseau ; ClO₂ 0,15 et 0,05). Pour le dioxyde, la valeur affichée est le ClO₂.</p>`;
 }
 
 /* ── Détail d'un site ── */
@@ -289,23 +294,23 @@ async function detail(id){
   const dx=s.type==='dioxyde',d12=new Date();d12.setFullYear(d12.getFullYear()-1);const lim=d12.toISOString().slice(0,10);
   const stat=p=>{const v=H.filter(m=>m.point_id===p.id&&m.statut==='mesure'&&m.date_releve>=lim).map(m=>val(p,m)).filter(x=>x!=null);
     if(!v.length)return null;const c={};v.forEach(x=>{const pl=palier(p,x);if(pl)c[pl.c]=(c[pl.c]||0)+1;});const so=[...v].sort((a,b)=>a-b);
-    return {n:v.length,med:so[Math.floor(so.length/2)],cible:Math.round((c.vert||0)/v.length*100),rouge:c.rouge||0};};
+    return {n:v.length,med:so[Math.floor(so.length/2)],cible:Math.round((c.vert||0)/v.length*100),rouge:c.rouge||0,vigi:v.filter(x=>sousVigi(p,x)).length};};
   const kp=(a,b,c)=>`<div class="card kpi"><div class="l">${a}</div><div class="v" style="font-size:1.35rem">${b}</div><div class="s">${c}</div></div>`;
   const recents=[...H].reverse().slice(0,12);
   view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Tous les sites</button>`+
    entete(s.nom,`${s.commune} · zone ${s.zone||'–'} · ${dx?'dioxyde de chlore (ClO₂)':'chlore'} · suivi depuis ${H[0]?H[0].date_releve.slice(0,4):'–'}`,'Données › Qualité de l\'eau')+`
   <div class="kpis">${P.map(p=>{const m=H.filter(x=>x.point_id===p.id&&x.statut!=='douteux').pop(),st=stat(p),pl=m&&palier(p,val(p,m));
     return kp(p.nom+' – dernier relevé',m?(m.statut==='arret'?'Arrêt':f(val(p,m))+' <small style="font-size:.8rem;font-weight:500">mg/l</small>'):'–',m?dfr(m.date_releve)+(pl?' · '+pl.l:''):'')
-     +kp(p.nom+' – sur 12 mois',st?st.cible+' % dans la cible':'–',st?`médiane ${f(st.med)} mg/l · ${st.n} relevés${st.rouge?' · '+st.rouge+' en rouge':''}`:'');}).join('')}</div>
+     +kp(p.nom+' – sur 12 mois',st?st.cible+' % dans la cible':'–',st?`médiane ${f(st.med)} mg/l · ${st.n} relevés${st.rouge?' · '+st.rouge+' en rouge':''}${st.vigi?' · <b style="color:var(--bad,#B42318)">'+st.vigi+' sous Vigipirate ('+f(seuilVigi(p))+')</b>':''}`:'');}).join('')}</div>
   <div class="card chart-card"><div class="chart-top"><h2>${dx?'ClO₂':'Chlore libre'} (mg/l)</h2>
     <div class="tools" style="margin:0">${P.length>1?`<div class="lieux">${P.map(p=>`<button class="${lieuSel===p.id?'on':''}" onclick="lieuSel=${p.id};detail(${id})">Cible ${p.nom.toLowerCase()}</button>`).join('')}</div>`:''}
       ${[1,2,5,'tout'].map(n=>`<button class="chip ${win.span===n?'on':''}" onclick="win.span=${typeof n==='number'?n:"'tout'"};detail(${id})">${n==='tout'?'Tout':n+(n>1?' ans':' an')}</button>`).join('')}
       <div class="pan"><button onclick="if(win.span!=='tout'){win.end-=win.span;detail(${id})}" aria-label="Période précédente">‹</button><span id="per"></span><button onclick="if(win.span!=='tout'){win.end+=win.span;detail(${id})}" aria-label="Période suivante">›</button></div></div></div>
     <div class="chart-box"><canvas id="cv"></canvas></div>
-    <div class="legend-note">Bandes de couleur : paliers du lieu sélectionné (provisoires). Les valeurs douteuses de l'historique ne sont pas tracées.</div></div>
+    <div class="legend-note">Bandes de couleur : paliers du lieu sélectionné (provisoires). Ligne rouge pointillée : minimum Vigipirate du lieu sélectionné (sortie de réservoir / réseau). Les valeurs douteuses de l'historique ne sont pas tracées.</div></div>
   <div class="card pts-wrap"><table class="recent"><thead><tr><th>Date</th><th>Lieu</th><th class="num">${dx?'ClO₂':'Cl libre'}</th>${dx?'':'<th class="num">Cl total</th>'}<th class="num">Turb.</th><th class="num">T °C</th><th>Réglage / %</th><th>Agent</th><th>Observations</th></tr></thead><tbody>
   ${recents.map(m=>{const p=P.find(x=>x.id===m.point_id),pl=palier(p,val(p,m));return `<tr><td>${dfr(m.date_releve)}</td><td>${p.nom}${m.variante?' ('+esc(m.variante)+')':''}</td>
-    <td class="num">${m.statut==='arret'?'Arrêt':`<span class="badge ${pl?BADGE[pl.c]:'b-mute'}">${f(val(p,m))}</span>`}</td>${dx?'':`<td class="num">${f(m.chlore_total)}</td>`}
+    <td class="num">${m.statut==='arret'?'Arrêt':`<span class="badge ${pl?BADGE[pl.c]:'b-mute'}" ${sousVigi(p,val(p,m))?'title="Sous le minimum Vigipirate ('+f(seuilVigi(p))+' mg/l)"':''}>${f(val(p,m))}${sousVigi(p,val(p,m))?' ⚠':''}</span>`}</td>${dx?'':`<td class="num">${f(m.chlore_total)}</td>`}
     <td class="num">${f(m.turbidite)}</td><td class="num">${f(m.temperature,1)}</td><td>${[m.reglage,m.pourcentage!=null?m.pourcentage+' %':null].filter(Boolean).join(' · ')||'–'}</td>
     <td>${m.agent?esc(m.agent.split('@')[0]):'–'}</td><td>${m.statut==='douteux'?'<span class="badge b-mute">douteux</span> ':''}${esc(m.observations)}</td></tr>`;}).join('')}
   </tbody></table></div>`;
@@ -321,9 +326,11 @@ function dessiner(s,P,H){
   const vals=H.filter(m=>m.statut==='mesure').map(m=>val(P.find(p=>p.id===m.point_id),m)).filter(x=>x!=null);
   const ymax=Math.ceil(Math.min(Math.max(0.5,...vals.slice(-200))*1.1,2)*10)/10;
   const bandes={id:'bandes',beforeDraw(c){const {ctx,chartArea:a,scales:{y}}=c;ctx.save();for(const [lo,hi,col] of pal){const yt=y.getPixelForValue(hi==null?ymax:Math.min(hi,ymax)),yb=y.getPixelForValue(lo);if(yb<a.top)continue;ctx.fillStyle=FOND[col];ctx.fillRect(a.left,Math.max(yt,a.top),a.right-a.left,Math.min(yb,a.bottom)-Math.max(yt,a.top));}ctx.restore();}};
+  const sv=seuilVigi(sel);
+  const vigiLigne={id:'vigi',afterDraw(c){const {ctx,chartArea:a,scales:{y}}=c;if(sv>ymax)return;const yy=y.getPixelForValue(sv);ctx.save();ctx.strokeStyle=COL.rouge;ctx.lineWidth=1.3;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(a.left,yy);ctx.lineTo(a.right,yy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=COL.rouge;ctx.font='11px Public Sans, sans-serif';ctx.textAlign='right';ctx.fillText('Minimum Vigipirate '+sv.toLocaleString('fr-FR')+' mg/l',a.right-4,yy-4);ctx.restore();}};
   const ds=P.map((p,i)=>({label:p.nom,data:H.filter(m=>m.point_id===p.id&&m.statut==='mesure'&&val(p,m)!=null).map(m=>({x:Date.parse(m.date_releve),y:Math.min(val(p,m),ymax)})).filter(o=>o.x>=t0&&o.x<t1),
     borderColor:i?'#2F6F9F':'#B84712',backgroundColor:i?'#2F6F9F':'#B84712',borderWidth:p.id===lieuSel?2.2:1.2,pointRadius:p.id===lieuSel?2.5:1.5,tension:.2}));
-  chart=new Chart(document.getElementById('cv'),{type:'line',data:{datasets:ds},plugins:[bandes],
+  chart=new Chart(document.getElementById('cv'),{type:'line',data:{datasets:ds},plugins:[bandes,vigiLigne],
     options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'nearest',intersect:false},
       scales:{x:{type:'linear',min:t0,max:t1,grid:{color:'#EFEAE3'},ticks:{maxTicksLimit:8,callback:v=>new Date(v).toLocaleDateString('fr-FR',win.span==='tout'||win.span>2?{year:'numeric'}:{month:'short',year:'2-digit'})}},
         y:{min:0,max:ymax,title:{display:true,text:'mg/l'},grid:{color:'#EFEAE3'},ticks:{callback:v=>v.toLocaleString('fr-FR')}}},
