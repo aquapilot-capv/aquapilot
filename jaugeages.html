@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="profil.js"></script>
+<script src="menu.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
@@ -184,16 +185,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
       <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
       <div><b>AquaPilot</b><small>Eau potable</small></div>
     </div>
-    <nav class="nav">
-      <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
-      <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
-      <a href="index.html#donnees" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
-      <a href="index.html#maintenance"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
-      <a href="documentation.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
-      <a href="fiches.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
-      <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
-      <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
-    </nav>
+    <nav class="nav" id="sidenav"></nav>
     <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
   </aside>
 
@@ -202,12 +194,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
   </main>
 </div>
 
-<nav class="bnav">
-  <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
-  <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
-  <a href="index.html#donnees" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
-  <a href="index.html#afaire"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
-</nav>
+<nav class="bnav" id="bnav"></nav>
 
 <script>
 const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
@@ -223,7 +210,7 @@ async function start(){
   if(!session){document.getElementById('login').classList.remove('off');return;}
   document.getElementById('login').classList.add('off');
   document.getElementById('who').textContent=session.user.email;
-  await chargerProfil(db,session.user);if(niv('jaugeages')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
+  await chargerProfil(db,session.user);montrerMenu('donnees');if(niv('jaugeages')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
   await charger(); route();
 }
 async function login(){

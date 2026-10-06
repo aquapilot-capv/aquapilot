@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="profil.js"></script>
+<script src="menu.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -214,16 +215,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
       <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
       <div><b>AquaPilot</b><small>Eau potable</small></div>
     </div>
-    <nav class="nav">
-      <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
-      <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
-      <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
-      <a href="index.html#maintenance"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
-      <a href="documentation.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
-      <a href="fiches.html" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
-      <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
-      <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
-    </nav>
+    <nav class="nav" id="sidenav"></nav>
     <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
   </aside>
 
@@ -234,12 +226,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
 
 <div class="toast" id="toast"></div>
 <div class="lb" id="lb" onclick="this.classList.remove('on')"><img id="lbi" alt=""></div>
-<nav class="bnav">
-  <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
-  <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
-  <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
-  <a href="index.html#afaire"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
-</nav>
+<nav class="bnav" id="bnav"></nav>
 
 <script>
 const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
@@ -269,7 +256,7 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   document.getElementById('login').classList.add('off');document.getElementById('who').textContent=session.user.email;
-  ME=session.user;await chargerProfil(db,ME);if(niv('projets')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès aux fiches projets.');return;}
+  ME=session.user;await chargerProfil(db,ME);montrerMenu('projets');if(niv('projets')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès aux fiches projets.');return;}
   await charger();route();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
