@@ -1,13 +1,13 @@
 /* Profil et droits de l'utilisateur connecté — partagé par toutes les pages.
    Niveaux : 0 aucun · 1 consultation · 2 saisie · 3 gestion
    L'affichage s'adapte, mais c'est la base de données qui fait réellement respecter ces droits. */
-const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance'};
+const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',compteurs:'Index compteurs',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance'};
 const ROLES={super_admin:'Super admin',chef_equipe:'Chef d\'équipe',agent:'Agent terrain',consultant:'Consultant'};
 const NIVEAUX=['Aucun','Consultation','Saisie','Gestion'];
 let PROFIL=null;
 function niveauParDefaut(role,m){
   if(role==='super_admin'||role==='chef_equipe')return 3;
-  if(role==='agent')return ['jaugeages','piezos','traitement','projets','maintenance'].includes(m)?2:1;
+  if(role==='agent')return ['jaugeages','piezos','traitement','compteurs','projets','maintenance'].includes(m)?2:1;
   return 1;
 }
 function niv(m){
