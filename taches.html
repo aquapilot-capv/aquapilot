@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>À faire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-soft:#FBE9DC;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4; --blue:#2F6F9F; --blue-soft:#E3EEF7;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;min-height:100%}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* Charpente (identique aux autres pages) */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute)}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav svg{width:28px;height:28px;margin:-4px;flex:none}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.side .who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.side .who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0;max-width:1180px}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+.crumb a{color:var(--mute);text-decoration:none}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;align-items:flex-end;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.head-l{display:flex;gap:14px;align-items:center}
+.hico{width:56px;height:56px;border-radius:14px;flex:none}
+.bnav{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search,.sel,.inp{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font:inherit;color:var(--ink)}
+.search{flex:1;min-width:180px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:500;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip small{opacity:.65;font-weight:600;margin-left:3px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:none;padding:10px 16px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem}
+.btn-p{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:600}
+.btn-p:disabled{opacity:.5}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}.b-mute{background:#EFEBE5;color:var(--mute)}.b-blue{background:var(--blue-soft);color:var(--blue)}
+.note{font-size:.8rem;color:var(--mute);margin-top:12px}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:.86rem;font-weight:500;margin-bottom:14px}
+
+/* Indicateurs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:14px 18px}
+.kpi .l{font-size:.78rem;color:var(--mute);font-weight:500}
+.kpi .v{font-size:1.5rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.78rem;color:var(--mute)}
+
+/* Liste */
+.gh{display:flex;justify-content:space-between;gap:8px;padding:9px 14px;background:#F7F3EE;font-size:.78rem;font-weight:700;color:var(--mute);border-bottom:1px solid var(--line)}
+.trow{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;align-items:start}
+.trow:last-child{border-bottom:none}
+.trow:hover{background:#FBF8F4}
+.trow.clos{opacity:.72}
+.tt{font-weight:600;white-space:pre-line;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ts{font-size:.8rem;color:var(--mute)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.pcol{padding-top:1px}
+
+/* Fenêtres */
+dialog{border:none;border-radius:16px;padding:22px;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto;color:var(--ink);font-family:var(--font);max-height:92vh;overflow:auto}
+dialog::backdrop{background:rgba(38,34,30,.45)}
+dialog h2{font-size:1.1rem;margin-bottom:12px}
+dialog .f{margin-bottom:12px}dialog .f>label,.lab{display:block;font-size:.78rem;font-weight:600;margin-bottom:4px}
+dialog .f .inp,dialog .f .sel{width:100%}
+textarea.inp{resize:vertical;min-height:84px}
+dialog .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.btn-d{background:var(--bad-soft);color:var(--bad);border:none;border-radius:10px;padding:10px 14px;font-weight:600;margin-right:auto}
+.two-c{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:6px}
+.seg label{position:relative;flex:1;text-align:center;border:1px solid var(--line);border-radius:10px;padding:9px 6px;font-weight:600;font-size:.85rem;cursor:pointer;margin:0!important}
+.seg input,.ck input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.seg label:has(input:focus-visible),.ck:has(input:focus-visible){outline:2px solid var(--acc);outline-offset:2px}
+.cks{display:flex;flex-wrap:wrap;gap:6px}
+.ck{position:relative;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.84rem;cursor:pointer}
+.ck:has(input:checked){background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:600}
+.grp-t{font-size:.72rem;font-weight:700;color:var(--mute);margin:8px 0 4px}
+.more{border:none;background:none;color:var(--acc);font-weight:600;padding:0;margin:2px 0 10px}
+.etat{background:#FBF9F6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.etat .inp{padding:7px 10px}
+
+/* Réglages */
+.tw{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:.74rem;font-weight:600;color:var(--mute);text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#FBF9F6}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:.86rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.exp{padding:18px;margin-bottom:16px}
+.exp h2{font-size:1.02rem;margin-bottom:10px}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:.88rem;font-weight:500;transition:.2s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0);opacity:1}
+.fab[hidden]{display:none!important}
+.fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom,0));z-index:15;border:none;background:var(--acc);color:#fff;border-radius:999px;padding:14px 20px;font-weight:700;box-shadow:0 6px 20px rgba(184,71,18,.4);display:none}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}.side{display:none}
+  main{padding:calc(16px + env(safe-area-inset-top,0)) 14px calc(90px + env(safe-area-inset-bottom,0))}
+  h1{font-size:1.4rem}.hico{width:46px;height:46px}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:10px 14px}.kpi .v{font-size:1.25rem}
+  .head .btn-p{display:none}.fab{display:block}
+  .two-c{grid-template-columns:1fr}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}.bnav svg{width:32px;height:32px;margin:-4px}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.toast{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-home" viewBox="0 0 96 96"><path d="M26 46 48 28l22 18v24H56V56H40v14H26z"/></symbol>
+  <symbol id="ic-releves" viewBox="0 0 96 96"><path d="M38 24h20v8H38zM34 28h-6v44h40V28h-6M38 46h20M38 56h20M38 66h12"/></symbol>
+  <symbol id="ic-maintenance" viewBox="0 0 96 96"><path d="M57 26a13 13 0 0 0-12 17L27 61a5.5 5.5 0 0 0 8 8l18-18a13 13 0 0 0 17-12l-8 5-7-7z"/></symbol>
+  <symbol id="ic-afaire" viewBox="0 0 96 96"><path d="M28 34l5 5 9-10M28 54l5 5 9-10M50 35h18M50 55h18"/></symbol>
+  <symbol id="ic-donnees" viewBox="0 0 96 96"><path d="M26 70h44M32 62V50M44 62V36M56 62V44M68 62V28"/></symbol>
+  <symbol id="ic-docs" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38"/></symbol>
+  <symbol id="ic-projets" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z"/></symbol>
+  <symbol id="ic-planning" viewBox="0 0 96 96"><path d="M26 32h44v38H26zM26 42h44M36 26v10M60 26v10M34 52h6M46 52h6M58 52h6M34 61h6M46 61h6"/></symbol>
+  <symbol id="ic-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
+  <symbol id="i-tch" viewBox="0 0 96 96"><path d="M28 34l5 5 9-10M28 54l5 5 9-10M50 35h18M50 55h18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+</svg>
+
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav">
+      <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+      <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+      <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+      <a href="index.html#maintenance"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
+      <a href="taches.html" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
+      <a href="documentation.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
+      <a href="fiches.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
+      <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
+      <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
+    </nav>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+  <main>
+    <div id="view"><div class="loading"><div class="spin"></div>Chargement des tâches…</div></div>
+  </main>
+</div>
+
+<nav class="bnav">
+  <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+  <a href="index.html#releves"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+  <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+  <a href="taches.html" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
+</nav>
+<button class="fab" id="fab" onclick="dlgTache()" hidden>+ Tâche</button>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+
+const PRIO={1:['P1','Urgente','b-bad'],2:['P2','Normale','b-warn'],3:['P3','Peu urgente','b-mute']};
+const STATUTS=[['a_faire','À planifier'],['planifie','Planifiées'],['fait','Faites'],['abandonne','Abandonnées'],['tous','Toutes']];
+const STATUT_L={a_faire:'À faire',planifie:'Planifiée',fait:'Faite',abandonne:'Abandonnée'};
+const SITES={RESERVOIR:'Réservoir',STATION:'Station',REGARD:'Regard',SOURCE:'Source',USINE:'Usine'};
+const TYPES={agent:'Agents',service:'Services',entreprise:'Entreprises',autre:'Autres'};
+const DUREES={demi:'½ journée',jour:'1 journée',plus:'Plus d\'une journée'};
+const dfr=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';
+const auj=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const cle=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);});
+
+let user=null,INT=[],INTM={},FAM=[],FAMM={},T=[],EQ={},hors=false,tab='liste',D=null;
+const FIL={statut:'a_faire',prio:0,fam:'',ref:'',eq:'',q:'',groupe:true,lim:100};
+
+/* ── Connexion ── */
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
+  await chargerProfil(db,user);
+  if(niv('taches')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
+  await charger();
+  await envoyerEnAttente();
+  route();
+}
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
+async function logout(){await db.auth.signOut();location.reload();}
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3200);}
+
+/* ── Chargement ── */
+async function toutes(q){let o=[],a=0;while(true){const {data,error}=await q().range(a,a+999);if(error)throw error;o=o.concat(data);if(data.length<1000)break;a+=1000;}return o;}
+function indexer(){INTM=Object.fromEntries(INT.map(i=>[i.id,i]));FAMM=Object.fromEntries(FAM.map(f=>[f.code,f]));}
+async function charger(){
+  const ck='tch-cache-'+user.id;
+  try{
+    const [i,f,t,e]=await Promise.all([toutes(()=>db.from('intervenants').select('*').order('id')),toutes(()=>db.from('tache_familles').select('*').order('ordre')),
+      toutes(()=>db.from('taches').select('*').order('id')),toutes(()=>db.from('tache_equipiers').select('tache_id,intervenant_id').order('tache_id').order('intervenant_id'))]);
+    INT=i;FAM=f;T=t;EQ={};for(const x of e)(EQ[x.tache_id]??=[]).push(x.intervenant_id);hors=false;
+    try{const ouv=T.filter(x=>x.statut==='a_faire'||x.statut==='planifie'),ids=new Set(ouv.map(x=>x.id));
+      const eq={};for(const k of ids)if(EQ[k])eq[k]=EQ[k];localStorage.setItem(ck,JSON.stringify({INT,FAM,T:ouv,EQ:eq}));}catch(_){}
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem(ck));INT=c.INT;FAM=c.FAM;T=c.T;EQ=c.EQ;hors=true;}
+    catch(_){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;throw e;}
+  }
+  indexer();
+}
+
+/* ── Routage ── */
+window.addEventListener('hashchange',route);
+function route(){
+  const h=location.hash.slice(1),m=h.match(/^t=(\d+)/);
+  tab=h==='reglages'&&niv('taches')>=3?'reglages':'liste';
+  page();
+  if(m&&T.find(x=>x.id===+m[1]))dlgTache(+m[1]);
+}
+const nomI=id=>(INTM[id]||{}).nom||'?';
+function entete(){return `<div class="crumb"><a href="index.html">Accueil</a> › À faire</div><div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-tch" style="color:var(--acc)"/></svg><div><h1>À faire</h1><div class="sub">Tâches du service : celles qui attendent d'être planifiées, et l'historique</div></div></div>${niv('taches')>=2?'<button class="btn-p" onclick="dlgTache()">+ Tâche</button>':''}</div>`;}
+function onglets(){return niv('taches')>=3?`<div class="tabs"><button class="${tab==='liste'?'on':''}" onclick="location.hash=''">Tâches</button><button class="${tab==='reglages'?'on':''}" onclick="location.hash='reglages'">Réglages</button></div>`:'';}
+function page(){
+  const att=lireFile().length;
+  view.innerHTML=entete()+(hors?'<div class="banner">Hors connexion : seules les tâches à faire sont disponibles (dernières données connues). Les nouvelles tâches seront envoyées dès que le réseau revient.</div>':'')+
+    (att?`<div class="banner">${att} tâche${att>1?'s':''} en attente d'envoi (gardée${att>1?'s':''} sur ce téléphone).</div>`:'')+onglets()+'<div id="corps"></div>';
+  document.getElementById('fab').hidden=niv('taches')<2||tab!=='liste';
+  ({liste:vueListe,reglages:vueReglages})[tab]();
+}
+
+/* ═══ LISTE ═══ */
+const equipiers=id=>EQ[id]||[];
+function filtre(t){
+  if(FIL.statut!=='tous'&&t.statut!==FIL.statut)return false;
+  if(FIL.prio&&t.priorite!==FIL.prio)return false;
+  if(FIL.fam&&t.famille!==FIL.fam)return false;
+  if(FIL.ref){const f=FAMM[t.famille];if(!f||String(f.referent_id)!==FIL.ref)return false;}
+  if(FIL.eq==='none'){if(equipiers(t.id).length)return false;}else if(FIL.eq&&!equipiers(t.id).includes(+FIL.eq))return false;
+  const q=FIL.q.trim().toLowerCase();
+  if(q){const f=FAMM[t.famille];const s=[t.travaux,t.site_nom,t.site_type,t.code_classeur,f&&f.libelle,t.programmation].join(' ').toLowerCase();if(!q.split(/\s+/).every(w=>s.includes(w)))return false;}
+  return true;
+}
+const triOuvert=(a,b)=>a.priorite-b.priorite||(a.annee||9999)-(b.annee||9999)||a.id-b.id;
+const triFait=(a,b)=>(b.fait_le||'').localeCompare(a.fait_le||'')||b.id-a.id;
+function setF(k,v){FIL[k]=v;FIL.lim=100;vueListe();}
+function vueListe(){
+  const cnt=s=>T.filter(t=>t.statut===s).length,ouv=T.filter(t=>t.statut==='a_faire');
+  const an=new Date().getFullYear();
+  const kp=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
+  const refs=[...new Set(FAM.map(f=>f.referent_id).filter(Boolean))];
+  const eqIds=[...new Set(Object.values(EQ).flat())].sort((a,b)=>nomI(a).localeCompare(nomI(b),'fr'));
+  let L=T.filter(filtre).sort(FIL.statut==='fait'||FIL.statut==='abandonne'?triFait:triOuvert);
+  const total=L.length;L=L.slice(0,FIL.lim);
+  const groupe=FIL.groupe&&(FIL.statut==='a_faire'||FIL.statut==='planifie');
+  let h='';
+  if(groupe){
+    const G={};for(const t of L){const k=(t.site_nom||'(site non précisé)');(G[k]??=[]).push(t);}
+    const ks=Object.keys(G).sort((a,b)=>Math.min(...G[a].map(x=>x.priorite))-Math.min(...G[b].map(x=>x.priorite))||G[b].length-G[a].length||a.localeCompare(b,'fr'));
+    for(const k of ks){const g=G[k];h+=`<div class="gh"><span>${esc(k)}${g[0].site_type?' · '+esc(g[0].site_type.toLowerCase()):''}</span><span>${g.length} tâche${g.length>1?'s':''}</span></div>`+g.map(ligne).join('');}
+  }else h=L.map(ligne).join('');
+  corps.innerHTML=`${FIL.statut==='a_faire'?`<div class="kpis">${kp('À planifier',ouv.length,'dans la boîte')}${kp('Urgentes (P1)',ouv.filter(t=>t.priorite===1).length,'à traiter en premier')}
+      ${kp('Sans équipier',ouv.filter(t=>!equipiers(t.id).length).length,'à attribuer')}${kp('Anciennes',ouv.filter(t=>t.annee&&t.annee<an-1).length,'constatées avant '+(an-1))}</div>`:''}
+    <div class="tools">${STATUTS.map(([k,l])=>`<button class="chip ${FIL.statut===k?'on':''}" onclick="setF('statut','${k}')">${l}${k==='tous'?'':`<small>${cnt(k)}</small>`}</button>`).join('')}</div>
+    <div class="tools">${[0,1,2,3].map(p=>`<button class="chip ${FIL.prio===p?'on':''}" onclick="setF('prio',${p})">${p?PRIO[p][0]+' '+PRIO[p][1]:'Toutes priorités'}</button>`).join('')}
+      <select class="sel" onchange="setF('fam',this.value)"><option value="">Toutes familles</option>${FAM.map(f=>`<option value="${esc(f.code)}" ${FIL.fam===f.code?'selected':''}>${esc(f.libelle)}</option>`).join('')}</select>
+      ${refs.length?`<select class="sel" onchange="setF('ref',this.value)"><option value="">Tous référents</option>${refs.map(r=>`<option value="${r}" ${FIL.ref==String(r)?'selected':''}>Référent : ${esc(nomI(r))}</option>`).join('')}</select>`:''}
+      <select class="sel" onchange="setF('eq',this.value)"><option value="">Tous équipiers</option><option value="none" ${FIL.eq==='none'?'selected':''}>Sans équipier</option>${eqIds.map(i=>`<option value="${i}" ${FIL.eq==String(i)?'selected':''}>${esc(nomI(i))}</option>`).join('')}</select></div>
+    <div class="tools"><input class="search" id="q" placeholder="Rechercher : site, travaux, code…" value="${esc(FIL.q)}" oninput="FIL.q=this.value;FIL.lim=100;clearTimeout(window._qt);window._qt=setTimeout(()=>{const p=this.selectionStart;vueListe();const e=document.getElementById('q');e.focus();e.setSelectionRange(p,p);},250)">
+      ${FIL.statut==='a_faire'||FIL.statut==='planifie'?`<button class="chip ${FIL.groupe?'on':''}" onclick="FIL.groupe=!FIL.groupe;vueListe()" title="Les tâches d'un même site sont regroupées : pratique pour y passer une seule fois">Regrouper par site</button>`:''}</div>
+    <div class="card" style="overflow:hidden">${h||'<div class="loading">Aucune tâche ne correspond.</div>'}</div>
+    ${total>L.length?`<p class="note"><button class="btn-l" onclick="FIL.lim+=200;vueListe()">Afficher plus (${total-L.length} restantes)</button></p>`:`<p class="note">${total} tâche${total>1?'s':''}.</p>`}`;
+}
+function ligne(t){
+  const p=PRIO[t.priorite]||PRIO[2],f=FAMM[t.famille],eq=equipiers(t.id),clos=t.statut==='fait'||t.statut==='abandonne';
+  const meta=[t.site_type?t.site_type.toLowerCase():'',t.site_nom,f&&f.libelle,t.constate_par?'constaté par '+nomI(t.constate_par):'',t.annee||''].filter(Boolean).map(esc).join(' · ');
+  return `<div class="trow ${clos?'clos':''}" role="button" tabindex="0" onclick="dlgTache(${t.id})" onkeydown="if(event.key==='Enter')dlgTache(${t.id})"><div class="pcol"><span class="badge ${p[2]}">${p[0]}</span></div>
+    <div><div class="tt">${esc(t.travaux)}</div><div class="ts">${meta}</div>
+    <div class="chips">${eq.map(i=>`<span class="badge b-blue">${esc(nomI(i))}</span>`).join('')||(clos?'':'<span class="badge b-mute">non attribuée</span>')}
+      ${t.statut==='fait'?`<span class="badge b-ok">faite le ${dfr(t.fait_le)}</span>`:t.statut==='abandonne'?'<span class="badge b-mute">abandonnée</span>':t.statut==='planifie'?'<span class="badge b-ok">planifiée</span>':''}
+      ${t.reportee_nb>0?`<span class="badge b-warn">reportée ${t.reportee_nb}×</span>`:''}${t.echeance?`<span class="badge b-warn">pour le ${dfr(t.echeance)}</span>`:''}
+      ${t.programmation?`<span class="badge b-mute" title="Note de programmation du classeur">${esc(t.programmation)}</span>`:''}${t.duree_estimee?`<span class="badge b-mute">${DUREES[t.duree_estimee]}</span>`:''}</div></div></div>`;
+}
+
+/* ═══ FENÊTRE TÂCHE ═══ */
+const peutT=t=>!t.id||peutModifier('taches',t,user);
+function dlgTache(id){
+  const t=id?T.find(x=>x.id===id):{priorite:2,statut:'a_faire',travaux:'',site_type:'RESERVOIR',site_nom:'',famille:'',constate_par:null,echeance:null,duree_estimee:null,programmation:''};
+  if(!t)return;
+  const edit=peutT(t),ro=edit?'':'disabled',eq=new Set(equipiers(id||0));D={id,eq,t};
+  const sites=[...new Set(T.map(x=>x.site_nom).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const actifs=INT.filter(i=>i.actif||eq.has(i.id)||i.id===t.constate_par);
+  const ck=Object.entries(TYPES).map(([ty,l])=>{const L=actifs.filter(i=>i.type===ty);return L.length?`<div class="grp-t">${l}</div><div class="cks">${L.map(i=>`<label class="ck"><input type="checkbox" value="${i.id}" ${eq.has(i.id)?'checked':''} ${ro}> ${esc(i.nom)}${i.actif?'':' (inactif)'}</label>`).join('')}</div>`:'';}).join('');
+  const nouveau=!id,det=id||t.programmation||t.echeance||t.duree_estimee;
+  dlg.innerHTML=`<h2>${id?'Tâche n° '+id:'Nouvelle tâche'}${id?` <span class="badge ${t.statut==='fait'?'b-ok':'b-mute'}">${STATUT_L[t.statut]}</span>`:''}</h2>
+   <div class="f"><label for="t-trav">Travaux à réaliser</label><textarea class="inp" id="t-trav" ${ro} placeholder="Ce qu'il y a à faire, en une ou deux phrases">${esc(t.travaux)}</textarea></div>
+   <div class="f"><label>Priorité</label><div class="seg">${[1,2,3].map(p=>`<label><input type="radio" name="t-prio" value="${p}" ${t.priorite===p?'checked':''} ${ro}> ${PRIO[p][0]} · ${PRIO[p][1]}</label>`).join('')}</div></div>
+   <div class="two-c"><div class="f"><label for="t-st">Type d'ouvrage</label><select class="sel" id="t-st" ${ro}><option value="">–</option>${Object.entries(SITES).map(([k,l])=>`<option value="${k}" ${t.site_type===k?'selected':''}>${l}</option>`).join('')}</select></div>
+     <div class="f"><label for="t-sn">Site</label><input class="inp" id="t-sn" list="t-sites" value="${esc(t.site_nom||'')}" ${ro} placeholder="ex. BARTHELON"><datalist id="t-sites">${sites.map(s=>`<option value="${esc(s)}">`).join('')}</datalist></div></div>
+   <div class="f"><label for="t-fam">Famille</label><select class="sel" id="t-fam" ${ro}><option value="">–</option>${FAM.map(f=>`<option value="${esc(f.code)}" ${t.famille===f.code?'selected':''}>${esc(f.libelle)}</option>`).join('')}</select></div>
+   <div class="f"><label>Équipiers (qui s'en occupe)</label>${ck}</div>
+   ${nouveau?'<button class="more" type="button" onclick="document.getElementById(\'t-det\').hidden=false;this.hidden=true">+ Plus de détails</button>':''}
+   <div id="t-det" ${nouveau&&!det?'hidden':''}>
+     <div class="f"><label for="t-cp">Constaté par</label><select class="sel" id="t-cp" ${ro}><option value="">–</option>${actifs.map(i=>`<option value="${i.id}" ${t.constate_par===i.id?'selected':''}>${esc(i.nom)}</option>`).join('')}</select></div>
+     <div class="two-c"><div class="f"><label for="t-ech">Échéance (facultatif)</label><input class="inp" type="date" id="t-ech" value="${t.echeance||''}" ${ro}></div>
+       <div class="f"><label for="t-du">Durée estimée</label><select class="sel" id="t-du" ${ro}><option value="">–</option>${Object.entries(DUREES).map(([k,l])=>`<option value="${k}" ${t.duree_estimee===k?'selected':''}>${l}</option>`).join('')}</select></div></div>
+     <div class="f"><label for="t-pg">Note de programmation</label><input class="inp" id="t-pg" value="${esc(t.programmation||'')}" ${ro} placeholder="ex. Été 2026, avec une entreprise"></div></div>
+   ${id&&edit?`<div class="etat">${t.statut==='fait'||t.statut==='abandonne'?`<button class="btn-l" onclick="changerStatut('a_faire')">Remettre à faire</button>`
+      :`<span class="lab" style="margin:0">Faite le</span><input type="date" class="inp" id="t-fait" value="${auj()}" max="${auj()}"><button class="btn-l" onclick="changerStatut('fait')">✓ Marquer faite</button><button class="btn-l" onclick="changerStatut('abandonne')">Abandonner</button>`}
+      ${t.statut==='fait'?`<span class="site-c">faite le ${dfr(t.fait_le)}</span>`:''}</div>`:''}
+   ${id&&!edit?'<p class="note">Tu peux consulter cette tâche ; seule la personne qui l\'a créée (pendant 30 jours) ou la gestion peut la modifier.</p>':''}
+   ${id?`<p class="note">${t.code_classeur?'Code du classeur : '+esc(t.code_classeur)+' · ':''}${t.source==='import'?'importée du classeur Tâches AEP':'saisie dans AquaPilot'}${t.annee?' · constatée en '+t.annee:''}${t.reportee_nb?' · reportée '+t.reportee_nb+' fois':''}</p>`:''}
+   <div class="acts">${id&&niv('taches')>=3?'<button class="btn-d" onclick="supprTache()">Supprimer</button>':''}<button class="btn-l" onclick="dlg.close()">${edit?'Annuler':'Fermer'}</button>${edit?`<button class="btn-p" id="t-ok" onclick="enregistrerTache()">Enregistrer</button>`:''}</div>`;
+  dlg.showModal();
+  if(nouveau)setTimeout(()=>{const e=document.getElementById('t-trav');if(e)e.focus();},50);
+}
+dlg.addEventListener('close',()=>{if(location.hash.startsWith('#t='))history.replaceState(null,'',location.pathname+location.search);});
+function lireForm(){
+  const v=id=>document.getElementById(id).value.trim();
+  const prio=document.querySelector('input[name="t-prio"]:checked');
+  return {p:{travaux:v('t-trav'),priorite:prio?+prio.value:2,site_type:v('t-st')||null,site_nom:v('t-sn').toUpperCase()||null,famille:v('t-fam')||null,
+    constate_par:v('t-cp')?+v('t-cp'):null,echeance:v('t-ech')||null,duree_estimee:v('t-du')||null,programmation:v('t-pg')||null},
+    eq:[...dlg.querySelectorAll('.cks input:checked')].map(x=>+x.value)};
+}
+const horsReseau=e=>!navigator.onLine||/fetch|network|load failed/i.test((e&&e.message)||'');
+async function enregistrerTache(){
+  const {p,eq}=lireForm();
+  if(!p.travaux){alert('Décris les travaux à réaliser.');document.getElementById('t-trav').focus();return;}
+  const ok=document.getElementById('t-ok');ok.disabled=true;
+  if(!D.id){
+    const row={...p,source:'manuelle',cle_client:cle()};
+    const r=await creer(row,eq);
+    if(r==='attente'){dlg.close();toast('Tâche gardée sur le téléphone, envoi dès que le réseau revient');page();return;}
+    if(r!=='ok'){ok.disabled=false;alert(r);return;}
+    dlg.close();await charger();page();toast('Tâche créée');return;
+  }
+  const {error}=await db.from('taches').update(p).eq('id',D.id);
+  if(error){ok.disabled=false;alert(horsReseau(error)?'Hors connexion : la modification n\'a pas pu être enregistrée.':refusDroits(error)?'Modification refusée.':error.message);return;}
+  const avant=new Set(equipiers(D.id)),apres=new Set(eq),ajout=eq.filter(i=>!avant.has(i)),retrait=[...avant].filter(i=>!apres.has(i));
+  if(retrait.length){const {error:e2}=await db.from('tache_equipiers').delete().eq('tache_id',D.id).in('intervenant_id',retrait);if(e2){alert('Équipiers : '+e2.message);}}
+  if(ajout.length){const {error:e3}=await db.from('tache_equipiers').insert(ajout.map(i=>({tache_id:D.id,intervenant_id:i})));if(e3){alert('Équipiers : '+e3.message);}}
+  dlg.close();await charger();page();toast('Tâche enregistrée');
+}
+async function creer(row,eq){
+  const {data,error}=await db.from('taches').upsert(row,{onConflict:'cle_client',ignoreDuplicates:true}).select('id');
+  if(error){
+    if(horsReseau(error)){ecrireFileAjout({row,eq});return 'attente';}
+    return refusDroits(error)?'Création refusée.':error.message;}
+  let id=data&&data[0]&&data[0].id;
+  if(!id){const {data:d2}=await db.from('taches').select('id').eq('cle_client',row.cle_client).maybeSingle();id=d2&&d2.id;}   // déjà reçue : on ne la recrée pas
+  if(id&&eq.length){const {error:e2}=await db.from('tache_equipiers').upsert(eq.map(i=>({tache_id:id,intervenant_id:i})),{onConflict:'tache_id,intervenant_id',ignoreDuplicates:true});if(e2)return 'Tâche créée, mais équipiers non enregistrés : '+e2.message;}
+  return 'ok';
+}
+async function changerStatut(s){
+  const p={statut:s,fait_le:s==='fait'?(document.getElementById('t-fait').value||auj()):null};
+  const {error}=await db.from('taches').update(p).eq('id',D.id);
+  if(error){alert(horsReseau(error)?'Hors connexion.':refusDroits(error)?'Modification refusée.':error.message);return;}
+  dlg.close();await charger();page();toast(s==='fait'?'Tâche marquée faite':s==='abandonne'?'Tâche abandonnée':'Tâche remise à faire');
+}
+async function supprTache(){
+  if(!confirm('Supprimer définitivement cette tâche ? (pour l\'écarter, « Abandonner » garde l\'historique)'))return;
+  const {error}=await db.from('taches').delete().eq('id',D.id);
+  if(error){alert(refusDroits(error)?'Suppression refusée.':error.message);return;}
+  dlg.close();await charger();page();toast('Tâche supprimée');
+}
+
+/* ── File d'attente hors connexion (clé anti-doublon cle_client) ── */
+const cleFile=()=>'tch-attente-'+user.id,cleRejets=()=>'tch-rejets-'+user.id;
+function lireFile(){try{return JSON.parse(localStorage.getItem(cleFile()))||[];}catch(e){return[];}}
+function ecrireFile(a){try{localStorage.setItem(cleFile(),JSON.stringify(a));}catch(e){}}
+function ecrireFileAjout(x){ecrireFile([...lireFile(),x]);}
+async function envoyerEnAttente(){
+  const a=lireFile();if(!a.length||!navigator.onLine)return;
+  const reste=[];let n=0;
+  for(const x of a){
+    const r=await creer(x.row,x.eq);
+    if(r==='ok')n++;
+    else if(r==='attente'){reste.push(x);}            // coupure : on réessaiera
+    else{try{const j=JSON.parse(localStorage.getItem(cleRejets()))||[];j.push({...x,erreur:r});localStorage.setItem(cleRejets(),JSON.stringify(j));}catch(e){}}  // refus définitif : gardée à part
+  }
+  // creer() a remis les tâches « coupure » dans la file : on la réécrit proprement
+  ecrireFile(reste);
+  if(n){toast(n+' tâche'+(n>1?'s':'')+' en attente envoyée'+(n>1?'s':''));try{await charger();}catch(e){}if(document.getElementById('corps'))page();}
+}
+window.addEventListener('online',()=>envoyerEnAttente());
+
+/* ═══ RÉGLAGES (gestion) ═══ */
+function vueReglages(){
+  corps.innerHTML=`<div class="card exp"><h2>Intervenants</h2>
+   <div class="tw"><table><thead><tr><th>Nom</th><th>Type</th><th>Actif</th><th>Dans la grille du planning</th><th>Note</th></tr></thead><tbody>
+   ${INT.map(i=>`<tr><td><b>${esc(i.nom)}</b></td><td>${esc(TYPES[i.type]||i.type)}</td>
+     <td><input type="checkbox" ${i.actif?'checked':''} onchange="majInt(${i.id},'actif',this.checked)" aria-label="Actif"></td>
+     <td>${i.type==='agent'?`<input type="checkbox" ${i.en_planning?'checked':''} onchange="majInt(${i.id},'en_planning',this.checked)" aria-label="Dans la grille du planning">`:''}</td>
+     <td class="site-c" style="color:var(--mute);font-size:.8rem">${esc(i.commentaire||'')}</td></tr>`).join('')}
+   </tbody></table></div>
+   <div class="tools" style="margin:14px 0 0"><input class="inp" id="n-nom" placeholder="Nouvel intervenant (ex. une entreprise)" style="flex:1;min-width:200px"><select class="sel" id="n-ty">${Object.entries(TYPES).map(([k,l])=>`<option value="${k}" ${k==='entreprise'?'selected':''}>${l.replace(/s$/,'')}</option>`).join('')}</select><button class="btn-l" onclick="ajouterInt()">Ajouter</button></div>
+   <p class="note">« Actif » : peut être choisi comme équipier. Les anciens agents restent visibles sur les tâches passées. La grille du planning n'affichera que les agents actifs cochés.</p></div>
+  <div class="card exp"><h2>Référent par famille de tâches</h2><div class="tw"><table><thead><tr><th>Famille</th><th>Référent</th></tr></thead><tbody>
+   ${FAM.map(f=>`<tr><td><b>${esc(f.libelle)}</b></td><td><select class="sel" onchange="majFam('${esc(f.code)}',this.value)"><option value="">–</option>${INT.filter(i=>i.actif&&i.type==='agent').map(i=>`<option value="${i.id}" ${f.referent_id===i.id?'selected':''}>${esc(i.nom)}</option>`).join('')}</select></td></tr>`).join('')}
+   </tbody></table></div></div>`;
+}
+async function majInt(id,k,v){const {error}=await db.from('intervenants').update({[k]:v}).eq('id',id);if(error){alert(refusDroits(error)?'Refusé : droit de gestion nécessaire.':error.message);vueReglages();return;}INTM[id][k]=v;toast('Enregistré');}
+async function ajouterInt(){
+  const nom=document.getElementById('n-nom').value.trim();if(!nom)return;
+  const {error}=await db.from('intervenants').insert({nom,type:document.getElementById('n-ty').value});
+  if(error){alert(error.code==='23505'?'Ce nom existe déjà.':refusDroits(error)?'Refusé : droit de gestion nécessaire.':error.message);return;}
+  await charger();vueReglages();toast('Intervenant ajouté');
+}
+async function majFam(code,v){const {error}=await db.from('tache_familles').update({referent_id:v?+v:null}).eq('code',code);if(error){alert(error.message);return;}FAMM[code].referent_id=v?+v:null;toast('Enregistré');}
+start();
+</script>
+</body>
+</html>
