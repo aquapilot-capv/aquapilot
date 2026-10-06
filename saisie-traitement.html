@@ -153,16 +153,30 @@ async function chargerRef(){
 /* ── File hors connexion ── */
 const queue=()=>LS.get('tr-queue',[]);
 function enqueue(op){const q=queue();q.push(op);LS.set('tr-queue',q);}
+const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)});
+/* Refus définitif de la base (donnée invalide, contrainte) : on écarte la saisie au lieu de bloquer toute la file.
+   Les erreurs de réseau, de session ou de schéma restent en file et sont retentées. */
+const rejet=e=>{const c=String(e&&e.code||'');return /^(22|23|42|P0)/.test(c)&&!['42703','42P10','42P01'].includes(c);};
+function ecarter(op,e){const R=LS.get('tr-rejets',[]);R.push({le:new Date().toISOString(),code:e.code||null,erreur:e.message||String(e),op});LS.set('tr-rejets',R.slice(-20));LS.set('tr-queue',queue().slice(1));}
 async function sync(){
   banner();if(!queue().length||sending||!navigator.onLine)return;
   sending=true;banner();
-  try{while(queue().length){const op=queue()[0];
-      if(op.del&&op.del.length){const {error}=await db.from('releves_traitement').delete().in('id',op.del);if(error)throw error;}
-      if(op.rows.length){const {error}=await db.from('releves_traitement').insert(op.rows);if(error)throw error;}
-      LS.set('tr-queue',queue().slice(1));}
+  try{
+    while(queue().length){
+      const q0=queue(),op=q0[0];let neuf=false;
+      op.rows.forEach(r=>{if(!r.cle_client){r.cle_client=uid();neuf=true;}});   // clé fixée avant envoi : un renvoi ne crée pas de doublon
+      if(neuf)LS.set('tr-queue',q0);
+      try{
+        if(op.del&&op.del.length){const {error}=await db.from('releves_traitement').delete().in('id',op.del);if(error)throw error;}
+        if(op.rows.length){const {error}=await db.from('releves_traitement').upsert(op.rows,{onConflict:'cle_client',ignoreDuplicates:true});if(error)throw error;}
+      }catch(e){
+        if(refusDroits(e)||rejet(e)){ecarter(op,e);toast(refusDroits(e)?'Un relevé a été refusé : tes droits ne permettent pas cette modification':'Un relevé a été refusé par la base : '+(e.message||'donnée invalide'));continue;}
+        throw e;
+      }
+      LS.set('tr-queue',queue().slice(1));
+    }
     toast('Relevés envoyés ✓');await chargerRef();if(!FS)route();
-  }catch(e){console.warn(e);
-    if(refusDroits(e)){LS.set('tr-queue',queue().slice(1));sending=false;toast('Un relevé a été refusé : tes droits ne permettent pas cette modification');return sync();}}
+  }catch(e){console.warn(e);}
   sending=false;banner();
 }
 window.addEventListener('online',()=>chargerRef().then(()=>{sync();if(!FS)route();}));

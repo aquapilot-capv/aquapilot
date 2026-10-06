@@ -1,6 +1,6 @@
 // Service worker : garde les écrans et bibliothèques en cache pour le travail sans réseau.
 // Les données (Supabase) ne passent jamais par ce cache.
-const CACHE='portail-eau-v7';
+const CACHE='portail-eau-v8';
 const FILES=['./','./index.html','./profil.js','./saisie-jaugeages.html','./jaugeages.html','./saisie-piezos.html','./piezos.html','./saisie-traitement.html',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(FILES.map(f=>c.add(f)))));self.skipWaiting();});

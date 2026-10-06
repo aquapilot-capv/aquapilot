@@ -159,6 +159,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
 .gal .ph{position:relative;aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:#EFEAE3}
 .gal img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
 .gal .x{position:absolute;top:6px;right:6px;border:none;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:26px;height:26px}
+.mini{border:1px solid var(--line);background:var(--card);border-radius:8px;width:28px;height:28px;color:var(--bad)}
 .warn2{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:.86rem;margin:8px 0}
 </style>
 </head>
@@ -399,7 +400,8 @@ async function retenir(id,src){
   const maj={pression_preconisee:v,source_preconisation:src};
   if(src!=='fabricant'){const s=document.getElementById('k_s'),b=document.getElementById('k_b'),h=document.getElementById('k_h');
     if(s&&nb(s.value)!=null)maj.pression_service=nb(s.value);if(b&&nb(b.value)!=null)maj.pressostat_bas=nb(b.value);if(h&&nb(h.value)!=null)maj.pressostat_haut=nb(h.value);}
-  const {error}=await db.from('ballons').update(maj).eq('id',id);if(error)return toast('Erreur : '+error.message);
+  const {data,error}=await db.from('ballons').update(maj).eq('id',id).select('id');if(error)return toast('Erreur : '+error.message);
+  if(!data.length)return toast('Tes droits ne permettent pas cette modification');
   Object.assign(B.find(x=>x.id===id),maj);toast('Gonflage préconisé enregistré ✓');fiche(id);
 }
 
@@ -419,8 +421,8 @@ async function controler(id){
   if(error)return toast(refusDroits(error)?'Tes droits ne permettent pas cette saisie':'Erreur : '+error.message);
   C.push(data);toast('Contrôle enregistré ✓');fiche(id);
 }
-async function supprCtrl(cid,id){if(!confirm('Supprimer ce contrôle ?'))return;const {error}=await db.from('ballon_controles').delete().eq('id',cid);
-  if(error)return toast('Erreur : '+error.message);C=C.filter(c=>c.id!==cid);fiche(id);}
+async function supprCtrl(cid,id){if(!confirm('Supprimer ce contrôle ?'))return;const {data,error}=await db.from('ballon_controles').delete().eq('id',cid).select('id');
+  if(error)return toast('Erreur : '+error.message);if(!data.length)return toast('Tes droits ne permettent pas cette suppression');C=C.filter(c=>c.id!==cid);fiche(id);}
 
 /* ── Photos : compression avant envoi ── */
 function compresser(file){return new Promise((ok,ko)=>{const u=URL.createObjectURL(file),im=new Image();
@@ -445,9 +447,11 @@ async function galerie(P,gest){
   if(error){gal.innerHTML='<span class="site-c">Photos indisponibles : '+esc(error.message)+'</span>';return;}
   gal.innerHTML=P.map((p,i)=>`<div class="ph"><img src="${data[i].signedUrl}" alt="${esc(p.legende||'Photo du ballon')}" loading="lazy" onclick="lbi.src=this.src;lb.classList.add('on')">${gest?`<button class="x" onclick="supprPhoto(${p.id})" aria-label="Supprimer la photo">✕</button>`:''}</div>`).join('');
 }
-async function supprPhoto(pid){const p=PH.find(x=>x.id===pid);if(!confirm('Supprimer cette photo ?'))return;
-  const r=await db.storage.from('photos').remove([p.chemin]);if(r.error)return toast('Erreur : '+r.error.message);
-  await db.from('ballon_photos').delete().eq('id',pid);PH=PH.filter(x=>x.id!==pid);fiche(p.ballon_id);}
+async function supprPhoto(pid){const p=PH.find(x=>x.id===pid);if(!p||!confirm('Supprimer cette photo ?'))return;
+  const {data,error}=await db.from('ballon_photos').delete().eq('id',pid).select('id');   // la ligne d'abord : si la base refuse, rien n'est perdu
+  if(error)return toast('Erreur : '+error.message);if(!data.length)return toast('Tes droits ne permettent pas cette suppression');
+  await db.storage.from('photos').remove([p.chemin]);   // si ça échoue : fichier orphelin invisible, sans gravité
+  PH=PH.filter(x=>x.id!==pid);fiche(p.ballon_id);}
 
 /* ── Modification de la fiche (gestion) ── */
 function editer(id){
@@ -471,7 +475,8 @@ async function sauver(id){
   for(const k of TXT){const v=document.getElementById('e_'+k).value.trim();m[k]=v||null;}
   if(!m.site_libelle)return toast('Le site est obligatoire');
   m.site_id=+e_site_id.value||null;m.actif=e_actif.checked;if(m.annee_service!=null)m.annee_service=Math.round(m.annee_service);
-  const {error}=await db.from('ballons').update(m).eq('id',id);if(error)return toast('Erreur : '+error.message);
+  const {data,error}=await db.from('ballons').update(m).eq('id',id).select('id');if(error)return toast('Erreur : '+error.message);
+  if(!data.length)return toast('Tes droits ne permettent pas cette modification');
   Object.assign(B.find(x=>x.id===id),m);toast('Fiche enregistrée ✓');location.hash='b='+id;fiche(id);
 }
 start();
