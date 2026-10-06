@@ -219,6 +219,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
 </nav>
 
 <script>
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
 const COL={vert:'#2F7D4F',orange:'#B7791F',rouge:'#B42318',bleu:'#2F6F9F'},FOND={vert:'rgba(47,125,79,.10)',orange:'rgba(183,121,31,.08)',rouge:'rgba(180,35,24,.07)',bleu:'rgba(47,111,159,.08)'};
 const BADGE={vert:'b-ok',orange:'b-warn',rouge:'b-bad',bleu:'b-blue'};
@@ -241,7 +242,7 @@ async function charger(){
     SITES=s;PTS=p.sort((a,b)=>rang(a.nom)-rang(b.nom));
     const d0=new Date();d0.setDate(d0.getDate()-120);
     RECENT=await toutes(()=>db.from('releves_traitement').select('*').gte('date_releve',d0.toISOString().slice(0,10)).order('date_releve'));
-  }catch(e){view.innerHTML=`<div class="card loading">Impossible de charger : ${e.message}</div>`;}
+  }catch(e){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;}
 }
 const val=(p,m)=>p.famille==='dioxyde'?m.clo2:m.chlore_libre;
 function palier(p,v){if(v==null)return null;for(const [a,b,c,l] of (p.params.paliers||[]))if(v>=a&&(b==null||v<b))return {c,l};return null;}
@@ -303,10 +304,10 @@ async function detail(id){
     <div class="chart-box"><canvas id="cv"></canvas></div>
     <div class="legend-note">Bandes de couleur : paliers du lieu sélectionné (provisoires). Les valeurs douteuses de l'historique ne sont pas tracées.</div></div>
   <div class="card pts-wrap"><table class="recent"><thead><tr><th>Date</th><th>Lieu</th><th class="num">${dx?'ClO₂':'Cl libre'}</th>${dx?'':'<th class="num">Cl total</th>'}<th class="num">Turb.</th><th class="num">T °C</th><th>Réglage / %</th><th>Agent</th><th>Observations</th></tr></thead><tbody>
-  ${recents.map(m=>{const p=P.find(x=>x.id===m.point_id),pl=palier(p,val(p,m));return `<tr><td>${dfr(m.date_releve)}</td><td>${p.nom}${m.variante?' ('+m.variante+')':''}</td>
+  ${recents.map(m=>{const p=P.find(x=>x.id===m.point_id),pl=palier(p,val(p,m));return `<tr><td>${dfr(m.date_releve)}</td><td>${p.nom}${m.variante?' ('+esc(m.variante)+')':''}</td>
     <td class="num">${m.statut==='arret'?'Arrêt':`<span class="badge ${pl?BADGE[pl.c]:'b-mute'}">${f(val(p,m))}</span>`}</td>${dx?'':`<td class="num">${f(m.chlore_total)}</td>`}
     <td class="num">${f(m.turbidite)}</td><td class="num">${f(m.temperature,1)}</td><td>${[m.reglage,m.pourcentage!=null?m.pourcentage+' %':null].filter(Boolean).join(' · ')||'–'}</td>
-    <td>${m.agent?m.agent.split('@')[0]:'–'}</td><td>${m.statut==='douteux'?'<span class="badge b-mute">douteux</span> ':''}${m.observations||''}</td></tr>`;}).join('')}
+    <td>${m.agent?esc(m.agent.split('@')[0]):'–'}</td><td>${m.statut==='douteux'?'<span class="badge b-mute">douteux</span> ':''}${esc(m.observations)}</td></tr>`;}).join('')}
   </tbody></table></div>`;
   dessiner(s,P,H);
 }
