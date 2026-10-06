@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="profil.js"></script>
+<script src="menu.js"></script>
 <style>
 :root{
   --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
@@ -218,13 +219,11 @@ const M={
   contacts:{ic:'contacts',label:'Contacts',desc:'Annuaire utile'},
   utilisateurs:{ic:'utilisateurs',label:'Utilisateurs',desc:'Rôles et droits',url:'utilisateurs.html'}
 };
-const SIDE=['root','alertes','releves','donnees','maintenance','docs','projets','planning','contacts','utilisateurs'];
 /* Droits nécessaires pour voir chaque tuile (les dossiers apparaissent s'ils contiennent au moins une tuile visible) */
 const DROIT={alertes:['jaugeages',1],m_antibelier:['maintenance',1],r_compteur:['compteurs',2],d_conso:['compteurs',1],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
   docs:['documentation',1],projets:['projets',1],d_sauvegarde:['gestion'],utilisateurs:['super']};
 function visible(id){const m=M[id];if(!m)return false;if(m.items)return m.items.some(visible);const d=DROIT[id];if(!d)return true;
   if(d[0]==='super')return estSuperAdmin();if(d[0]==='gestion')return estGestionnaire();return niv(d[0])>=d[1];}
-const BOTTOM=[['root','home','Accueil'],['releves','releves','Relevés'],['donnees','donnees','Données'],['afaire','afaire','À faire']];
 
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let user=null,cfg={order:{},hidden:[],density:9},level='root',editing=false,alertes=null,saveT;
@@ -272,9 +271,7 @@ function go(id){
 
 /* ── Rendu ── */
 function render(){
-  document.getElementById('sidenav').innerHTML=SIDE.filter(k=>k==='root'||visible(k)).map(k=>{const m=k==='root'?{ic:'home',label:'Accueil'}:M[k];
-    const href=M[k].url||('#'+(k==='root'?'':k));return `<a href="${href}" class="${level===k?'on':''}">${ic(m.ic)}${m.label}</a>`;}).join('');
-  document.getElementById('bnav').innerHTML=BOTTOM.map(([k,i,l])=>`<a href="#${k==='root'?'':k}" class="${level===k?'on':''}" ${M[k].items||k==='root'?'':`onclick="event.preventDefault();go('${k}')"`}>${ic(i)}${l}</a>`).join('');
+  montrerMenu(level,true);   // menu commun (menu.js)
   if(level==='alertes'){
     view.innerHTML=`<div class="crumb"><a href="#" style="color:inherit">Accueil</a> › Alertes</div>
     <div class="head"><div><h1>Alertes</h1><div class="sub">Ce qui demande ton attention</div></div></div>
