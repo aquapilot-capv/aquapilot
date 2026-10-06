@@ -307,13 +307,23 @@ async function charger(){
     const debut=(new Date().getFullYear()-2)+'-12-01';
     const [c,r]=await Promise.all([toutes(()=>db.from('compteurs').select('*').order('id')),
       toutes(()=>db.from('releves_compteurs').select('*').gte('date_releve',debut).order('date_releve').order('id'))]);
-    CPT=c;REL=grouper(r);FULL={};hors=false;
+    CPT=c;REL=grouper(r);FULL={};hors=false;CHARGEES=new Set();
+    try{const {data:m}=await db.from('releves_compteurs').select('date_releve').order('date_releve').limit(1);if(m&&m[0])MINAN=+m[0].date_releve.slice(0,4);}catch(_){}
     try{const dern={};for(const k in REL){dern[k]=REL[k].slice(-3);}localStorage.setItem(cle,JSON.stringify({CPT,dern}));}catch(e){}
   }catch(e){
     try{const c=JSON.parse(localStorage.getItem(cle));CPT=c.CPT;REL=c.dern;hors=true;}
     catch(_){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;throw e;}
   }
 }
+let MINAN=null,CHARGEES=new Set();
+function fusion(rows){const g=grouper(rows);for(const k in g){const ex=REL[k]||[],ids=new Set(ex.map(x=>x.id));const add=g[k].filter(x=>!ids.has(x.id));if(add.length)REL[k]=ex.concat(add).sort((a,b)=>a.date_releve<b.date_releve?-1:a.date_releve>b.date_releve?1:a.id-b.id);}}
+async function chargerAnnee(y){ // charge à la demande une année passée (+ 1 mois de chaque côté pour les raccords)
+  if(hors||CHARGEES.has(y)||y>=new Date().getFullYear()-1)return;
+  corps.innerHTML='<div class="card loading">Chargement '+y+'…</div>';
+  try{const r=await toutes(()=>db.from('releves_compteurs').select('*').gte('date_releve',(y-1)+'-12-01').lte('date_releve',(y+1)+'-01-31').order('date_releve').order('id'));fusion(r);CHARGEES.add(y);}
+  catch(e){toast('Chargement impossible : '+e.message);}
+}
+async function choisirAnnee(y){await chargerAnnee(y);annee=y;vueConso();}
 async function chargerCompteur(id){
   if(FULL[id]||hors)return;
   const r=await toutes(()=>db.from('releves_compteurs').select('*').eq('compteur_id',id).order('date_releve').order('id'));
@@ -485,7 +495,7 @@ async function envoyerEnAttente(){
 window.addEventListener('online',()=>envoyerEnAttente());
 
 /* ═══ CONSOMMATIONS ═══ */
-function annees(){const s=new Set([new Date().getFullYear()]);for(const k in REL)for(const r of REL[k])s.add(+r.date_releve.slice(0,4));return [...s].sort();}
+function annees(){const s=new Set([new Date().getFullYear()]);for(const k in REL)for(const r of REL[k])s.add(+r.date_releve.slice(0,4));if(MINAN)for(let y=MINAN;y<=new Date().getFullYear();y++)s.add(y);return [...s].sort();}
 function vueConso(){
   const L=filtrer().map(c=>{const S2=segOf(c),M=ventiler(S2,annee);return {c,M,cu:cumul(M),d:dernier(c.id)};});
   const lastM=x=>{for(let m=11;m>=0;m--)if(x.M[m].complet)return x.M[m];return null;};
@@ -499,7 +509,7 @@ function vueConso(){
   for(const x of L){x.M.forEach((m,i)=>{if(m.vol!=null){tot[i].v+=m.vol;tot[i].n+=1;}});totCu+=x.cu.vol||0;}
   const nbj=m=>new Date(annee,m+1,0).getDate();
   const ymax=annees();
-  corps.innerHTML=`<div class="tools"><div style="display:flex;gap:6px;flex-wrap:wrap">${ymax.map(y=>`<button class="chip ${y===annee?'on':''}" onclick="annee=${y};vueConso()">${y}</button>`).join('')}</div>
+  corps.innerHTML=`<div class="tools"><div style="display:flex;gap:6px;flex-wrap:wrap">${ymax.map(y=>`<button class="chip ${y===annee?'on':''}" onclick="choisirAnnee(${y})">${y}</button>`).join('')}</div>
     <div class="lieux" style="display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden">${[['vol','m³ / mois'],['jour','m³ / jour']].map(([k,l])=>`<button class="chip ${FIL.mode===k?'on':''}" style="border:none;border-radius:0" onclick="setF('mode','${k}')">${l}</button>`).join('')}</div>
     <select class="sel" onchange="setF('tri',this.value)"><option value="commune" ${FIL.tri==='commune'?'selected':''}>Tri : commune</option><option value="cumul" ${FIL.tri==='cumul'?'selected':''}>Tri : cumul décroissant</option><option value="dernier" ${FIL.tri==='dernier'?'selected':''}>Tri : dernier mois décroissant</option></select>
     ${niv('compteurs')>=3?'<button class="btn-l" onclick="dlgCompteur()">+ Compteur</button>':''}</div>`+barreFiltres()+
