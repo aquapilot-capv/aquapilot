@@ -191,7 +191,7 @@ const M={
   r_chlore:{ic:'chlore',label:'Tournée chlore',desc:'Chlore et dioxyde',url:'saisie-traitement.html'},
   r_jaugeage:{ic:'jaugeage',label:'Saisir un jaugeage',desc:'Mesure terrain du débit',url:'saisie-jaugeages.html'},
   r_piezo:{ic:'piezo',label:'Relever les piézos',desc:'Niveau de nappe',url:'saisie-piezos.html'},
-  r_compteur:{ic:'compteur',label:'Index compteurs',desc:'Lecture d\'index'},
+  r_compteur:{ic:'compteur',label:'Index compteurs',desc:'Lecture d\'index',url:'compteurs.html'},
   r_uv:{ic:'lampe_uv',label:'Lampes UV',desc:'Heures, état des lampes'},
   maintenance:{ic:'maintenance',label:'Maintenance',desc:'Contrôles périodiques',items:['m_antibelier','m_visite','m_filtres','m_pi']},
   m_antibelier:{ic:'antibelier',label:'Ballons',desc:'Anti-béliers et hydrophores',url:'ballons.html'},
@@ -204,7 +204,7 @@ const M={
   d_nappes:{ic:'piezo',label:'Niveaux de nappes',desc:'Piézomètres, tendances',url:'piezos.html'},
   d_debits:{ic:'debits',label:'Débits / volumes',desc:'Production'},
   d_qnuit:{ic:'qnuit',label:'Débits de nuit',desc:'Recherche de fuites'},
-  d_conso:{ic:'conso',label:'Consommations',desc:'Par secteur'},
+  d_conso:{ic:'conso',label:'Consommations',desc:'Volumes par compteur',url:'compteurs.html#conso'},
   d_qualite:{ic:'chlore',label:'Qualité de l\'eau',desc:'Chlore et dioxyde',url:'traitement.html'},
   d_sauvegarde:{ic:'docs',label:'Sauvegarde',desc:'Exporter toutes les données',url:'sauvegarde.html'},
   docs:{ic:'docs',label:'Documentation',desc:'Notices, procédures, schémas',url:'documentation.html'},
@@ -220,7 +220,7 @@ const M={
 };
 const SIDE=['root','alertes','releves','donnees','maintenance','docs','projets','planning','contacts','utilisateurs'];
 /* Droits nécessaires pour voir chaque tuile (les dossiers apparaissent s'ils contiennent au moins une tuile visible) */
-const DROIT={alertes:['jaugeages',1],m_antibelier:['maintenance',1],r_compteur:['jaugeages',2],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
+const DROIT={alertes:['jaugeages',1],m_antibelier:['maintenance',1],r_compteur:['compteurs',2],d_conso:['compteurs',1],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
   docs:['documentation',1],projets:['projets',1],d_sauvegarde:['gestion'],utilisateurs:['super']};
 function visible(id){const m=M[id];if(!m)return false;if(m.items)return m.items.some(visible);const d=DROIT[id];if(!d)return true;
   if(d[0]==='super')return estSuperAdmin();if(d[0]==='gestion')return estGestionnaire();return niv(d[0])>=d[1];}
