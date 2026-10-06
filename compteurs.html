@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Index compteurs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-soft:#FBE9DC;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4; --blue:#2F6F9F; --blue-soft:#E3EEF7;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;min-height:100%}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* Charpente (identique aux autres pages) */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute)}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav svg{width:28px;height:28px;margin:-4px;flex:none}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.side .who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.side .who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+.crumb a{color:var(--mute);text-decoration:none}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;align-items:flex-end;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.head-l{display:flex;gap:14px;align-items:center}
+.hico{width:56px;height:56px;border-radius:14px;flex:none}
+.bnav{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search,.sel,.inp{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font:inherit;color:var(--ink)}
+.search{flex:1;min-width:180px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:500;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:none;padding:10px 16px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem}
+.btn-p{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:600}
+.btn-p:disabled{opacity:.5}
+.back{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem;margin-bottom:14px}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}.b-mute{background:#EFEBE5;color:var(--mute)}.b-blue{background:var(--blue-soft);color:var(--blue)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.site-n{font-weight:600}.site-c{font-size:.8rem;color:var(--mute)}
+.note{font-size:.8rem;color:var(--mute);margin-top:12px}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:.86rem;font-weight:500;margin-bottom:14px}
+
+/* Tableaux */
+table{width:100%;border-collapse:collapse}
+th{font-size:.74rem;font-weight:600;color:var(--mute);text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);background:#FBF9F6;position:sticky;top:0;z-index:1}
+td{padding:9px 10px;border-bottom:1px solid var(--line);font-size:.86rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.tw{overflow:auto;max-height:72vh}
+.tw tbody tr{cursor:pointer}.tw tbody tr:hover{background:#FBF8F4}
+.tw .grp td{background:#F7F3EE;font-weight:700;font-size:.78rem;color:var(--mute);cursor:default;position:sticky;left:0}
+.est{color:var(--warn)}.nul{color:#B9B0A6}
+tfoot td{font-weight:700;background:#FBF9F6;position:sticky;bottom:0}
+.list-m{display:none}
+
+/* Saisie */
+.rw{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center}
+.rw:last-child{border-bottom:none}
+.rw.fait{background:#F8FBF9}
+.rw-r{display:flex;gap:6px;align-items:center}
+.idx{width:150px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:1.05rem;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.idx:focus{border-color:var(--acc);outline:none}
+.gear{border:1px solid var(--line);background:var(--card);border-radius:10px;width:40px;height:44px;font-size:1rem;color:var(--mute)}
+.gear.on{background:var(--acc-soft);color:var(--acc);border-color:var(--acc)}
+.inf{grid-column:1/-1;font-size:.82rem;min-height:0}
+.inf:empty{display:none}
+.rw-x{grid-column:1/-1;display:none;gap:8px;flex-wrap:wrap;background:#FBF9F6;border-radius:10px;padding:10px}
+.rw-x.open{display:flex}
+.rw-x label{font-size:.78rem;font-weight:600;display:block;margin-bottom:3px}
+.rw-x .inp{padding:8px 10px;width:150px}
+.rw-x .full{flex:1 1 100%}.rw-x .full .inp{width:100%}
+.gh{padding:9px 14px;background:#F7F3EE;font-size:.78rem;font-weight:700;color:var(--mute);position:sticky;top:0;z-index:2;border-bottom:1px solid var(--line)}
+.sticky-save{position:sticky;bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--ink);color:#fff;border-radius:14px;padding:10px 12px 10px 18px;margin-top:14px;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.sticky-save .btn-p{padding:10px 20px}
+
+/* Détail */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:16px 18px}
+.kpi .l{font-size:.78rem;color:var(--mute);font-weight:500}
+.kpi .v{font-size:1.5rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:.8rem;font-weight:500;color:var(--mute)}
+.kpi .s{font-size:.8rem;color:var(--mute);margin-top:2px}
+.chart-card{padding:18px 18px 10px;margin-bottom:16px}
+.chart-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chart-top h2{font-size:1rem}
+.chart-box{position:relative;height:300px}
+.two{display:grid;grid-template-columns:1fr 1.4fr;gap:16px;align-items:start}
+.exp{padding:20px;margin-bottom:16px;max-width:760px}
+.exp h2{font-size:1.05rem;margin-bottom:4px}
+.exp .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.exp label.l{font-size:.8rem;font-weight:600;display:block;margin-bottom:4px}
+.exp pre{background:#FBF9F6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.8rem;overflow:auto;margin-top:10px;max-height:150px}
+dialog{border:none;border-radius:16px;padding:22px;max-width:480px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto;color:var(--ink);font-family:var(--font)}
+dialog::backdrop{background:rgba(38,34,30,.45)}
+dialog h2{font-size:1.1rem;margin-bottom:12px}
+dialog .f{margin-bottom:10px}dialog .f label{display:block;font-size:.78rem;font-weight:600;margin-bottom:3px}
+dialog .f .inp,dialog .f .sel{width:100%}
+dialog .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.btn-d{background:var(--bad-soft);color:var(--bad);border:none;border-radius:10px;padding:10px 14px;font-weight:600;margin-right:auto}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:.88rem;font-weight:500;transition:.2s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0);opacity:1}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}.side{display:none}
+  main{padding:calc(16px + env(safe-area-inset-top,0)) 14px calc(90px + env(safe-area-inset-bottom,0))}
+  h1{font-size:1.4rem}.hico{width:46px;height:46px}
+  .table-d{display:none}.list-m{display:flex;flex-direction:column;gap:10px}
+  .mcard{padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 12px;cursor:pointer}
+  .mcard .big{font-size:1.15rem;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:12px 14px}.kpi .v{font-size:1.2rem}
+  .two{grid-template-columns:1fr}.chart-box{height:240px}
+  .idx{width:130px}
+  .sticky-save{bottom:calc(76px + env(safe-area-inset-bottom,0))}
+  .tabs button{padding:10px 12px;font-size:.9rem}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}.bnav svg{width:32px;height:32px;margin:-4px}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.toast{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-home" viewBox="0 0 96 96"><path d="M26 46 48 28l22 18v24H56V56H40v14H26z"/></symbol>
+  <symbol id="ic-releves" viewBox="0 0 96 96"><path d="M38 24h20v8H38zM34 28h-6v44h40V28h-6M38 46h20M38 56h20M38 66h12"/></symbol>
+  <symbol id="ic-maintenance" viewBox="0 0 96 96"><path d="M57 26a13 13 0 0 0-12 17L27 61a5.5 5.5 0 0 0 8 8l18-18a13 13 0 0 0 17-12l-8 5-7-7z"/></symbol>
+  <symbol id="ic-afaire" viewBox="0 0 96 96"><path d="M28 34l5 5 9-10M28 54l5 5 9-10M50 35h18M50 55h18"/></symbol>
+  <symbol id="ic-donnees" viewBox="0 0 96 96"><path d="M26 70h44M32 62V50M44 62V36M56 62V44M68 62V28"/></symbol>
+  <symbol id="ic-docs" viewBox="0 0 96 96"><path d="M48 32c-6-5-14-6-22-5v38c8-1 16 0 22 5 6-5 14-6 22-5V27c-8-1-16 0-22 5zM48 32v38"/></symbol>
+  <symbol id="ic-projets" viewBox="0 0 96 96"><path d="M24 34a4 4 0 0 1 4-4h12l6 6h22a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4z"/></symbol>
+  <symbol id="ic-planning" viewBox="0 0 96 96"><path d="M26 32h44v38H26zM26 42h44M36 26v10M60 26v10M34 52h6M46 52h6M58 52h6M34 61h6M46 61h6"/></symbol>
+  <symbol id="ic-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
+  <symbol id="i-cpt" viewBox="0 0 96 96"><path d="M24 41.4545H32.7273M24 54.5455H32.7273M63.2727 41.4545H72M63.2727 54.5455H72M43.6364 39.2727V45.8182M48 39.2727V45.8182M52.3636 39.2727V45.8182M43.6364 61.0909H52.3636M32.7273 24H63.2727V72H32.7273V24ZM39.2727 34.9091H56.7273V50.1818H39.2727V34.9091Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+</svg>
+
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav">
+      <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+      <a href="index.html#releves" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+      <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+      <a href="index.html#maintenance"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-maintenance"/></svg>Maintenance</a>
+      <a href="documentation.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-docs"/></svg>Documentation</a>
+      <a href="fiches.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-projets"/></svg>Fiches projets</a>
+      <a href="index.html#planning"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-planning"/></svg>Planning</a>
+      <a href="index.html#contacts"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-contacts"/></svg>Contacts</a>
+    </nav>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+  <main>
+    <div id="view"><div class="loading"><div class="spin"></div>Chargement des compteurs…</div></div>
+  </main>
+</div>
+
+<nav class="bnav">
+  <a href="index.html"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-home"/></svg>Accueil</a>
+  <a href="index.html#releves" class="on"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-releves"/></svg>Relevés</a>
+  <a href="index.html#donnees"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-donnees"/></svg>Données</a>
+  <a href="index.html#afaire"><svg class="ic" viewBox="0 0 96 96"><use href="#ic-afaire"/></svg>À faire</a>
+</nav>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+
+/*CALC*/
+/* Calcul des consommations. Compteur changé : on saisit l'ancien index final la veille (date D-1), puis l'index de départ du nouveau (souvent 0) à la date D, statut « remplacement ». Les relevés sont des index à des dates quelconques ; entre deux relevés
+   on suppose un débit constant, puis on ventile ce volume sur les jours de chaque mois civil.
+   Mois complet : volume du mois ÷ nombre de jours du mois = m³/jour (même définition que le classeur). */
+const J=s=>{const [y,m,d]=s.slice(0,10).split('-');return Date.UTC(+y,+m-1,+d)/864e5;};
+const TOL_BAISSE=10;   // une baisse d'index ≤ 10 m³ est traitée comme 0 (bruit, léger retour d'eau) — sauf compteur bidirectionnel
+function segments(c,R){
+  const S=[];let prev=null;
+  for(const r of R){
+    if(r.statut==='douteux')continue;
+    if(prev){
+      const j0=J(prev.date_releve),j1=J(r.date_releve);
+      if(j1<=j0){prev=r;continue;}
+      const sens=c.sens||1;let vol=null,fl=null;
+      if(r.statut==='remplacement'){
+        // relevé = index de départ du nouveau compteur ; le relevé précédent est l'ancien index final (la veille)
+        if(j1-j0<=1)vol=0;else fl='rupture';
+      }else if(r.statut==='rupture'){fl='rupture';}   // compteur changé à une date inconnue : série non comparable
+      else{
+        vol=sens*(+r.index_val-+prev.index_val);
+        if(vol<0&&!c.bidirectionnel){if(vol>=-TOL_BAISSE)vol=0;else{vol=null;fl='baisse';}}
+      }
+      S.push({j0,j1,vol,fl,d0:prev.date_releve,d1:r.date_releve,rid:r.id});
+    }
+    prev=r;
+  }
+  // ruptures : estimation au débit habituel du compteur (médiane des autres périodes), signalée « estimé »
+  const ok=S.filter(s=>s.vol!=null&&!s.fl).map(s=>s.vol/(s.j1-s.j0)).sort((a,b)=>a-b);
+  const med=ok.length?ok[Math.floor(ok.length/2)]:null;
+  for(const s of S)if(s.fl==='rupture'){if(med!=null){s.vol=med*(s.j1-s.j0);s.fl='estime';}else s.fl='baisse';}
+  return S;
+}
+const LONG=45;  // au-delà de 45 jours entre deux relevés, le volume mensuel est une interpolation (≈)
+function ventiler(S,annee){
+  const out=[];
+  for(let m=0;m<12;m++){
+    const a=Date.UTC(annee,m,1)/864e5,b=Date.UTC(annee,m+1,1)/864e5,nj=b-a;
+    let vol=0,cov=0,inc=0,est=false,interp=false;
+    for(const s of S){
+      const lo=Math.max(a,s.j0),hi=Math.min(b,s.j1);if(hi<=lo)continue;
+      const ov=hi-lo;
+      if(s.vol==null){inc+=ov;continue;}
+      vol+=s.vol*ov/(s.j1-s.j0);cov+=ov;if(s.fl==='estime')est=true;if(s.j1-s.j0>LONG)interp=true;
+    }
+    out.push({m,jours:nj,cov,inc,vol:cov>0?vol:null,complet:cov>=nj-1e-9,est,interp,parJour:cov>0?vol/cov:null});
+  }
+  return out;
+}
+function cumul(M){let v=0,j=0,any=false,inc=0,est=false;for(const x of M){if(x.vol!=null){v+=x.vol;j+=x.cov;any=true;}inc+=x.inc;if(x.est)est=true;}return {vol:any?v:null,jours:j,inc,est};}
+/*/CALC*/
+
+const MOIS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],MC=['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+const USAGE={production:'Production',adduction:'Adduction',refoulement:'Refoulement',distribution:'Distribution',sectorisation:'Sectorisation',achat:'Achat d\'eau',vente:'Vente d\'eau',rejet:'Rejet',autre:'Autre'};
+const f=(x,d=0)=>x==null||isNaN(x)?'–':Number(x).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const dfr=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(2,4):'';
+const auj=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const jDate=j=>new Date(j*864e5).toISOString().slice(0,10);
+const num=s=>{const t=String(s??'').trim().replace(/\s/g,'').replace(',','.');return t===''||isNaN(t)?null:Number(t);};
+
+let user=null,CPT=[],REL={},FULL={},annee=new Date().getFullYear(),tab=null,chart=null,hors=false;
+const FIL={manuel:false,cat:'tous',commune:'',q:'',afaire:false,tri:'commune',mode:'vol'};
+let S={date:auj(),vals:{}};   // saisie en cours
+const REL_FENETRE=15;         // « relevé récemment » = dans les 15 jours avant la date de relève
+
+/* ── Connexion ── */
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
+  await chargerProfil(db,user);
+  if(niv('compteurs')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
+  try{S=JSON.parse(localStorage.getItem('cpt-brouillon-'+user.id))||S;if(!S.vals)S.vals={};}catch(e){S={date:auj(),vals:{}};}
+  await charger();
+  await envoyerEnAttente();
+  route();
+}
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
+async function logout(){await db.auth.signOut();location.reload();}
+pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3200);}
+
+/* ── Chargement ── */
+async function toutes(q){let o=[],a=0;while(true){const {data,error}=await q().range(a,a+999);if(error)throw error;o=o.concat(data);if(data.length<1000)break;a+=1000;}return o;}
+function grouper(rows){const g={};for(const r of rows)(g[r.compteur_id]??=[]).push(r);for(const k in g)g[k].sort((a,b)=>a.date_releve<b.date_releve?-1:a.date_releve>b.date_releve?1:0);return g;}
+async function charger(){
+  const cle='cpt-cache-'+user.id;
+  try{
+    const debut=(new Date().getFullYear()-2)+'-12-01';
+    const [c,r]=await Promise.all([toutes(()=>db.from('compteurs').select('*').order('id')),
+      toutes(()=>db.from('releves_compteurs').select('*').gte('date_releve',debut).order('date_releve').order('id'))]);
+    CPT=c;REL=grouper(r);FULL={};hors=false;
+    try{const dern={};for(const k in REL){dern[k]=REL[k].slice(-3);}localStorage.setItem(cle,JSON.stringify({CPT,dern}));}catch(e){}
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem(cle));CPT=c.CPT;REL=c.dern;hors=true;}
+    catch(_){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;throw e;}
+  }
+}
+async function chargerCompteur(id){
+  if(FULL[id]||hors)return;
+  const r=await toutes(()=>db.from('releves_compteurs').select('*').eq('compteur_id',id).order('date_releve').order('id'));
+  REL[id]=r;FULL[id]=true;
+}
+
+/* ── Données dérivées ── */
+const relOf=id=>REL[id]||[];
+const segOf=c=>segments(c,relOf(c.id));
+const dernier=id=>{const r=relOf(id).filter(x=>x.statut!=='douteux');return r[r.length-1]||null;};
+function precedent(id,date){const r=relOf(id).filter(x=>x.statut!=='douteux'&&x.date_releve<date);return r[r.length-1]||null;}
+function recent(id,date){const j=J(date);return relOf(id).filter(x=>x.date_releve<=date&&J(x.date_releve)>=j-REL_FENETRE).pop()||null;}
+function refJour(c,avantDate){ // débit journalier de référence = médiane des 6 derniers intervalles complets
+  const v=segOf(c).filter(s=>s.vol!=null&&s.vol>=0&&s.d1<avantDate&&!s.fl).slice(-6).map(s=>s.vol/(s.j1-s.j0)).sort((a,b)=>a-b);
+  return v.length?v[Math.floor(v.length/2)]:null;
+}
+function filtrer(tous=false){
+  const q=FIL.q.trim().toLowerCase();
+  return CPT.filter(c=>(tous||c.actif)&&(FIL.cat==='tous'||c.categorie===FIL.cat)&&(!FIL.manuel||c.mode_releve==='manuel')&&(!FIL.commune||c.commune===FIL.commune)&&
+    (!q||(c.nom+' '+c.commune+' '+(c.ref||'')).toLowerCase().includes(q)));
+}
+const communes=()=>[...new Set(CPT.map(c=>c.commune))].sort((a,b)=>a.localeCompare(b,'fr'));
+const triCommune=(a,b)=>a.commune.localeCompare(b.commune,'fr')||a.nom.localeCompare(b.nom,'fr');
+
+/* ── Routage ── */
+window.addEventListener('hashchange',route);
+function route(){
+  const h=location.hash.slice(1),m=h.match(/^c=(\d+)/);
+  if(m){detail(+m[1]);return;}
+  tab=['releve','conso','export'].includes(h)?h:(tab||(niv('compteurs')>=2?'releve':'conso'));
+  if(tab==='releve'&&niv('compteurs')<2)tab='conso';
+  page();
+}
+function entete(t,sub,crumb){return `<div class="crumb">${crumb}</div><div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-cpt" style="color:var(--acc)"/></svg><div><h1>${t}</h1><div class="sub">${sub}</div></div></div></div>`;}
+function onglets(){return `<div class="tabs">${niv('compteurs')>=2?`<button class="${tab==='releve'?'on':''}" onclick="location.hash='releve'">Relever</button>`:''}<button class="${tab==='conso'?'on':''}" onclick="location.hash='conso'">Consommations</button><button class="${tab==='export'?'on':''}" onclick="location.hash='export'">Export</button></div>`;}
+function page(){
+  if(chart){chart.destroy();chart=null;}
+  const sub={releve:'Saisir les index relevés sur le terrain',conso:'Volumes mensuels, débit moyen par jour et cumul de l\'année',export:'Fichiers CSV / TXT pour le SCADA ou un tableur'}[tab];
+  view.innerHTML=entete('Index compteurs',sub,'<a href="index.html">Accueil</a> › Relevés › Index compteurs')+
+    (hors?'<div class="banner">Hors connexion : dernières données connues. Les index saisis seront envoyés dès que le réseau revient.</div>':'')+onglets()+'<div id="corps"></div>';
+  ({releve:vueReleve,conso:vueConso,export:vueExport})[tab]();
+}
+function barreFiltres(extra=''){
+  const nb=CPT.filter(c=>c.actif).length;
+  return `<div class="tools">
+    <button class="chip ${FIL.cat==='tous'?'on':''}" onclick="setF('cat','tous')">Tous</button>
+    <button class="chip ${FIL.cat==='declare'?'on':''}" onclick="setF('cat','declare')">Déclarés agence</button>
+    <button class="chip ${FIL.cat==='general'?'on':''}" onclick="setF('cat','general')">Généraux</button>
+    <button class="chip ${FIL.manuel?'on':''}" onclick="FIL.manuel=!FIL.manuel;rafraichir()" title="Compteurs sans remontée SCADA, relevés par les agents (fin décembre et fin mai)">Manuels</button>
+    <select class="sel" onchange="setF('commune',this.value)"><option value="">Toutes les communes</option>${communes().map(c=>`<option ${FIL.commune===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+    <input class="search" id="q" placeholder="Rechercher un site, une REF…" value="${esc(FIL.q)}" oninput="FIL.q=this.value;clearTimeout(window._qt);window._qt=setTimeout(()=>{const p=this.selectionStart;rafraichir();const e=document.getElementById('q');e.focus();e.setSelectionRange(p,p);},250)">${extra}</div>`;
+}
+function setF(k,v){FIL[k]=v;rafraichir();}
+function rafraichir(){({releve:vueReleve,conso:vueConso,export:vueExport})[tab]();}
+
+/* ═══ RELEVER ═══ */
+function vueReleve(){
+  let L=filtrer().sort(triCommune);
+  const faits=L.filter(c=>recent(c.id,S.date)).length,total=L.length;
+  if(FIL.afaire)L=L.filter(c=>!recent(c.id,S.date));
+  let h='',cur=null;
+  for(const c of L){if(c.commune!==cur){cur=c.commune;h+=`<div class="gh">${esc(cur)}</div>`;}h+=ligneSaisie(c);}
+  const nbSaisis=Object.values(S.vals).filter(v=>v.index!=null&&String(v.index).trim()!=='').length;
+  corps.innerHTML=`<div class="tools"><div><label class="site-c" style="display:block;font-weight:600">Date du relevé</label><input type="date" class="inp" value="${S.date}" max="${auj()}" onchange="S.date=this.value||auj();sauverBrouillon();vueReleve()"></div>
+    <div class="site-c" style="margin-left:6px">${faits} / ${total} déjà relevés dans les ${REL_FENETRE} jours avant cette date</div></div>`+
+    barreFiltres(`<button class="chip ${FIL.afaire?'on':''}" onclick="FIL.afaire=!FIL.afaire;vueReleve()">À relever seulement</button>`)+
+    `<div class="card" style="overflow:hidden">${h||'<div class="loading">Aucun compteur</div>'}</div>
+    <div class="sticky-save"><span id="nbs">${nbSaisis} index saisi${nbSaisis>1?'s':''}</span><span><button class="btn-l" style="color:var(--ink);margin-right:6px" onclick="viderSaisie()">Effacer</button><button class="btn-p" id="bsave" onclick="enregistrer()" ${nbSaisis?'':'disabled'}>Enregistrer</button></span></div>
+    <p class="note">⚙ à droite d'un index : compteur changé ou remis à zéro, ou ajout d'une observation. Les valeurs saisies sont gardées sur le téléphone tant qu'elles ne sont pas enregistrées.</p>`;
+}
+function ligneSaisie(c){
+  const v=S.vals[c.id]||{},p=precedent(c.id,S.date),r=recent(c.id,S.date);
+  return `<div class="rw ${r?'fait':''}" id="rw-${c.id}">
+    <div><div class="site-n">${esc(c.nom)}</div>
+      <div class="site-c">${c.ref?esc(c.ref):'relevé manuel'} · ${USAGE[c.usage]||''}${c.categorie==='declare'?' · <span class="badge b-blue">Agence</span>':''}</div>
+      <div class="site-c">${p?`Dernier : <b>${f(p.index_val)}</b> le ${dfr(p.date_releve)}`:'Aucun relevé'}${r?` · <span class="badge b-ok">relevé le ${dfr(r.date_releve)}</span>`:''}</div></div>
+    <div class="rw-r"><input class="idx" inputmode="decimal" autocomplete="off" placeholder="Index" value="${esc(v.index??'')}" oninput="saisir(${c.id},'index',this.value)">
+      <button class="gear ${v.remp||v.obs?'on':''}" onclick="ouvrirX(${c.id})" aria-label="Compteur changé, observation">⚙</button></div>
+    <div class="rw-x ${v.open?'open':''}" id="x-${c.id}">${panneauX(c,v)}</div>
+    <div class="inf" id="inf-${c.id}">${info(c,v)}</div></div>`;
+}
+function panneauX(c,v){
+  return `<div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" ${v.remp?'checked':''} onchange="saisir(${c.id},'remp',this.checked);majX(${c.id})"> Compteur changé ou remis à zéro à cette date</label></div>
+   ${v.remp?`<div class="full"><div class="site-c" style="margin-bottom:6px">L'index saisi à droite est celui du <b>nouveau compteur</b> (0 s'il est neuf). Indique ici le dernier index de l'<b>ancien</b> compteur : il sera enregistré la veille.</div>
+   <label>Dernier index de l'ancien compteur</label><input class="inp" inputmode="decimal" value="${esc(v.ancien??'')}" oninput="saisir(${c.id},'ancien',this.value)" placeholder="obligatoire"></div>`:''}
+   <div class="full"><label>Observation</label><input class="inp" value="${esc(v.obs??'')}" oninput="saisir(${c.id},'obs',this.value)" placeholder="facultatif"></div>`;
+}
+function ouvrirX(id){const v=S.vals[id]??={};v.open=!v.open;majX(id);}
+function majX(id){const c=CPT.find(x=>x.id===id),v=S.vals[id]||{};const el=document.getElementById('x-'+id);el.classList.toggle('open',!!v.open);el.innerHTML=panneauX(c,v);
+  document.querySelector('#rw-'+id+' .gear').classList.toggle('on',!!(v.remp||v.obs));majInfo(id);sauverBrouillon();}
+function saisir(id,k,val){const v=S.vals[id]??={};v[k]=val;if(k==='obs'){document.querySelector('#rw-'+id+' .gear').classList.toggle('on',!!(v.remp||v.obs));}
+  majInfo(id);sauverBrouillon();}
+function majInfo(id){const c=CPT.find(x=>x.id===id),v=S.vals[id]||{};const e=document.getElementById('inf-'+id);if(e)e.innerHTML=info(c,v);
+  const n=Object.values(S.vals).filter(x=>x.index!=null&&String(x.index).trim()!=='').length;
+  const nb=document.getElementById('nbs');if(nb){nb.textContent=n+' index saisi'+(n>1?'s':'');document.getElementById('bsave').disabled=!n;}}
+function sauverBrouillon(){try{localStorage.setItem('cpt-brouillon-'+user.id,JSON.stringify(S));}catch(e){}}
+function viderSaisie(){if(Object.keys(S.vals).length&&!confirm('Effacer tous les index saisis non enregistrés ?'))return;S.vals={};sauverBrouillon();vueReleve();}
+/* Calcul instantané sous la saisie : volume, m³/j, alertes */
+function evaluer(c,v){
+  const idx=num(v.index);if(idx==null)return null;
+  const p=precedent(c.id,S.date);if(!p)return {idx,premier:true};
+  const sens=c.sens||1;
+  if(v.remp){const anc=num(v.ancien),jd=J(S.date)-1,jours=jd-J(p.date_releve);
+    if(anc==null)return {idx,p,remp:true,manque:true};
+    if(jours<0)return {idx,p,erreur:'date'};
+    const vol=sens*(anc-+p.index_val);return {idx,p,jours,vol,parJour:jours>0?vol/jours:null,remp:true,baisse:vol<-TOL_BAISSE&&!c.bidirectionnel};}
+  const jours=J(S.date)-J(p.date_releve);if(jours<=0)return {idx,p,jours,erreur:'date'};
+  const vol=sens*(idx-+p.index_val);
+  return {idx,p,jours,vol,parJour:vol/jours,baisse:vol<-TOL_BAISSE&&!c.bidirectionnel,ref:refJour(c,S.date)};
+}
+function info(c,v){
+  const e=evaluer(c,v);if(!e)return '';
+  if(e.premier)return '<span class="site-c">Premier relevé de ce compteur.</span>';
+  if(e.erreur)return '<span class="badge b-bad">La date est antérieure au dernier relevé</span>';
+  if(e.manque)return '<span class="badge b-warn">Renseigne l\'ancien index (⚙)</span>';
+  if(e.baisse)return `<span class="badge b-bad">${e.remp?'Ancien index':'Index'} inférieur au précédent (${f(e.p.index_val)})</span>${e.remp?'':' <span class="site-c">compteur changé ? ouvre ⚙</span>'}`;
+  const sg=e.vol<0?'':'+';
+  let w='';
+  if(!e.remp&&e.ref>0&&e.parJour>0){const r=e.parJour/e.ref;if(r>2)w=` <span class="badge b-warn">×${f(r,1)} la normale</span>`;else if(r<.4)w=` <span class="badge b-warn">${f(r*100)} % de la normale</span>`;}
+  if(!e.remp&&e.ref===0&&e.parJour>0)w=' <span class="badge b-warn">habituellement à l\'arrêt</span>';
+  const jr=e.parJour==null?'':` · ${f(e.parJour,Math.abs(e.parJour)<10?1:0)} m³/j`;
+  return `<span class="badge ${e.vol<0?'b-blue':'b-ok'}">${sg}${f(e.vol)} m³${e.vol<0?' (flux inverse)':''}</span> <span class="site-c">${e.remp?'jusqu\'au remplacement, ':''}en ${e.jours} j${jr}</span>${w}`;
+}
+
+/* ── Enregistrement (avec file d'attente hors connexion) ── */
+const cleFile=()=>'cpt-attente-'+user.id;
+const lireFile=()=>{try{return JSON.parse(localStorage.getItem(cleFile()))||[];}catch(e){return[];}};
+const ecrireFile=a=>{try{localStorage.setItem(cleFile(),JSON.stringify(a));}catch(e){}};
+const horsReseau=e=>!navigator.onLine||/fetch|network|load failed/i.test((e&&e.message)||'');
+async function enregistrer(){
+  const rows=[],douteux=[];
+  for(const c of CPT){
+    const v=S.vals[c.id];if(!v||num(v.index)==null)continue;
+    const e=evaluer(c,v);
+    if(e&&e.erreur){alert(`${c.nom} : la date du relevé est antérieure au dernier relevé (${dfr(e.p.date_releve)}).`);return;}
+    const obs=(v.obs||'').trim()||null;
+    if(v.remp){
+      const anc=num(v.ancien);if(anc==null){alert(`${c.nom} : indique le dernier index de l'ancien compteur.`);return;}
+      if(e&&e.baisse){alert(`${c.nom} : l'ancien index (${f(anc)}) est inférieur au dernier relevé (${f(e.p.index_val)}).`);return;}
+      const veille=jDate(J(S.date)-1);
+      if(!relOf(c.id).some(x=>x.date_releve===veille))rows.push({compteur_id:c.id,date_releve:veille,index_val:anc,statut:'normal',observations:'Dernier index avant remplacement du compteur'});
+      rows.push({compteur_id:c.id,date_releve:S.date,index_val:num(v.index),statut:'remplacement',observations:obs||'Compteur changé / remis à zéro'});
+      continue;
+    }
+    const r={compteur_id:c.id,date_releve:S.date,index_val:num(v.index),statut:'normal',observations:obs};
+    if(e&&e.baisse){r.statut='douteux';douteux.push(c.nom);}
+    rows.push(r);
+  }
+  if(!rows.length)return;
+  if(douteux.length&&!confirm(`Index inférieur au précédent pour : ${douteux.slice(0,6).join(', ')}${douteux.length>6?'…':''}.\nEnregistrer quand même (ils seront marqués « douteux » et non comptés) ?`))return;
+  bsave.disabled=true;
+  const {error}=await db.from('releves_compteurs').upsert(rows,{onConflict:'compteur_id,date_releve'});
+  if(error){
+    if(horsReseau(error)){ecrireFile([...lireFile().filter(a=>!rows.some(r=>r.compteur_id===a.compteur_id&&r.date_releve===a.date_releve)),...rows]);
+      for(const r of rows){(REL[r.compteur_id]??=[]).push({...r,id:null,agent:user.email});REL[r.compteur_id].sort((a,b)=>a.date_releve<b.date_releve?-1:1);}
+      terminerSaisie(rows);toast(rows.length+' relevé(s) gardés sur le téléphone, envoi dès que le réseau revient');return;}
+    bsave.disabled=false;
+    alert(refusDroits(error)?'Enregistrement refusé : un relevé existe déjà à cette date et tu n\'en es pas l\'auteur.':'Erreur : '+error.message);return;}
+  terminerSaisie(rows);toast(rows.length+' relevé'+(rows.length>1?'s':'')+' enregistré'+(rows.length>1?'s':''));
+  try{await charger();}catch(e){}
+  rafraichir();
+}
+function terminerSaisie(rows){for(const r of rows)delete S.vals[r.compteur_id];sauverBrouillon();rafraichir();}
+async function envoyerEnAttente(){
+  const a=lireFile();if(!a.length||!navigator.onLine)return;
+  const {error}=await db.from('releves_compteurs').upsert(a,{onConflict:'compteur_id,date_releve'});
+  if(!error){ecrireFile([]);toast(a.length+' relevé(s) en attente envoyés');try{await charger();}catch(e){}if(tab)rafraichir();}
+}
+window.addEventListener('online',()=>envoyerEnAttente());
+
+/* ═══ CONSOMMATIONS ═══ */
+function annees(){const s=new Set([new Date().getFullYear()]);for(const k in REL)for(const r of REL[k])s.add(+r.date_releve.slice(0,4));return [...s].sort();}
+function vueConso(){
+  const L=filtrer().map(c=>{const S2=segOf(c),M=ventiler(S2,annee);return {c,M,cu:cumul(M),d:dernier(c.id)};});
+  const lastM=x=>{for(let m=11;m>=0;m--)if(x.M[m].complet)return x.M[m];return null;};
+  const tri={commune:(a,b)=>triCommune(a.c,b.c),cumul:(a,b)=>(b.cu.vol??-1)-(a.cu.vol??-1),dernier:(a,b)=>((lastM(b)||{}).vol??-1)-((lastM(a)||{}).vol??-1)}[FIL.tri];
+  L.sort(tri);
+  const par=FIL.mode==='jour';
+  const val=m=>m.vol==null?null:(par?m.parJour:m.vol);
+  const cell=m=>{const v=val(m);if(v==null)return '<span class="nul">–</span>';
+    return `<span class="${m.complet?'':'est'}" title="${m.complet?(m.interp?'Interpolé entre deux relevés espacés de plus de '+LONG+' jours':''):'Mois partiel ('+f(m.cov)+' j couverts)'}">${f(v,par&&v<100?1:0)}${m.interp?' ≈':''}${m.inc?' ⚠':''}</span>`;};
+  const tot=Array.from({length:12},()=>({v:0,n:0}));let totCu=0;
+  for(const x of L){x.M.forEach((m,i)=>{if(m.vol!=null){tot[i].v+=m.vol;tot[i].n+=1;}});totCu+=x.cu.vol||0;}
+  const nbj=m=>new Date(annee,m+1,0).getDate();
+  const ymax=annees();
+  corps.innerHTML=`<div class="tools"><div style="display:flex;gap:6px;flex-wrap:wrap">${ymax.map(y=>`<button class="chip ${y===annee?'on':''}" onclick="annee=${y};vueConso()">${y}</button>`).join('')}</div>
+    <div class="lieux" style="display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden">${[['vol','m³ / mois'],['jour','m³ / jour']].map(([k,l])=>`<button class="chip ${FIL.mode===k?'on':''}" style="border:none;border-radius:0" onclick="setF('mode','${k}')">${l}</button>`).join('')}</div>
+    <select class="sel" onchange="setF('tri',this.value)"><option value="commune" ${FIL.tri==='commune'?'selected':''}>Tri : commune</option><option value="cumul" ${FIL.tri==='cumul'?'selected':''}>Tri : cumul décroissant</option><option value="dernier" ${FIL.tri==='dernier'?'selected':''}>Tri : dernier mois décroissant</option></select>
+    ${niv('compteurs')>=3?'<button class="btn-l" onclick="dlgCompteur()">+ Compteur</button>':''}</div>`+barreFiltres()+
+  `<div class="card table-d tw"><table><thead><tr><th>Site</th><th>Cat.</th>${MC.map(m=>`<th class="num">${m}</th>`).join('')}<th class="num">Cumul ${annee}</th></tr></thead><tbody>
+   ${(()=>{let h='',cur=null;for(const x of L){if(FIL.tri==='commune'&&x.c.commune!==cur){cur=x.c.commune;h+=`<tr class="grp"><td colspan="15">${esc(cur)}</td></tr>`;}
+     h+=`<tr onclick="location.hash='c=${x.c.id}'"><td><div class="site-n">${esc(x.c.nom)}</div><div class="site-c">${FIL.tri==='commune'?'':esc(x.c.commune)+' · '}${x.c.ref?esc(x.c.ref):'manuel'}</div></td>
+       <td>${x.c.categorie==='declare'?'<span class="badge b-blue">Agence</span>':''}</td>${x.M.map(m=>`<td class="num">${cell(m)}</td>`).join('')}
+       <td class="num"><b>${x.cu.vol==null?'–':f(x.cu.vol)}</b>${x.cu.est?' <span class="est" title="Contient une période estimée">~</span>':''}</td></tr>`;}return h;})()}
+   </tbody><tfoot><tr><td colspan="2">Somme des ${L.length} compteurs affichés</td>${tot.map((t,i)=>`<td class="num">${t.n?f(par?t.v/nbj(i):t.v):'–'}</td>`).join('')}<td class="num">${f(totCu)}</td></tr></tfoot></table></div>
+   <div class="list-m">${L.map(x=>{const lm=lastM(x);return `<div class="card mcard" onclick="location.hash='c=${x.c.id}'"><div><div class="site-n">${esc(x.c.nom)}</div><div class="site-c">${esc(x.c.commune)}${x.c.categorie==='declare'?' · <span class="badge b-blue">Agence</span>':''}</div></div>
+     <div class="big">${lm?f(par?lm.parJour:lm.vol,par&&lm.parJour<100?1:0):'–'}<div class="site-c" style="font-weight:500">${lm?MC[lm.m]+(par?' m³/j':' m³'):''}</div></div>
+     <div class="site-c" style="grid-column:1/-1">Cumul ${annee} : <b>${x.cu.vol==null?'–':f(x.cu.vol)+' m³'}</b>${x.d?' · dernier relevé '+dfr(x.d.date_releve):''}</div></div>`;}).join('')}</div>
+   <p class="note">Volume d'un mois = différence d'index répartie au prorata des jours entre deux relevés ; m³/jour = volume du mois ÷ nombre de jours du mois. <span class="est">Orange</span> : mois partiel. ⚠ : une période sans volume exploitable (index en baisse non expliqué). ≈ : volume interpolé entre deux relevés espacés de plus de 45 jours (compteurs manuels). ~ : cumul contenant une période estimée au débit habituel (compteur changé à une date inconnue). La somme mélange production, achats et ventes : filtre par catégorie avant de l'interpréter.</p>`;
+}
+
+/* ═══ DÉTAIL D'UN COMPTEUR ═══ */
+async function detail(id){
+  const c=CPT.find(x=>x.id===id);if(!c){location.hash='conso';return;}
+  view.innerHTML='<div class="loading"><div class="spin"></div>Chargement de l\'historique…</div>';
+  try{await chargerCompteur(id);}catch(e){}
+  if(chart){chart.destroy();chart=null;}
+  const R=relOf(id),S2=segOf(c),yrs=[...new Set([new Date().getFullYear(),...R.map(r=>+r.date_releve.slice(0,4))])].sort();
+  if(!yrs.includes(annee))annee=yrs[yrs.length-1];
+  const M=ventiler(S2,annee),M1=ventiler(S2,annee-1),cu=cumul(M),cu1=cumul(M1);
+  const d=dernier(id),lm=[...M].reverse().find(x=>x.complet);
+  const moyJ=cu.jours?cu.vol/cu.jours:null;
+  const segDe={};S2.forEach(s=>segDe[s.rid]=s);
+  const kp=(a,b,s)=>`<div class="card kpi"><div class="l">${a}</div><div class="v">${b}</div><div class="s">${s||''}</div></div>`;
+  const mod=r=>peutModifier('compteurs',r,user)&&r.id;
+  view.innerHTML=`<button class="back" onclick="history.length>1?history.back():location.hash='conso'">‹ Retour</button>`+
+   entete(esc(c.nom),`${esc(c.commune)} · ${c.ref?esc(c.ref):'relevé manuel'} · ${USAGE[c.usage]||''}${c.bidirectionnel?' · bidirectionnel':''} · ${c.categorie==='declare'?'déclaré à l\'agence de l\'eau':'compteur général'}${c.ud?' · UD '+esc(c.ud):''}${c.actif?'':' · <b>inactif</b>'}`,'Relevés › Index compteurs › Détail')+
+   (niv('compteurs')>=3?`<div class="tools"><button class="btn-l" onclick="dlgCompteur(${id})">Modifier ce compteur</button></div>`:'')+
+   `<div class="kpis">${kp('Dernier index',d?f(d.index_val):'–',d?'relevé le '+dfr(d.date_releve):'')}
+     ${kp('Dernier mois complet',lm?f(lm.vol)+' <small>m³</small>':'–',lm?MOIS[lm.m]+' '+annee+' · '+f(lm.parJour,lm.parJour<100?1:0)+' m³/j':'')}
+     ${kp('Cumul '+annee,cu.vol==null?'–':f(cu.vol)+' <small>m³</small>'+(cu.est?' <small>~</small>':''),cu1.vol!=null?'même année précédente (année entière) : '+f(cu1.vol)+' m³':'')}
+     ${kp('Moyenne '+annee,moyJ==null?'–':f(moyJ,moyJ<100?1:0)+' <small>m³/j</small>',cu.jours?'sur '+f(cu.jours)+' jours couverts':'')}</div>
+   <div class="card chart-card"><div class="chart-top"><h2>Volume mensuel (m³)</h2><div style="display:flex;gap:6px;flex-wrap:wrap">${yrs.map(y=>`<button class="chip ${y===annee?'on':''}" onclick="annee=${y};detail(${id})">${y}</button>`).join('')}</div></div>
+     <div class="chart-box"><canvas id="cv"></canvas></div></div>
+   <div class="two"><div class="card tw" style="max-height:none"><table><thead><tr><th>Mois ${annee}</th><th class="num">Volume m³</th><th class="num">m³/j</th><th class="num">Cumul</th></tr></thead><tbody>
+     ${(()=>{let acc=0;return M.map(m=>{if(m.vol!=null)acc+=m.vol;return `<tr style="cursor:default"><td>${MOIS[m.m]}</td><td class="num ${m.complet?'':'est'}">${m.vol==null?'<span class="nul">–</span>':f(m.vol)}${m.inc?' ⚠':''}</td><td class="num">${m.parJour==null?'–':f(m.parJour,m.parJour<100?1:0)}</td><td class="num">${m.vol==null?'<span class="nul">–</span>':f(acc)}</td></tr>`;}).join('');})()}
+     </tbody></table></div>
+   <div class="card tw" style="max-height:none"><table><thead><tr><th>Date</th><th class="num">Index</th><th class="num">Δ m³</th><th class="num">Jours</th><th class="num">m³/j</th><th>Statut / obs.</th><th></th></tr></thead><tbody>
+     ${[...R].reverse().map(r=>{const s=segDe[r.id];const j=s?s.j1-s.j0:null;
+       return `<tr style="cursor:default"><td>${dfr(r.date_releve)}</td><td class="num"><b>${f(r.index_val)}</b></td><td class="num">${s&&s.vol!=null?f(s.vol):(s&&s.fl==='baisse'?'⚠':'–')}${s&&s.fl==='estime'?' ~':''}</td><td class="num">${j??'–'}</td><td class="num">${s&&s.vol!=null?f(s.vol/j,s.vol/j<100?1:0):'–'}</td>
+       <td>${r.statut==='remplacement'?'<span class="badge b-blue">nouveau compteur</span> ':r.statut==='rupture'?'<span class="badge b-blue">rupture de série</span> ':r.statut==='douteux'?'<span class="badge b-mute">douteux</span> ':''}<span class="site-c">${esc(r.observations||'')}${r.agent?' · '+esc(String(r.agent).split('@')[0]):''}</span></td>
+       <td>${mod(r)?`<button class="btn-l" style="padding:4px 10px" onclick="dlgReleve(${r.id},${id})">Modifier</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="7" class="site-c">Aucun relevé</td></tr>'}
+     </tbody></table></div></div>`;
+  const ds=[{label:String(annee),data:M.map(m=>m.vol),backgroundColor:M.map(m=>m.complet?'#B84712':'#E3B08F'),borderRadius:4}];
+  if(cu1.vol!=null)ds.unshift({label:String(annee-1),data:M1.map(m=>m.vol),backgroundColor:'#DCD3C8',borderRadius:4});
+  chart=new Chart(document.getElementById('cv'),{type:'bar',data:{labels:MC,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,
+    scales:{y:{beginAtZero:true,grid:{color:'#EFEAE3'},ticks:{callback:v=>v.toLocaleString('fr-FR')}},x:{grid:{display:false}}},
+    plugins:{legend:{display:ds.length>1,position:'bottom'},tooltip:{callbacks:{label:t=>{const mm=(t.dataset.label==String(annee)?M:M1)[t.dataIndex];return t.dataset.label+' : '+f(t.parsed.y)+' m³'+(mm.parJour!=null?' · '+f(mm.parJour,mm.parJour<100?1:0)+' m³/j':'')+(mm.complet?'':' (mois partiel)');}}}}}});
+}
+
+/* ═══ Dialogues : relevé / compteur ═══ */
+const dlg=document.getElementById('dlg');
+function dlgReleve(rid,cid){
+  const r=relOf(cid).find(x=>x.id===rid);if(!r)return;
+  dlg.innerHTML=`<h2>Modifier le relevé</h2>
+   <div class="f"><label>Date</label><input class="inp" type="date" id="d-date" value="${r.date_releve}"></div>
+   <div class="f"><label>Index</label><input class="inp" id="d-idx" inputmode="decimal" value="${r.index_val}"></div>
+   <div class="f"><label>Statut</label><select class="sel" id="d-st"><option value="normal" ${r.statut==='normal'?'selected':''}>Normal</option><option value="remplacement" ${r.statut==='remplacement'?'selected':''}>Nouveau compteur : index de départ (le relevé précédent = ancien index final)</option><option value="rupture" ${r.statut==='rupture'?'selected':''}>Rupture de série : compteur changé à une date inconnue (volume estimé)</option><option value="douteux" ${r.statut==='douteux'?'selected':''}>Douteux (non compté)</option></select></div>
+   <div class="f"><label>Observation</label><input class="inp" id="d-obs" value="${esc(r.observations||'')}"></div>
+   <div class="acts"><button class="btn-d" onclick="supprReleve(${rid},${cid})">Supprimer</button><button class="btn-l" onclick="dlg.close()">Annuler</button><button class="btn-p" onclick="majReleve(${rid},${cid})">Enregistrer</button></div>`;
+  dlg.showModal();
+}
+async function majReleve(rid,cid){
+  const idx=num(d_idx.value);if(idx==null||!d_date.value){alert('Date et index obligatoires.');return;}
+  const st=d_st.value,p={date_releve:d_date.value,index_val:idx,statut:st,observations:d_obs.value.trim()||null};
+  const {error}=await db.from('releves_compteurs').update(p).eq('id',rid);
+  if(error){alert(error.code==='23505'?'Un relevé existe déjà à cette date pour ce compteur.':refusDroits(error)?'Modification refusée.':error.message);return;}
+  dlg.close();FULL[cid]=false;await detail(cid);toast('Relevé modifié');
+}
+async function supprReleve(rid,cid){
+  if(!confirm('Supprimer ce relevé ?'))return;
+  const {error}=await db.from('releves_compteurs').delete().eq('id',rid);
+  if(error){alert(refusDroits(error)?'Suppression refusée.':error.message);return;}
+  dlg.close();FULL[cid]=false;await detail(cid);toast('Relevé supprimé');
+}
+function dlgCompteur(id){
+  const c=id?CPT.find(x=>x.id===id):{commune:FIL.commune||'',nom:'',ref:'',categorie:'general',usage:'autre',sens:1,mode_releve:'scada',bidirectionnel:false,ud:'',actif:true,commentaire:''};
+  dlg.innerHTML=`<h2>${id?'Modifier le compteur':'Nouveau compteur'}</h2>
+   <div class="f"><label>Commune</label><input class="inp" id="k-com" list="k-coms" value="${esc(c.commune)}"><datalist id="k-coms">${communes().map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+   <div class="f"><label>Nom du site</label><input class="inp" id="k-nom" value="${esc(c.nom)}"></div>
+   <div class="f"><label>REF (code SCADA)</label><input class="inp" id="k-ref" value="${esc(c.ref||'')}" placeholder="ex. P43F10"></div>
+   <div class="f"><label>Catégorie</label><select class="sel" id="k-cat"><option value="general" ${c.categorie==='general'?'selected':''}>Général</option><option value="declare" ${c.categorie==='declare'?'selected':''}>Déclaré à l'agence de l'eau</option></select></div>
+   <div class="f"><label>Usage</label><select class="sel" id="k-usage">${Object.entries(USAGE).map(([k,l])=>`<option value="${k}" ${c.usage===k?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div class="f"><label>Sens de l'index</label><select class="sel" id="k-sens"><option value="1" ${c.sens==1?'selected':''}>Croissant (normal)</option><option value="-1" ${c.sens==-1?'selected':''}>Décroissant (compteur monté à l'envers)</option></select></div>
+   <div class="f"><label>Unité de distribution / secteur</label><input class="inp" id="k-ud" value="${esc(c.ud||'')}"></div>
+   <div class="f"><label>Mode de relevé</label><select class="sel" id="k-mode"><option value="scada" ${c.mode_releve!=='manuel'?'selected':''}>Remonté par le SCADA (REF TOPKAPI)</option><option value="manuel" ${c.mode_releve==='manuel'?'selected':''}>Manuel (agents, fin décembre et fin mai)</option></select></div>
+   <div class="f"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="k-bidi" ${c.bidirectionnel?'checked':''}> Débitmètre bidirectionnel (l'index peut baisser : volume net, négatif = flux inverse)</label></div>
+   <div class="f"><label>Commentaire</label><input class="inp" id="k-com2" value="${esc(c.commentaire||'')}"></div>
+   <div class="f"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="k-actif" ${c.actif?'checked':''}> Actif (apparaît dans les relèves)</label></div>
+   <div class="acts"><button class="btn-l" onclick="dlg.close()">Annuler</button><button class="btn-p" onclick="majCompteur(${id||0})">Enregistrer</button></div>`;
+  dlg.showModal();
+}
+async function majCompteur(id){
+  const p={commune:k_com.value.trim(),nom:k_nom.value.trim(),ref:k_ref.value.trim()||null,categorie:k_cat.value,usage:k_usage.value,sens:+k_sens.value,mode_releve:k_mode.value,bidirectionnel:k_bidi.checked,ud:k_ud.value.trim()||null,commentaire:k_com2.value.trim()||null,actif:k_actif.checked};
+  if(!p.commune||!p.nom){alert('Commune et nom obligatoires.');return;}
+  const {error}=id?await db.from('compteurs').update(p).eq('id',id):await db.from('compteurs').insert(p);
+  if(error){alert(error.code==='23505'?'Cette REF existe déjà.':refusDroits(error)?'Refusé : droit de gestion nécessaire.':error.message);return;}
+  dlg.close();await charger();toast('Compteur enregistré');id?detail(id):rafraichir();
+}
+
+/* ═══ EXPORT ═══ */
+const EX={mode:'dernier',du:(new Date().getFullYear())+'-01-01',au:auj(),sep:';',fmt:'fr',entete:true,ext:'csv',decl:true,gen:true,douteux:false};
+function vueExport(){
+  const e=EX;
+  corps.innerHTML=`<div class="card exp"><h2>Index pour le SCADA</h2><div class="sub">Une ligne par relevé : REF, date, index. Les compteurs manuels (sans REF TOPKAPI) ne sont pas exportés.</div>
+   <div class="row"><label style="display:flex;gap:6px;align-items:center"><input type="radio" name="em" ${e.mode==='dernier'?'checked':''} onchange="EX.mode='dernier';vueExport()"> Dernier relevé de chaque compteur</label>
+     <label style="display:flex;gap:6px;align-items:center"><input type="radio" name="em" ${e.mode==='periode'?'checked':''} onchange="EX.mode='periode';vueExport()"> Période</label>
+     ${e.mode==='periode'?`<input type="date" class="inp" value="${e.du}" onchange="EX.du=this.value"> → <input type="date" class="inp" value="${e.au}" onchange="EX.au=this.value">`:''}</div>
+   <div class="row"><div><label class="l">Séparateur</label><select class="sel" onchange="EX.sep=this.value">${[[';','Point-virgule ;'],[',','Virgule ,'],['\t','Tabulation']].map(([v,l])=>`<option value="${v}" ${e.sep===v?'selected':''}>${l}</option>`).join('')}</select></div>
+     <div><label class="l">Format de date</label><select class="sel" onchange="EX.fmt=this.value"><option value="fr" ${e.fmt==='fr'?'selected':''}>JJ/MM/AAAA</option><option value="iso" ${e.fmt==='iso'?'selected':''}>AAAA-MM-JJ</option><option value="iso2" ${e.fmt==='iso2'?'selected':''}>AAAAMMJJ</option></select></div>
+     <div><label class="l">Extension</label><select class="sel" onchange="EX.ext=this.value"><option value="csv" ${e.ext==='csv'?'selected':''}>.csv</option><option value="txt" ${e.ext==='txt'?'selected':''}>.txt</option></select></div></div>
+   <div class="row"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${e.decl?'checked':''} onchange="EX.decl=this.checked"> Déclarés agence</label>
+     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${e.gen?'checked':''} onchange="EX.gen=this.checked"> Généraux</label>
+     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${e.entete?'checked':''} onchange="EX.entete=this.checked"> Ligne d'en-tête</label>
+     <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${e.douteux?'checked':''} onchange="EX.douteux=this.checked"> Inclure les relevés douteux</label></div>
+   <button class="btn-p" onclick="exporterScada()">Télécharger</button><div id="exinfo" class="note"></div><pre id="expre" style="display:none"></pre></div>
+  <div class="card exp"><h2>Consommations mensuelles (tableur)</h2><div class="sub">Une ligne par compteur et par mois : volume, m³/jour, mois complet ou non. Séparateur ; — s'ouvre directement dans Excel / LibreOffice.</div>
+   <div class="row"><select class="sel" id="ex-an">${annees().map(y=>`<option ${y===annee?'selected':''}>${y}</option>`).join('')}</select><button class="btn-p" onclick="exporterConso()">Télécharger</button></div></div>`;
+}
+const fdate=(d,fmt)=>fmt==='fr'?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):fmt==='iso2'?d.replace(/-/g,''):d;
+const cell=(v,sep)=>{v=String(v??'');return (v.includes(sep)||/["\n]/.test(v))?'"'+v.replace(/"/g,'""')+'"':v;};
+function telecharger(nom,texte,bom){const b=new Blob([bom?'﻿'+texte:texte],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=nom;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+async function exporterScada(){
+  const e=EX,ok=c=>(c.categorie==='declare'?e.decl:e.gen);
+  const C=CPT.filter(c=>c.actif&&ok(c)),avecRef=C.filter(c=>c.ref),sansRef=C.filter(c=>!c.ref),ids=new Set(avecRef.map(c=>c.id));
+  let rows;
+  try{
+    if(e.mode==='periode'){if(!e.du||!e.au||e.du>e.au){alert('Période invalide.');return;}
+      rows=await toutes(()=>db.from('releves_compteurs').select('*').gte('date_releve',e.du).lte('date_releve',e.au).order('date_releve').order('id'));}
+    else{const g=await toutes(()=>db.from('releves_compteurs').select('compteur_id,date_releve,index_val,statut').order('date_releve').order('id'));
+      const last={};for(const r of g){if(!e.douteux&&r.statut==='douteux')continue;last[r.compteur_id]=r;}rows=Object.values(last);}
+  }catch(err){alert('Export impossible : '+err.message);return;}
+  rows=rows.filter(r=>ids.has(r.compteur_id)&&(e.douteux||r.statut!=='douteux'));
+  const ref=Object.fromEntries(avecRef.map(c=>[c.id,c.ref]));
+  rows.sort((a,b)=>a.date_releve<b.date_releve?-1:a.date_releve>b.date_releve?1:ref[a.compteur_id].localeCompare(ref[b.compteur_id]));
+  const L=rows.map(r=>[ref[r.compteur_id],fdate(r.date_releve,e.fmt),String(+r.index_val)].map(x=>cell(x,e.sep)).join(e.sep));
+  if(e.entete)L.unshift(['REF','DATE','INDEX'].join(e.sep));
+  const nom='index_compteurs_'+auj().replace(/-/g,'')+'.'+e.ext;
+  telecharger(nom,L.join('\r\n')+'\r\n',false);
+  document.getElementById('exinfo').textContent=`${rows.length} relevé(s) exportés dans ${nom}.`+(sansRef.length?` ${sansRef.length} compteur(s) manuel(s) sans REF non exportés : ${sansRef.slice(0,5).map(c=>c.nom).join(', ')}${sansRef.length>5?'…':''}.`:'');
+  const pre=document.getElementById('expre');pre.style.display='block';pre.textContent=L.slice(0,6).join('\n');
+}
+function exporterConso(){
+  const y=+document.getElementById('ex-an').value,sep=';',L=[['REF','Commune','Site','Catégorie','Usage','Année','Mois','Volume m3','m3 par jour','Mois complet'].join(sep)];
+  for(const c of CPT.filter(c=>c.actif).sort(triCommune)){const M=ventiler(segOf(c),y);
+    for(const m of M){if(m.vol==null)continue;L.push([c.ref||'',c.commune,c.nom,c.categorie==='declare'?'Déclaré agence':'Général',USAGE[c.usage],y,m.m+1,Math.round(m.vol),m.parJour==null?'':m.parJour.toFixed(1).replace('.',','),m.complet?'oui':'non'].map(x=>cell(x,sep)).join(sep));}}
+  telecharger('consommations_'+y+'.csv',L.join('\r\n')+'\r\n',true);toast((L.length-1)+' lignes exportées');
+}
+start();
+</script>
+</body>
+</html>

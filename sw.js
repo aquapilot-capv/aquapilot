@@ -1,8 +1,8 @@
 // Service worker : garde les écrans et bibliothèques en cache pour le travail sans réseau.
 // Les données (Supabase) ne passent jamais par ce cache.
-const CACHE='portail-eau-v8';
-const FILES=['./','./index.html','./profil.js','./saisie-jaugeages.html','./jaugeages.html','./saisie-piezos.html','./piezos.html','./saisie-traitement.html',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
+const CACHE='portail-eau-v9';
+const FILES=['./','./index.html','./profil.js','./saisie-jaugeages.html','./jaugeages.html','./saisie-piezos.html','./piezos.html','./saisie-traitement.html','./compteurs.html',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(FILES.map(f=>c.add(f)))));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{
