@@ -215,13 +215,13 @@ const M={
   k_proc:{ic:'procedures',label:'Procédures',desc:'Modes opératoires'},
   k_ouvrages:{ic:'ouvrages',label:'Fiches ouvrages',desc:'Carte d\'identité'},
   projets:{ic:'projets',label:'Fiches projets',desc:'Suivi des projets',url:'fiches.html'},
-  planning:{ic:'planning',label:'Planning',desc:'Équipe et astreinte'},
+  planning:{ic:'planning',label:'Planning',desc:'Équipe, ATT et Ma semaine',url:'planning.html'},
   contacts:{ic:'contacts',label:'Contacts',desc:'Annuaire utile'},
   utilisateurs:{ic:'utilisateurs',label:'Utilisateurs',desc:'Rôles et droits',url:'utilisateurs.html'}
 };
 /* Droits nécessaires pour voir chaque tuile (les dossiers apparaissent s'ils contiennent au moins une tuile visible) */
 const DROIT={alertes:['jaugeages',1],m_antibelier:['maintenance',1],r_compteur:['compteurs',2],d_conso:['compteurs',1],r_uv:['traitement',2],r_chlore:['traitement',2],r_jaugeage:['jaugeages',2],r_piezo:['piezos',2],d_jaugeages:['jaugeages',1],d_nappes:['piezos',1],d_qualite:['traitement',1],
-  docs:['documentation',1],projets:['projets',1],d_sauvegarde:['gestion'],utilisateurs:['super']};
+  docs:['documentation',1],projets:['projets',1],planning:['planning',1],d_sauvegarde:['gestion'],utilisateurs:['super']};
 function visible(id){const m=M[id];if(!m)return false;if(m.items)return m.items.some(visible);const d=DROIT[id];if(!d)return true;
   if(d[0]==='super')return estSuperAdmin();if(d[0]==='gestion')return estGestionnaire();return niv(d[0])>=d[1];}
 

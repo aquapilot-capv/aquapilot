@@ -13,7 +13,7 @@ const MENU=[
   {k:'afaire',    label:'À faire',       ic:'afaire',      href:'taches.html',          droit:[['taches',1]]},
   {k:'docs',      label:'Documentation', ic:'docs',        href:'documentation.html',   droit:[['documentation',1]]},
   {k:'projets',   label:'Fiches projets',ic:'projets',     href:'fiches.html',          droit:[['projets',1]]},
-  {k:'planning',  label:'Planning',      ic:'planning',    href:'index.html#planning'},
+  {k:'planning',  label:'Planning',      ic:'planning',    href:'planning.html',        droit:[['planning',1]]},
   {k:'contacts',  label:'Contacts',      ic:'contacts',    href:'index.html#contacts'},
   {k:'utilisateurs',label:'Utilisateurs',ic:'utilisateurs',href:'utilisateurs.html',    droit:'super'}
 ];

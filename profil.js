@@ -1,7 +1,7 @@
 /* Profil et droits de l'utilisateur connecté — partagé par toutes les pages.
    Niveaux : 0 aucun · 1 consultation · 2 saisie · 3 gestion
    L'affichage s'adapte, mais c'est la base de données qui fait réellement respecter ces droits. */
-const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',compteurs:'Index compteurs',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance',taches:'Tâches (À faire)'};
+const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',compteurs:'Index compteurs',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance',taches:'Tâches (À faire)',planning:'Planning'};
 const ROLES={super_admin:'Super admin',chef_equipe:'Chef d\'équipe',agent:'Agent terrain',consultant:'Consultant'};
 const NIVEAUX=['Aucun','Consultation','Saisie','Gestion'];
 let PROFIL=null;
