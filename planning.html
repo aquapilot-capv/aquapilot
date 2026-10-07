@@ -161,7 +161,7 @@ main{max-width:none}
 .pl .fl .inp{flex:1;min-width:0;padding:7px 10px}.pl .fl .sel{padding:6px}
 .list{overflow:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:6px}
 .t{border:1px solid var(--line);border-left:5px solid var(--mute);border-radius:10px;padding:7px 10px;background:#fff;cursor:grab;font-size:.82rem}
-.t.p1{border-left-color:var(--bad)}.t.p2{border-left-color:var(--warn)}.t.p3{border-left-color:#9BB0A2}
+.t.p1{border-left-color:#C62828}.t.p2{border-left-color:#E6B800}.t.p3{border-left-color:#9BB0A2}
 .t.choisi{outline:2px solid var(--acc);background:var(--acc-soft)}
 .t b{display:block;font-size:.8rem}
 .t .tx{color:var(--mute);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -179,7 +179,10 @@ main{max-width:none}
 .pg td.c.target{background:#FFF8F2;cursor:pointer}
 .pg tr:last-child td{border-bottom:1px solid var(--line)}
 .m{border-radius:8px;padding:3px 6px;font-size:.74rem;line-height:1.25;cursor:pointer;background:var(--blue-soft);border-left:4px solid var(--blue);overflow:hidden;margin-bottom:2px}
-.m.p1{background:var(--bad-soft);border-left-color:var(--bad)}.m.p2{background:var(--warn-soft);border-left-color:var(--warn)}
+.m.p1{background:#FDE7E4;border-left-color:#C62828}.m.p2{background:#FFF7C7;border-left-color:#E6B800}
+.pp{display:inline-block;font-size:.62rem;font-weight:800;line-height:1;padding:2px 4px;border-radius:4px;margin-right:4px;vertical-align:1px;color:#fff;background:#2F6F9F}
+.pp.p1{background:#C62828}.pp.p2{background:#FFD600;color:#4A3C00}
+.legend .pp{margin-right:2px}
 .m.fait{background:var(--ok-soft);border-left-color:var(--ok);opacity:.85}.m.fait .mt{text-decoration:line-through}
 .m b{display:block}.m i{display:block;font-style:normal;color:var(--mute)}
 .ev{border-radius:6px;background:#EFE8F7;border-left:4px solid #7A4FB0;padding:1px 5px;font-size:.7rem;margin-bottom:2px;cursor:pointer;line-height:1.25}
@@ -195,6 +198,17 @@ main{max-width:none}
 .rl .xs{display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px;font-size:.78rem;margin:4px 4px 0 0}
 .rl .xs button{border:none;background:none;color:var(--acc);font-weight:700;padding:0 6px}
 tr.inactif td{opacity:.55}
+.pg th.fer{background:#EEE9E2;color:var(--mute)}
+.pg td.c.fer{background:repeating-linear-gradient(45deg,#F4F0EA,#F4F0EA 6px,#FAF8F4 6px,#FAF8F4 12px);cursor:default}
+.pg td.c.fer span{display:block;text-align:center;color:var(--mute);font-size:.72rem;font-weight:600;padding-top:6px}
+.astr{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#FFF;border:1px solid var(--line);border-left:4px solid #B84712;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:.86rem}
+.astr b{font-weight:700}.astr .sep{color:var(--mute)}.astr.click{cursor:pointer}
+.ag .tel{display:inline-block;margin-left:5px;font-size:.66rem;font-weight:700;color:#fff;background:#B84712;border-radius:5px;padding:1px 5px;vertical-align:2px}
+.ag .tel.enc{background:#7A7068}
+.m .cr{color:var(--ok);font-weight:600}
+.ph-th{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.ph-th img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
+.rap{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px;background:#FBF9F6;font-size:.86rem}
+.rap small{color:var(--mute);display:block}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:var(--mute);margin:10px 2px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 /* fenêtres du planning */
@@ -229,7 +243,8 @@ dialog .sub2{color:var(--mute);font-size:.85rem;margin-bottom:12px}
 .pdfcap .pg{min-width:0}.pdfcap .pg th,.pdfcap .pg td.ag{position:static}
 .pdfcap .pg td.c{height:60px}.pdfcap .pg td.c.target{background:none}
 .pdfcap.me h2{display:none}
-.pdfcap .abs{background:#ECE6DE}.pdfcap .abs.att{background:#F7F3EE}
+.pdfcap .legend{margin:12px 2px 0;font-size:13px}
+.pdfcap .abs{background:#ECE6DE}.pdfcap .pg td.c.fer{background:#F3EFE9}.pdfcap .abs.att{background:#F7F3EE}
 .ph{display:none}
 @media print{
  .side,.bnav,.fab,.crumb,.head,.bar,.pl,.tabs,#bandeaux,.legend,.toast,dialog,.login{display:none!important}
@@ -310,7 +325,7 @@ const cle=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxx
 const $=id=>document.getElementById(id);
 
 /* ── État ── */
-let user=null,INT=[],INTM={},AGP=[],TA={},EQ={},M=[],ABS=[],ATTR=[],ATTEX=new Set(),RDV=[],ROU=[];
+let user=null,INT=[],INTM={},AGP=[],TA={},EQ={},M=[],ABS=[],ATTR=[],ATTEX=new Set(),RDV=[],ROU=[],FER={},AST=[],RAP={};
 let wk=lundi(new Date()),vue=innerWidth<700?'M':'G',me=null,MOI=null,sel=null,hors=false,onglet='planning',fQ='',fP='';
 const P=()=>niv('planning');
 const dayOf=i=>addDays(wk,i);
@@ -361,16 +376,20 @@ async function chargerSemaine(){
   M=m.data;ABS=a.data;ATTEX=new Set(x.data.map(r=>r.agent_id+'|'+r.jour));
   const manq=[...new Set(M.map(r=>r.tache_id).filter(i=>i&&!TA[i]))];
   if(manq.length){const {data,error}=await db.from('taches').select(TCOLS).in('id',manq);if(error)throw error;for(const t of data)TA[t.id]=t;}
+  const lots=[...new Set(M.map(r=>r.lot))];RAP={};
+  for(let i=0;i<lots.length;i+=60){const {data,error}=await db.from('planning_rapports').select('*').in('lot',lots.slice(i,i+60)).order('created_at');if(error)throw error;for(const r of data)(RAP[r.lot]??=[]).push(r);}
 }
 async function chargerTout(){
   try{
     const r=await Promise.all([db.from('intervenants').select('*').order('id'),db.from('planning_att_regles').select('*').order('id'),
       db.from('planning_rdv').select('*').order('id'),db.from('planning_rdv_agents').select('rdv_id,agent_id'),db.from('planning_rdv_exceptions').select('rdv_id,jour'),
-      db.from('planning_routines').select('*').order('id'),db.from('planning_routine_exceptions').select('routine_id,jour')]);
+      db.from('planning_routines').select('*').order('id'),db.from('planning_routine_exceptions').select('routine_id,jour'),
+      db.from('planning_feries').select('*'),db.from('planning_astreintes').select('*').order('semaine')]);
     for(const x of r)if(x.error)throw x.error;
     INT=r[0].data;ATTR=r[1].data;
     const rx={};for(const e of r[6].data)(rx[e.routine_id]??=[]).push(e.jour);
     ROU=r[5].data.map(x=>({...x,ex:new Set(rx[x.id]||[])}));
+    FER=Object.fromEntries(r[7].data.map(f=>[f.jour,f]));AST=r[8].data;
     const ag={},ex={};for(const a of r[3].data)(ag[a.rdv_id]??=[]).push(a.agent_id);for(const e of r[4].data)(ex[e.rdv_id]??=[]).push(e.jour);
     RDV=r[2].data.map(x=>({...x,heure:(x.heure||'09:00').slice(0,5),agents:ag[x.id]||[],ex:new Set(ex[x.id]||[])}));
     await chargerTaches();await chargerSemaine();hors=false;sauverCache();
@@ -386,10 +405,10 @@ function indexer(){
   MOI=(INT.find(i=>i.user_id===user.id)||{}).id||null;
   if(me==null||!INTM[me])me=MOI||(AGP[0]&&AGP[0].id)||null;
 }
-function sauverCache(){try{localStorage.setItem(cleCache(),JSON.stringify({INT,ATTR,TA,EQ,M,ABS,ATTEX:[...ATTEX],wk:iso(wk),RDV:RDV.map(r=>({...r,ex:[...r.ex]})),ROU:ROU.map(r=>({...r,ex:[...r.ex]}))}));}catch(e){}}
+function sauverCache(){try{localStorage.setItem(cleCache(),JSON.stringify({INT,ATTR,TA,EQ,M,ABS,ATTEX:[...ATTEX],FER,AST,RAP,wk:iso(wk),RDV:RDV.map(r=>({...r,ex:[...r.ex]})),ROU:ROU.map(r=>({...r,ex:[...r.ex]}))}));}catch(e){}}
 function lireCache(){
   try{const c=JSON.parse(localStorage.getItem(cleCache()));if(!c)return false;
-    INT=c.INT;ATTR=c.ATTR;TA=c.TA;EQ=c.EQ;M=c.M;ABS=c.ABS;ATTEX=new Set(c.ATTEX);RDV=c.RDV.map(r=>({...r,ex:new Set(r.ex)}));ROU=(c.ROU||[]).map(r=>({...r,ex:new Set(r.ex)}));wk=dt(c.wk);return true;}catch(e){return false;}
+    INT=c.INT;ATTR=c.ATTR;TA=c.TA;EQ=c.EQ;M=c.M;ABS=c.ABS;ATTEX=new Set(c.ATTEX);RDV=c.RDV.map(r=>({...r,ex:new Set(r.ex)}));ROU=(c.ROU||[]).map(r=>({...r,ex:new Set(r.ex)}));FER=c.FER||{};AST=c.AST||[];RAP=c.RAP||{};wk=dt(c.wk);return true;}catch(e){return false;}
 }
 async function rafraichir(){
   try{await chargerTaches();await chargerSemaine();hors=false;sauverCache();}catch(e){hors=true;}
@@ -417,13 +436,14 @@ function vuePlanning(){
     <div class="vseg"><button id="vG">Grille équipe</button><button id="vM">Ma semaine</button></div>
     <select class="sel" id="who-me" aria-label="Agent"></select>
     <div class="wk"><button class="btn-l" id="wk-p" aria-label="Semaine précédente">←</button><b id="wl"></b><button class="btn-l" id="wk-n" aria-label="Semaine suivante">→</button><button class="btn-l" id="wk-t">Aujourd'hui</button></div></div>
-   <div class="grp"><button class="btn-l" id="b-att">ATT et routines</button>${P()>=2?'<button class="btn-p" id="b-rdv">+ Rendez-vous</button><button class="btn-l" id="b-lib">+ Mission libre</button>':''}<button class="btn-l" id="b-pdf">PDF</button><button class="btn-l" id="b-mail">Envoyer (PDF)</button></div></div>
+   <div class="grp"><button class="btn-l" id="b-att">ATT et routines</button>${P()>=2?'<button class="btn-p" id="b-rdv">+ Rendez-vous</button><button class="btn-l" id="b-lib">+ Mission libre</button><button class="btn-l" id="b-cg">Congés</button>':''}<button class="btn-l" id="b-pdf">PDF</button><button class="btn-l" id="b-mail">Envoyer (PDF)</button></div></div>
+  <div id="astr"></div>
   <div id="vgrid" class="layout ${liste?'':'sans-liste'}">
    ${liste?`<aside class="box pl"><h2>À planifier <span id="cnt" style="color:var(--mute);font-weight:500"></span></h2><div class="hint">Glisse une tâche dans la grille, ou touche-la puis touche une case.</div>
      <div class="fl"><input class="inp" id="q" placeholder="Site, mot-clé…" value="${esc(fQ)}"><select class="sel" id="fp"><option value="">Toutes prio</option><option value="1">Prio 1</option><option value="2">Prio 2</option><option value="3">Prio 3</option></select></div>
      <div class="list" id="list"></div></aside>`:''}
    <section><div class="box gridw"><table class="pg" id="tb"></table></div>
-   <div class="legend"><span><i style="background:var(--bad)"></i>Prio 1</span><span><i style="background:var(--warn)"></i>Prio 2</span><span><i style="background:var(--blue)"></i>Prio 3</span><span><i style="background:var(--ok)"></i>Fait</span><span><i style="background:#7A4FB0"></i>Rendez-vous ↻ récurrent</span><span><i style="background:#DDD6CC"></i>Absence · ATT prévu en pointillé</span></div></section></div>
+   ${legende()}</section></div>
   <div id="vme" class="ms"></div>`;
   $('vG').onclick=()=>{vue='G';rendu()};$('vM').onclick=()=>{vue='M';rendu()};
   $('who-me').innerHTML=INT.filter(i=>i.type==='agent'&&i.actif).map(a=>`<option value="${a.id}" ${a.id===me?'selected':''}>${esc(a.nom)}</option>`).join('');
@@ -431,6 +451,7 @@ function vuePlanning(){
   $('wk-p').onclick=()=>changerSemaine(-7);$('wk-n').onclick=()=>changerSemaine(7);$('wk-t').onclick=()=>{wk=lundi(new Date());changerSemaine(0)};
   $('b-att').onclick=reglesATT;$('b-pdf').onclick=telechargerPdf;$('b-mail').onclick=envoyerPdf;
   if(navigator.onLine)setTimeout(()=>chargerPdfLib().catch(()=>{}),2500);   // prêt avant le clic : le partage exige un geste récent
+  if($('b-cg'))$('b-cg').onclick=()=>formConges();
   if($('b-rdv')){$('b-rdv').onclick=()=>formRdv({jour:iso(wk),ags:MOI?[MOI]:[]});$('b-lib').onclick=()=>formLibre({});}
   if($('fp')){$('fp').value=fP;$('fp').onchange=e=>{fP=e.target.value;renderListe()};$('q').oninput=e=>{fQ=e.target.value;renderListe()};}
   rendu();
@@ -447,7 +468,7 @@ function rendu(){
   $('who-me').style.display=vue==='M'?'':'none';
   const ds=[0,1,2,3,4].map(dayOf);
   $('wl').textContent='Sem. '+semNum(wk)+' · '+ds[0].getDate()+' – '+ds[4].getDate()+' '+ds[4].toLocaleDateString('fr-FR',{month:'short'});
-  bandeaux();renderListe();renderGrille();renderMe();
+  bandeaux();$('astr').innerHTML=astreinteHTML();renderListe();renderGrille();renderMe();
 }
 function bandeaux(){
   const att=lireFile().length;let h='';
@@ -462,11 +483,29 @@ const couvre=(m,sl)=>m.creneau==='journee'||m.creneau===CRN[sl];
 const mAt=(ag,day,sl)=>M.find(m=>m.agent_id===ag&&m.jour===day&&m.statut!=='reporte'&&couvre(m,sl));
 const slotsRegle=r=>r.creneau==='journee'?[0,1]:[r.creneau==='matin'?0:1];
 function attOn(r,day){const d=dt(day);return d.getDay()===r.jour_semaine&&(r.semaines==='toutes'||(semNum(d)%2===0)===(r.semaines==='paires'));}
-const attAt=(ag,day,sl)=>ATTR.some(r=>r.actif&&r.agent_id===ag&&slotsRegle(r).includes(sl)&&attOn(r,day))&&!ATTEX.has(ag+'|'+day);
+/* Jours fériés légaux calculés (Pâques, Ascension, Pentecôte…) + ajouts de la table (ponts) */
+function paques(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),n=h+l-7*m+114;return new Date(y,Math.floor(n/31)-1,n%31+1,12);}
+const FCACHE={};
+function feriesAn(y){
+  if(FCACHE[y])return FCACHE[y];
+  const p=paques(y),o={},s=(d,l)=>o[iso(d)]=l,j=(m,d)=>new Date(y,m-1,d,12);
+  s(j(1,1),'Jour de l\'an');s(addDays(p,1),'Lundi de Pâques');s(j(5,1),'Fête du travail');s(j(5,8),'8 mai 1945');s(addDays(p,39),'Ascension');s(addDays(p,50),'Lundi de Pentecôte');
+  s(j(7,14),'Fête nationale');s(j(8,15),'Assomption');s(j(11,1),'Toussaint');s(j(11,11),'Armistice');s(j(12,25),'Noël');
+  return FCACHE[y]=o;
+}
+function ferie(day){const x=FER[day];if(x)return x.travaille?null:x.libelle;return feriesAn(+day.slice(0,4))[day]||null;}
+const attAt=(ag,day,sl)=>!ferie(day)&&ATTR.some(r=>r.actif&&r.agent_id===ag&&slotsRegle(r).includes(sl)&&attOn(r,day))&&!ATTEX.has(ag+'|'+day);   // ATT un jour férié : perdu
 function aAt(ag,day,sl){const a=ABS.find(x=>x.agent_id===ag&&x.jour===day&&x.creneau===CRN[sl]);return a||(attAt(ag,day,sl)?{type:'ATT',auto:1}:undefined);}
 /* Routines : « dernière semaine du mois » = dernière semaine complète (lundi → vendredi) dans le mois */
 function derniereSemaine(day){const mo=lundi(dt(day));if(addDays(mo,4).getMonth()!==mo.getMonth())return false;return addDays(mo,11).getMonth()!==mo.getMonth();}
 function rouOn(r,day){
+  if(ferie(day))return false;
+  if(rouBase(r,day))return true;
+  // férié : la routine est décalée à un autre jour de la même semaine (ex. tournée du lundi → mercredi)
+  if(r.si_ferie==='decaler'&&r.decale_jour===dt(day).getDay()&&r.actif&&!r.ex.has(day)){const mo=lundi(dt(day));return r.jours.some(j=>{const x=iso(addDays(mo,j-1));return ferie(x)&&rouBase(r,x);});}
+  return false;
+}
+function rouBase(r,day){
   const d=dt(day);
   if(!r.actif||!r.jours.includes(d.getDay())||r.ex.has(day)||(r.debut&&day<r.debut)||(r.fin&&day>r.fin))return false;
   if(r.semaines!=='toutes'&&(semNum(d)%2===0)!==(r.semaines==='paires'))return false;
@@ -478,10 +517,10 @@ const rouAt=(ag,day,sl)=>ROU.find(r=>r.agents.includes(ag)&&slotsRegle(r).includ
 const JC=['','lun','mar','mer','jeu','ven'];
 function decrire(r){
   return r.jours.slice().sort().map(j=>JC[j]).join(' + ')+' · '+({journee:'journée',matin:'matin',aprem:'après-midi'})[r.creneau]+
-    ({toutes:'',paires:' · semaines paires',impaires:' · semaines impaires'})[r.semaines]+({tous:'',derniere:' · dernière semaine du mois',sauf_derniere:' · sauf la dernière semaine du mois'})[r.mois||'tous'];
+    ({toutes:'',paires:' · semaines paires',impaires:' · semaines impaires'})[r.semaines]+({tous:'',derniere:' · dernière semaine du mois',sauf_derniere:' · sauf la dernière semaine du mois'})[r.mois||'tous']+(r.si_ferie==='decaler'&&r.decale_jour?' · si férié : décalée au '+JC[r.decale_jour]:'');
 }
 function prochains(f,n=4){const o=[];let d=new Date();for(let k=0;k<200&&o.length<n;k++){const s=iso(d);if(d.getDay()%6&&f(s))o.push(d.getDate()+'/'+(d.getMonth()+1));d=addDays(d,1);}return o.join(' · ')||'—';}
-const occupe=(ag,day,sl)=>!!mAt(ag,day,sl)||!!aAt(ag,day,sl)||!!rouAt(ag,day,sl);
+const occupe=(ag,day,sl)=>!!ferie(day)||!!mAt(ag,day,sl)||!!aAt(ag,day,sl)||!!rouAt(ag,day,sl);
 const slotRdv=e=>(+e.heure.slice(0,2)*60+ +e.heure.slice(3,5))<750?0:1;
 function occurs(e,day){
   if(!e.recurrence)return e.jour===day;
@@ -498,7 +537,48 @@ const evOn=(day,ag,sl)=>RDV.filter(e=>e.agents.includes(ag)&&slotRdv(e)===sl&&oc
 function info(m){const t=m.tache_id?TA[m.tache_id]:null;return {site:t?cap(t.site_nom||'(sans site)'):m.titre,trav:t?t.travaux:'',prio:t?t.priorite:2};}
 function avec(m){const o=[...new Set(M.filter(x=>x.lot===m.lot&&x.jour===m.jour&&x.agent_id!==m.agent_id&&x.statut!=='reporte').map(x=>x.agent_id))];
   return o.length?`<i>+ ${o.map(i=>esc((INTM[i]||{}).nom||'?')).join(', ')}</i>`:'';}
-const tuile=(m,compact)=>{const i=info(m);return `<div class="m p${i.prio}${m.statut==='fait'?' fait':''}" data-m="${m.id}" draggable="${P()>=2}"><b>${esc(i.site)}${m.nb_jours>1?` · j${m.rang}/${m.nb_jours}`:''}</b><span class="mt">${esc(compact?i.trav.slice(0,50):i.trav)}</span>${avec(m)}</div>`;};
+const tuile=(m,compact)=>{const i=info(m);return `<div class="m p${i.prio}${m.statut==='fait'?' fait':''}" data-m="${m.id}" draggable="${P()>=2}"><b>${m.tache_id?`<span class="pp p${i.prio}">P${i.prio}</span>`:''}${esc(i.site)}${m.nb_jours>1?` · j${m.rang}/${m.nb_jours}`:''}</b><span class="mt">${esc(compact?i.trav.slice(0,50):i.trav)}</span>${avec(m)}${RAP[m.lot]?'<i class="cr">✎ compte rendu</i>':''}</div>`;};
+/* Astreinte d'exploitation : du vendredi 16h30 au vendredi suivant 16h30 */
+const vendrediAvant=d=>{const x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+2)%7));return x;};   // vendredi ≤ d
+const astLignes=(sem,role)=>AST.filter(a=>a.semaine===sem&&a.role===role);
+const astSem=(sem,role)=>astLignes(sem,role).map(a=>a.intervenant_id).filter(Boolean);
+const astNoms=(sem,role)=>astLignes(sem,role).map(a=>a.intervenant_id?(INTM[a.intervenant_id]||{}).nom||'?':a.nom).join(' / ')||'—';
+function astreinteHTML(){
+  const s1=iso(vendrediAvant(wk)),s2=iso(addDays(wk,4));
+  if(!AST.some(a=>a.semaine===s1||a.semaine===s2))return P()>=3?'<div class="astr click" onclick="formAstreinte()">☎ Astreinte : rien de saisi pour cette semaine — <b>importer ou saisir</b></div>':'';
+  const f=s=>`encadrant <b>${esc(astNoms(s,'encadrant'))}</b> · terrain <b>${esc(astNoms(s,'agent'))}</b>`;
+  const d2=dt(s2);
+  return `<div class="astr${P()>=3?' click':''}" ${P()>=3?'onclick="formAstreinte()"':''}>☎ <span>Astreinte jusqu'au ven. ${d2.getDate()}/${d2.getMonth()+1} 16h30 : ${f(s1)}</span><span class="sep">→</span><span>puis ${f(s2)}</span></div>`;
+}
+function telAgent(ag){
+  const s1=iso(vendrediAvant(wk));
+  if(astSem(s1,'agent').includes(ag))return '<span class="tel" title="Agent d\'astreinte (jusqu\'à vendredi 16h30)">☎</span>';
+  if(astSem(s1,'encadrant').includes(ag))return '<span class="tel enc" title="Encadrant d\'astreinte (jusqu\'à vendredi 16h30)">☎ enc.</span>';
+  return '';
+}
+function formAstreinte(){
+  const ss=[iso(vendrediAvant(wk)),iso(addDays(wk,4))];
+  const inp=(s,role)=>{const v=astNoms(s,role);return `<input class="inp" list="dl-ast" id="as-${s}-${role}" value="${v==='—'?'':esc(v)}">`;};
+  ouvrir(`<h2>Astreinte</h2><p class="sub2">Du vendredi 16h30 au vendredi suivant 16h30. Pour un remplacement (arrêt, échange), change le nom. Un nom qui n'est pas un agent de l'appli est gardé tel quel, pour l'affichage.</p>
+   <datalist id="dl-ast">${INT.filter(i=>i.type==='agent'&&i.actif).map(a=>`<option value="${esc(a.nom)}">`).join('')}</datalist><div class="frm">
+   ${ss.map(s=>{const d=dt(s),e=addDays(d,7);return `<label class="l">Du ven. ${d.getDate()}/${d.getMonth()+1} au ven. ${e.getDate()}/${e.getMonth()+1}</label><div class="two-c"><div><small>Encadrant</small>${inp(s,'encadrant')}</div><div><small>Agent terrain</small>${inp(s,'agent')}</div></div>`;}).join('')}</div>
+   <div class="acts"><button class="btn-l" onclick="fermer();location.hash='reglages'">Import / toute l'année</button><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="saveAstreinte(['${ss[0]}','${ss[1]}'])">Enregistrer</button></div>`);
+}
+const agentDeNom=n=>{const k=norm(n);return INT.find(i=>i.type==='agent'&&norm(i.nom)===k);};
+function ligneAst(semaine,role,n){const a=agentDeNom(n);return a?{semaine,role,intervenant_id:a.id}:{semaine,role,nom:n};}
+async function saveAstreinte(ss){
+  for(const s of ss)for(const role of ['encadrant','agent']){
+    const v=$('as-'+s+'-'+role).value.trim();
+    if(v===(astNoms(s,role)==='—'?'':astNoms(s,role)))continue;
+    let {error}=await db.from('planning_astreintes').delete().eq('semaine',s).eq('role',role);
+    const rows=v.split(/\s*[\/,]\s*/).filter(Boolean).map(n=>ligneAst(s,role,n));
+    if(!error&&rows.length)({error}=await db.from('planning_astreintes').insert(rows));
+    if(error){alert(msgErr(error));return;}
+  }
+  fermer();await chargerAstreintes();rendu();toast('Astreinte enregistrée');
+}
+async function chargerAstreintes(){const {data,error}=await db.from('planning_astreintes').select('*').order('semaine');if(!error){AST=data;sauverCache();}}
+const legende=()=>`<div class="legend"><span><span class="pp p1">P1</span>urgente</span><span><span class="pp p2">P2</span>normale</span><span><span class="pp p3">P3</span>peu urgente</span><span><i style="background:var(--ok)"></i>Fait</span><span><i style="background:#5B7A8C"></i>↻ Mission récurrente</span><span><i style="background:#7A4FB0"></i>Rendez-vous</span><span><i style="background:#ECE6DE;border:1px solid #B9AFA2"></i>Absence · ATT prévu en pointillé</span></div>`;
 const chipRdv=e=>`<div class="ev" data-e="${e.id}"><b>${e.recurrence?'↻ ':''}${fh(e.heure)} · ${durTxt(e.duree_min)}</b> ${esc(e.titre)}</div>`;
 const tuileRou=(r,ag,day,ab)=>{const o=r.agents.filter(i=>i!==ag&&INTM[i]);return `<div class="m rou${ab?' conflit':''}" data-r="${r.id}"><b>↻ ${esc(r.titre)}</b>${o.length?`<i>+ ${o.map(i=>esc(INTM[i].nom)).join(', ')}</i>`:''}${ab?`<i class="cf">⚠ ${esc(ab.type)} ce jour-là</i>`:''}</div>`;};
 const chipAbs=(a,ag,day,sl)=>`<div class="abs${a.auto?' att':''}" data-a="${ag}|${day}|${sl}">${esc(a.type)}${a.auto?'<small>prévu</small>':''}</div>`;
@@ -512,7 +592,7 @@ function renderListe(){
   const l=tous.filter(t=>(!fP||String(t.priorite)===fP)&&(!q||((t.site_nom||'')+' '+t.travaux+' '+(t.famille||'')).toLowerCase().includes(q))).sort((a,b)=>a.priorite-b.priorite||a.id-b.id);
   box.innerHTML=l.map(t=>{
     const retard=t.echeance&&t.echeance<iso(new Date());
-    return `<div class="t p${t.priorite}${sel===t.id?' choisi':''}" draggable="true" data-id="${t.id}"><b>${esc(cap(t.site_nom||'(sans site)'))}</b><span class="tx">${esc(t.travaux)}</span>
+    return `<div class="t p${t.priorite}${sel===t.id?' choisi':''}" draggable="true" data-id="${t.id}"><b><span class="pp p${t.priorite}">P${t.priorite}</span>${esc(cap(t.site_nom||'(sans site)'))}</b><span class="tx">${esc(t.travaux)}</span>
       <div class="tg">${t.reportee_nb?`<span class="badge b-bad">reportée ${t.reportee_nb}×</span>`:''}${retard?'<span class="badge b-bad">échéance dépassée</span>':''}${t.duree_estimee?`<span class="badge b-mute">${{demi:'½ j',jour:'1 j',plus:'plusieurs j'}[t.duree_estimee]}</span>`:''}</div></div>`;}).join('')||'<div style="padding:12px;color:var(--mute)">Rien à planifier.</div>';
   box.querySelectorAll('.t').forEach(e=>{
     e.onclick=()=>{sel=sel===+e.dataset.id?null:+e.dataset.id;renderListe();renderGrille();};
@@ -524,11 +604,12 @@ function renderListe(){
 function renderGrille(){
   const tb=$('tb');if(!tb)return;
   const ds=[0,1,2,3,4].map(dayOf),auj=iso(new Date());
-  let h='<tr><th></th>'+ds.map((d,i)=>`<th colspan="2" class="${iso(d)===auj?'today':''}">${JOURS[i]}<small>${d.getDate()}/${d.getMonth()+1}</small></th>`).join('')+'</tr>';
-  for(const a of AGP){
-    h+=`<tr><td class="ag">${esc(a.nom)}</td>`;
+  let h='<tr><th></th>'+ds.map((d,i)=>{const f=ferie(iso(d));return `<th colspan="2" class="${iso(d)===auj?'today':''}${f?' fer':''}">${JOURS[i]}<small>${d.getDate()}/${d.getMonth()+1}${f?' · '+esc(f):''}</small></th>`;}).join('')+'</tr>';
+  for(const [ri,a] of AGP.entries()){
+    h+=`<tr><td class="ag">${esc(a.nom)}${telAgent(a.id)}</td>`;
     for(const d of ds){
-      const day=iso(d);
+      const day=iso(d),fe=ferie(day);
+      if(fe){h+=`<td class="c fer" colspan="2" data-ag="${a.id}" data-day="${day}" data-sl="0">${ri===0?'<span>Férié</span>':''}</td>`;continue;}
       const cont=sl=>{const m=mAt(a.id,day,sl),ab=aAt(a.id,day,sl),ro=rouAt(a.id,day,sl),evs=evOn(day,a.id,sl);
         return {m,ab,ro,evs,key:(m?'m'+m.id:'')+(ro?'r'+ro.id:'')+(ab?'a'+ab.type+(ab.auto?'*':''):''),
           html:evs.map(chipRdv).join('')+(m?tuile(m,true):'')+(ro?tuileRou(ro,a.id,day,ab):'')+(ab?chipAbs(ab,a.id,day,sl):'')};};
@@ -547,8 +628,9 @@ function renderGrille(){
     const ag=+td.dataset.ag,day=td.dataset.day,sl=+td.dataset.sl;
     td.ondragover=e=>{e.preventDefault();td.classList.add('drop');};
     td.ondragleave=()=>td.classList.remove('drop');
-    td.ondrop=e=>{e.preventDefault();td.classList.remove('drop');const d=e.dataTransfer.getData('text')||'';if(d.startsWith('m:'))dropMission(+d.slice(2),ag,day,sl);else if(d.startsWith('t:')){sel=+d.slice(2);poserOuAtt(ag,day,sl);}};
+    td.ondrop=e=>{e.preventDefault();td.classList.remove('drop');if(ferie(day))return toast('Jour férié : '+ferie(day));const d=e.dataTransfer.getData('text')||'';if(d.startsWith('m:'))dropMission(+d.slice(2),ag,day,sl);else if(d.startsWith('t:')){sel=+d.slice(2);poserOuAtt(ag,day,sl);}};
     td.onclick=e=>{
+      if(ferie(day))return toast('Jour férié : '+ferie(day));
       const ee=e.target.closest('[data-e]');if(ee)return ficheRdv(+ee.dataset.e,day);
       const mm=e.target.closest('[data-m]');if(mm)return ficheMission(+mm.dataset.m);
       const rr=e.target.closest('[data-r]');if(rr&&!sel)return ficheRou(+rr.dataset.r,ag,day);
@@ -572,7 +654,9 @@ function renderMe(){
   let h=`<div class="sum"><div><b>${mine.length-faits}</b><small>à faire</small></div><div><b>${faits}</b><small>faites</small></div><div><b>${Object.values(TA).filter(t=>t.statut==='a_faire'&&t.priorite===1).length}</b><small>prio 1 à planifier (équipe)</small></div></div>`;
   ds.forEach((d,i)=>{
     const day=iso(d);
-    h+=`<div class="day ${day===auj?'today':''}" data-day="${day}"><h3>${JOURS[i]} ${d.getDate()}${day===auj?' · aujourd\'hui':''}</h3>`;
+    const fe=ferie(day);
+    h+=`<div class="day ${day===auj?'today':''}" data-day="${day}"><h3>${JOURS[i]} ${d.getDate()}${day===auj?' · aujourd\'hui':''}${fe?' · férié ('+esc(fe)+')':''}</h3>`;
+    if(fe){h+='<div class="slot"><em></em><div class="sc"><div class="empty">Jour férié</div></div></div></div>';return;}
     [0,1].forEach(sl=>{
       const m=mAt(me,day,sl),ab=aAt(me,day,sl),ro=rouAt(me,day,sl),evs=evOn(day,me,sl).map(chipRdv).join('');
       let c;
@@ -584,7 +668,9 @@ function renderMe(){
     });
     h+='</div>';
   });
-  box.innerHTML=`<h2 style="margin-bottom:12px">Ma semaine — ${esc(a.nom)}</h2>`+h;
+  const s1=iso(vendrediAvant(wk)),s2=iso(addDays(wk,4)),moiAst=[s1,s2].filter(s=>astSem(s,'agent').includes(me)||astSem(s,'encadrant').includes(me));
+  const astTxt=moiAst.map(s=>{const d=dt(s),e=addDays(d,7);return `☎ ${astSem(s,'encadrant').includes(me)?'Encadrant':'Agent'} d'astreinte du ven. ${d.getDate()}/${d.getMonth()+1} 16h30 au ven. ${e.getDate()}/${e.getMonth()+1} 16h30`;}).join('<br>');
+  box.innerHTML=`<h2 style="margin-bottom:12px">Ma semaine — ${esc(a.nom)}</h2>`+(astTxt?`<div class="astr">${astTxt}</div>`:'')+h;
   box.querySelectorAll('[data-m]').forEach(e=>e.onclick=()=>ficheMission(+e.dataset.m));
   box.querySelectorAll('[data-r]').forEach(e=>e.onclick=()=>ficheRou(+e.dataset.r,me,e.closest('.day').dataset.day));
   box.querySelectorAll('[data-e]').forEach(e=>e.onclick=()=>ficheRdv(+e.dataset.e,e.closest('.day').dataset.day));
@@ -665,26 +751,83 @@ function ficheMission(id){
   const solo=noms.length<2,marque=peutMarquer(m.lot),moi=P()>=3||(P()>=2&&m.agent_id===MOI);
   const jours=[...new Set(lot.map(x=>x.jour))].sort();
   ouvrir(`<h2>${esc(i.site)}</h2><p class="sub2">${esc(i.trav)}${t?'':'<br><i>Mission libre</i>'}<br><b>${esc(noms.join(', '))}</b> · ${jours.length>1?dfr(jours[0])+' → '+dfr(jours[jours.length-1]):dfr(m.jour)+(m.creneau==='journee'?' · journée':' · '+(m.creneau==='matin'?'matin':'après-midi'))}</p>
+   <div id="raps"></div>
    ${m.statut==='fait'?`<p class="sub2"><span class="badge b-ok">Faite${m.fait_le?' le '+new Date(m.fait_le).toLocaleDateString('fr-FR'):''}</span></p>`:''}
    <div class="opts">
-   ${m.statut==='fait'?(marque?`<button onclick="statutLot('${m.lot}','prevu')">Remettre à faire</button>`:''):
-     `${marque?`<button class="ok" onclick="statutLot('${m.lot}','fait')">✓ Fait${solo?'':' (pour toute l\'équipe)'}</button><button onclick="statutLot('${m.lot}','reporte')">Reporter${solo?'':' (toute l\'équipe)'} — retourne dans À planifier</button>`:''}
+   ${m.statut==='fait'?(marque?`<button onclick="formFait('${m.lot}',true)">+ Compte rendu</button><button onclick="statutLot('${m.lot}','prevu')">Remettre à faire</button>`:''):
+     `${marque?`<button class="ok" onclick="formFait('${m.lot}')">✓ Fait${solo?'':' (pour toute l\'équipe)'}</button><button onclick="statutLot('${m.lot}','reporte')">Reporter${solo?'':' (toute l\'équipe)'} — retourne dans À planifier</button>`:''}
       ${P()>=3?`<button onclick="choixEq(${id})">+ Ajouter un équipier</button>`:''}
       ${moi&&m.nb_jours===1?`<button onclick="formDeplacer(${id})">Déplacer…</button>`:''}`}
    ${moi?`<button onclick="retirer(${id})">${solo?'Retirer du planning (sans compter de report)':'Retirer '+esc(INTM[m.agent_id].nom)+' seulement'}</button>`:''}
    <button onclick="fermer()">Fermer</button></div>
    ${marque||moi?'':'<p class="note">Tu peux consulter cette mission ; seuls les agents concernés et la gestion peuvent la modifier.</p>'}`);
+  afficherRapports(m.lot);
 }
-async function statutLot(lot,s){
+async function afficherRapports(lot){
+  const R=RAP[lot]||[];if(!R.length)return;
+  const ch=R.flatMap(r=>r.photos||[]);let U={};
+  if(ch.length){try{const {data}=await db.storage.from('photos').createSignedUrls(ch,3600);(data||[]).forEach(d=>{if(d.signedUrl)U[d.path]=d.signedUrl;});}catch(e){}}
+  const box=$('raps');if(!box)return;
+  box.innerHTML=R.map(r=>`<div class="rap"><small>${esc((INTM[r.agent_id]||{}).nom||'')} · ${new Date(r.created_at).toLocaleDateString('fr-FR')}</small>${r.note?esc(r.note):''}
+    ${(r.photos||[]).length?`<div class="ph-th">${r.photos.map(p=>U[p]?`<a href="${esc(U[p])}" target="_blank" rel="noopener"><img src="${esc(U[p])}" alt="photo"></a>`:'<span class="badge b-mute">photo hors ligne</span>').join('')}</div>`:''}</div>`).join('');
+}
+/* Compte rendu (facultatif) : une note et jusqu'à 3 photos compressées, posés en marquant « fait » */
+let CR_PH=[];
+function formFait(lot,seul){
+  CR_PH=[];
+  ouvrir(`<h2>${seul?'Compte rendu':'Mission faite'}</h2><p class="sub2">${seul?'':'Un compte rendu est facultatif : tu peux valider directement. '}Il reste attaché à la tâche.</p><div class="frm">
+   <label class="l">Note</label><textarea class="inp" id="cr-n" rows="3" placeholder="Ex. clapet changé, joint à prévoir au prochain passage"></textarea>
+   <label class="l">Photos (3 au plus)</label><input type="file" accept="image/*" multiple id="cr-f" onchange="photosCR(this)"><div class="ph-th" id="cr-p"></div></div>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button>${seul?'':`<button class="btn-l" onclick="statutLot('${lot}','fait')">Valider sans compte rendu</button>`}<button class="btn-p" id="cr-ok" onclick="validerFait('${lot}',${!!seul})">${seul?'Enregistrer':'Valider avec le compte rendu'}</button></div>`);
+}
+function compresser(file){return new Promise((ok,ko)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const M=1600,k=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):ko(new Error('compression')),'image/jpeg',0.75);};
+  im.onerror=()=>ko(new Error('image illisible'));im.src=u;});}
+async function photosCR(inp){
+  const fs=[...inp.files].slice(0,3-CR_PH.length);inp.value='';
+  for(const f of fs){try{CR_PH.push(await compresser(f));}catch(e){toast(f.name+' : '+e.message);}}
+  $('cr-p').innerHTML=CR_PH.map(b=>`<img src="${URL.createObjectURL(b)}" alt="">`).join('');
+}
+const blobVersData=b=>new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(b);});
+const dataVersBlob=async d=>(await fetch(d)).blob();
+async function validerFait(lot,seul){
+  const cr={note:$('cr-n').value.trim(),photos:CR_PH.slice(),cle:cle()};
+  if(!cr.note&&!cr.photos.length){if(seul){fermer();return;}return statutLot(lot,'fait');}
+  $('cr-ok').disabled=true;
+  if(seul){const r=await envoyerRapport(lot,cr);if(r==='attente')await garderRapport(lot,null,cr);fermer();await rafraichir();toast(r==='attente'?'Compte rendu gardé sur le téléphone':'Compte rendu enregistré');return;}
+  return statutLot(lot,'fait',cr);
+}
+async function envoyerRapport(lot,cr){
+  const m=M.find(x=>x.lot===lot)||{},chemins=[];
+  try{
+    for(const [i,b] of cr.photos.entries()){
+      const blob=typeof b==='string'?await dataVersBlob(b):b,ch=`planning/${lot}/${cr.cle}_${i}.jpg`;
+      const up=await db.storage.from('photos').upload(ch,blob,{contentType:'image/jpeg',upsert:true});if(up.error)throw up.error;chemins.push(ch);
+    }
+    const {error}=await db.from('planning_rapports').upsert({lot,tache_id:m.tache_id||null,agent_id:MOI||m.agent_id||null,note:cr.note||null,photos:chemins,cle_client:cr.cle},{onConflict:'cle_client',ignoreDuplicates:true});
+    if(error)throw error;
+    return 'ok';
+  }catch(e){if(horsReseau(e))return 'attente';alert('Compte rendu non enregistré : '+msgErr(e));return 'refus';}
+}
+async function garderRapport(lot,statut,cr){
+  const x={lot,statut,cr:{note:cr.note,cle:cr.cle,photos:await Promise.all(cr.photos.map(b=>typeof b==='string'?b:blobVersData(b)))}};
+  const a=lireFile().filter(y=>!(y.lot===lot&&y.statut===statut));a.push(x);
+  try{localStorage.setItem(cleFile(),JSON.stringify(a));}catch(e){x.cr.photos=[];ecrireFile(a);alert('Plus assez de place sur le téléphone pour garder les photos hors connexion : la note est gardée, les photos non.');}
+}
+async function statutLot(lot,s,cr){
   fermer();
   // effet immédiat à l'écran (le serveur confirme ensuite ; hors connexion, l'action attend)
   for(const x of M.filter(r=>r.lot===lot)){if(s==='fait'&&x.statut==='prevu'){x.statut='fait';x.fait_le=new Date().toISOString();}else if(s==='prevu'&&x.statut==='fait'){x.statut='prevu';x.fait_le=null;}else if(s==='reporte'&&x.statut==='prevu')x.statut='reporte';}
   M=M.filter(x=>x.statut!=='reporte');rendu();
   const {error}=await db.rpc('planning_statut',{p_lot:lot,p_statut:s});
   if(error){
-    if(horsReseau(error)){ecrireFile([...lireFile().filter(a=>a.lot!==lot),{lot,statut:s}]);sauverCache();bandeaux();toast('Gardé sur le téléphone, envoi dès que le réseau revient');return;}
+    if(horsReseau(error)){
+      if(cr)await garderRapport(lot,s,cr);else ecrireFile([...lireFile().filter(a=>a.lot!==lot||a.cr),{lot,statut:s}]);
+      sauverCache();bandeaux();toast('Gardé sur le téléphone, envoi dès que le réseau revient');return;}
     alert(msgErr(error));await rafraichir();return;
   }
+  if(cr&&(await envoyerRapport(lot,cr))==='attente')await garderRapport(lot,null,cr);
   await rafraichir();
   toast(s==='fait'?'Mission terminée — la tâche est marquée faite':s==='reporte'?'Reportée — la tâche est de retour dans « À planifier »':'Remise à faire');
 }
@@ -788,6 +931,43 @@ function reglesATT(){
    <div class="acts">${P()>=3?`<button class="btn-l" onclick="fermer();location.hash='reglages'">Modifier dans Réglages</button>`:''}<button class="btn-l" onclick="fermer()">Fermer</button></div>`);
 }
 
+/* ── Congés et absences par période (du… au…) ── */
+async function formConges(){
+  const ags=P()>=3?INT.filter(i=>i.type==='agent'&&i.actif):INT.filter(i=>i.id===MOI);
+  if(!ags.length){alert('Ton compte n\'est pas relié à un agent.');return;}
+  let liste=[];
+  try{const {data}=await db.from('planning_absences').select('agent_id,jour,type,periode').not('periode','is',null).gte('jour',iso(addDays(new Date(),-1))).order('jour');
+    const g={};for(const a of data||[]){const k=a.periode;g[k]??={periode:k,agent_id:a.agent_id,type:a.type,du:a.jour,au:a.jour};g[k].au=a.jour;}liste=Object.values(g).filter(x=>P()>=3||x.agent_id===MOI);}catch(e){}
+  const auj=iso(new Date());
+  ouvrir(`<h2>Congés et absences</h2><p class="sub2">Saisis une période : les jours ouvrés sont remplis seuls (week-ends et fériés sautés). Jamais de motif médical : un arrêt s'affiche « Absent ».</p><div class="frm">
+   <label class="l">Agent</label><select class="sel" id="cg-a">${ags.map(a=>`<option value="${a.id}" ${a.id===me?'selected':''}>${esc(a.nom)}</option>`).join('')}</select>
+   <label class="l">Type</label><select class="sel" id="cg-t"><option value="CE">Congé (CE)</option><option value="Formation">Formation</option><option value="Absent">Absent</option></select>
+   <div class="two-c"><div><label class="l">Du</label><input class="inp" type="date" id="cg-d" value="${auj}"><label style="font-size:.8rem"><input type="checkbox" id="cg-dp"> à partir de l'après-midi</label></div>
+   <div><label class="l">Au (inclus)</label><input class="inp" type="date" id="cg-f" value="${auj}"><label style="font-size:.8rem"><input type="checkbox" id="cg-fm"> jusqu'au matin seulement</label></div></div></div>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Fermer</button><button class="btn-p" onclick="saveConges()">Enregistrer la période</button></div>
+   ${liste.length?`<div class="grp-t" style="margin-top:14px">À venir</div>${liste.map(x=>`<div class="rl"><b>${esc((INTM[x.agent_id]||{}).nom||'?')}</b> — ${esc(x.type)}<div class="d">du ${dt(x.du).toLocaleDateString('fr-FR')} au ${dt(x.au).toLocaleDateString('fr-FR')}</div><div class="acts"><button class="btn-l" onclick="supprConges('${x.periode}')">Supprimer la période</button></div></div>`).join('')}`:''}`);
+}
+async function saveConges(){
+  const ag=+$('cg-a').value,type=$('cg-t').value,du=$('cg-d').value,au=$('cg-f').value;
+  if(!du||!au||au<du){alert('Vérifie les dates.');return;}
+  const periode=cle(),rows=[];let d=dt(du),nMis=0;
+  while(iso(d)<=au){const j=iso(d);
+    if(d.getDay()%6&&!ferie(j))for(const sl of [0,1]){
+      if(j===du&&sl===0&&$('cg-dp').checked)continue;if(j===au&&sl===1&&$('cg-fm').checked)continue;
+      rows.push({agent_id:ag,jour:j,creneau:CRN[sl],type,periode});if(mAt(ag,j,sl))nMis++;}
+    d=addDays(d,1);}
+  if(!rows.length){alert('Aucun jour ouvré dans cette période.');return;}
+  const {error}=await db.from('planning_absences').upsert(rows,{onConflict:'agent_id,jour,creneau'});
+  if(error){alert(msgErr(error));return;}
+  fermer();await rafraichir();toast((rows.length/2).toString().replace('.',',')+' jour(s) enregistré(s)'+(nMis?' — attention : '+nMis+' mission(s) visibles cette semaine sont sur la période':''));
+}
+async function supprConges(periode){
+  if(!confirm('Supprimer toute cette période ?'))return;
+  const {error}=await db.from('planning_absences').delete().eq('periode',periode);
+  if(error){alert(msgErr(error));return;}
+  await rafraichir();formConges();toast('Période supprimée');
+}
+
 /* ── Rendez-vous ── */
 function formRdv(o){
   const e=o.id?RDV.find(x=>x.id===o.id):null;
@@ -874,8 +1054,10 @@ async function envoyerEnAttente(){
   const a=lireFile();if(!a.length||!navigator.onLine)return;
   const reste=[];let n=0;
   for(const x of a){
-    const {error}=await db.rpc('planning_statut',{p_lot:x.lot,p_statut:x.statut});
-    if(!error)n++;else if(horsReseau(error))reste.push(x);   // coupure : on réessaiera
+    if(x.statut){const {error}=await db.rpc('planning_statut',{p_lot:x.lot,p_statut:x.statut});
+      if(error){if(horsReseau(error))reste.push(x);continue;}}   // coupure : on réessaiera ; refus : abandonnée
+    if(x.cr){const r=await envoyerRapport(x.lot,x.cr);if(r==='attente'){reste.push({...x,statut:null});continue;}}
+    n++;
     // refus définitif (mission retirée entre-temps, droits) : abandonnée
   }
   ecrireFile(reste);
@@ -895,7 +1077,7 @@ async function capturer(){
   const g=vue==='G',box=document.createElement('div');
   box.className='pdfcap'+(g?'':' me');
   box.style.width=(g?1250:760)+'px';
-  box.innerHTML=`<div class="pdft">${esc(titrePage())}</div>`+(g?`<div class="box"><table class="pg">${$('tb').innerHTML}</table></div>`:$('vme').innerHTML);
+  box.innerHTML=`<div class="pdft">${esc(titrePage())}</div>`+astreinteHTML().replace(/ click|onclick="formAstreinte\(\)"/g,'')+(g?`<div class="box"><table class="pg">${$('tb').innerHTML}</table></div>`:$('vme').innerHTML)+legende();
   document.body.appendChild(box);
   try{await (document.fonts?document.fonts.ready:null);return await html2canvas(box,{scale:2,backgroundColor:'#ffffff',logging:false});}
   finally{box.remove();}
@@ -962,7 +1144,139 @@ async function vueReglages(){
    ${ROU.map(r=>{const ex=[...r.ex].filter(d=>d>=auj).sort();return `<div class="rl"><b>↻ ${esc(r.titre)}</b>${r.actif?'':' <span class="badge b-mute">en pause</span>'}<div class="d">${esc(r.agents.map(i=>(INTM[i]||{}).nom).filter(Boolean).join(', '))} · ${decrire(r)}${r.debut?' · à partir du '+dt(r.debut).toLocaleDateString('fr-FR'):''}${r.fin?' · jusqu\'au '+dt(r.fin).toLocaleDateString('fr-FR'):''}<br>Prochaines : ${prochains(s=>rouOn(r,s))}</div>
      ${ex.length?`<div class="d">Annulées : ${ex.map(d=>`<span class="xs">${dt(d).toLocaleDateString('fr-FR',{day:'numeric',month:'numeric'})}<button title="Rétablir" onclick="retablir(${r.id},'${d}')">↺</button></span>`).join('')}</div>`:''}
      <div class="acts"><button class="btn-l" onclick="formRou(${r.id})">Modifier</button><button class="btn-l" onclick="supprRou(${r.id})">Supprimer</button></div></div>`;}).join('')||'<p class="note">Aucune pour l\'instant.</p>'}
-   <button class="btn-p" onclick="formRou(0)" style="margin-top:6px">+ Nouvelle mission récurrente</button></div>`;
+   <button class="btn-p" onclick="formRou(0)" style="margin-top:6px">+ Nouvelle mission récurrente</button></div>
+
+  <div class="card exp"><h2>Astreintes</h2>
+   <p class="note" style="margin:0 0 10px">Du vendredi 16h30 au vendredi suivant 16h30 : un encadrant et un agent terrain par semaine. Importe le planning annuel (.ods, .xlsx ou .csv), puis corrige à la main en cas de changement.</p>
+   <div class="tools"><label class="btn-l" style="cursor:pointer">Importer un fichier…<input type="file" accept=".ods,.xlsx,.xls,.csv,.txt" style="display:none" onchange="importerAstreintes(this)"></label></div>
+   <div class="tw" style="max-height:360px;overflow:auto;margin-top:10px"><table><thead><tr><th>Semaine (vendredi)</th><th>Encadrant</th><th>Agent terrain</th></tr></thead><tbody>
+   ${[...new Set(AST.map(a=>a.semaine))].filter(s=>s>=iso(addDays(new Date(),-7))).sort().map(s=>`<tr><td>${dt(s).toLocaleDateString('fr-FR')}</td><td>${esc(astNoms(s,'encadrant'))}</td><td>${esc(astNoms(s,'agent'))}</td></tr>`).join('')||'<tr><td colspan="3" class="note">Rien de saisi.</td></tr>'}
+   </tbody></table></div><p class="note">Pour modifier une semaine : touche le bandeau « Astreinte » au-dessus de la grille.</p></div>
+
+  <div class="card exp"><h2>Jours fériés</h2>
+   <p class="note" style="margin:0 0 10px">Les fériés légaux sont calculés seuls (Pâques, Ascension, Pentecôte compris). Ajoute ici les ponts accordés.</p>
+   <div style="font-size:.84rem;color:var(--mute);margin-bottom:8px">Prochains : ${(()=>{const o=[];let d=new Date();for(let k=0;k<400&&o.length<6;k++){const s=iso(d);if(d.getDay()%6&&ferie(s))o.push(d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' ('+ferie(s)+')');d=addDays(d,1);}return o.join(' · ');})()}</div>
+   ${Object.values(FER).sort((a,b)=>a.jour<b.jour?-1:1).map(f=>`<span class="xs" style="border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 10px;margin:0 6px 6px 0;display:inline-flex;gap:4px">${dt(f.jour).toLocaleDateString('fr-FR')} · ${esc(f.libelle)}<button class="btn-l" style="padding:0 6px" onclick="supprFerie('${f.jour}')">✕</button></span>`).join('')}
+   <div class="tools" style="margin-top:8px"><input class="inp" type="date" id="fe-d"><input class="inp" id="fe-l" placeholder="Ex. Pont de l'Ascension" style="flex:1;min-width:160px"><button class="btn-l" onclick="ajouterFerie()">Ajouter</button></div></div>`;
+}
+async function ajouterFerie(){
+  const jour=$('fe-d').value,libelle=$('fe-l').value.trim()||'Pont';if(!jour)return;
+  const {error}=await db.from('planning_feries').upsert({jour,libelle,travaille:false});
+  if(error){alert(msgErr(error));return;}
+  await apresReglage('Jour ajouté');
+}
+async function supprFerie(jour){
+  const {error}=await db.from('planning_feries').delete().eq('jour',jour);
+  if(error){alert(msgErr(error));return;}
+  await apresReglage('Jour retiré');
+}
+/* Import du planning annuel d'astreinte. Format attendu (celui du service) : une ligne de dates, des sections en colonne A
+   (« Encadrement astreinte technique AEP », « Agent Exploitation Eau »), le nom en colonne B, une initiale sur la semaine.
+   Accepte aussi un CSV simple : date;encadrant;agent */
+const XLSX_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const isoUTC=d=>{const x=new Date(Math.round(d.getTime()/864e5)*864e5);return x.getUTCFullYear()+'-'+String(x.getUTCMonth()+1).padStart(2,'0')+'-'+String(x.getUTCDate()).padStart(2,'0');};
+function lireDate(v){if(v instanceof Date)return isoUTC(v);const s=String(v||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+'-'+m[2]+'-'+m[3];m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):null;}
+function lireOds(buf,nomFeuille){
+  const z=XLSX.CFB.read(new Uint8Array(buf),{type:'array'}),f=XLSX.CFB.find(z,'content.xml');
+  if(!f)throw new Error('fichier .ods illisible');
+  const doc=new DOMParser().parseFromString(new TextDecoder().decode(f.content),'application/xml');
+  const tabs=[...doc.getElementsByTagName('table:table')],tab=tabs.find(t=>nomFeuille&&nomFeuille.test(t.getAttribute('table:name')||''))||tabs[0],rows=[];
+  rows.feuille=tab.getAttribute('table:name')||'';
+  for(const tr of tab.getElementsByTagName('table:table-row')){
+    const rr=Math.min(+(tr.getAttribute('table:number-rows-repeated')||1),5),row=[];
+    for(const c of tr.children){
+      if(c.tagName!=='table:table-cell'&&c.tagName!=='table:covered-table-cell')continue;
+      const n=Math.min(+(c.getAttribute('table:number-columns-repeated')||1),800),dv=c.getAttribute('office:date-value');
+      let v=null;
+      if(dv){const [y,m,d]=dv.slice(0,10).split('-').map(Number);v=new Date(Date.UTC(y,m-1,d));}
+      else{const t=[...c.getElementsByTagName('text:p')].map(x=>x.textContent).join(' ').trim();v=t||null;}
+      for(let k=0;k<n&&row.length<1200;k++)row.push(v);
+    }
+    for(let k=0;k<rr&&rows.length<3000;k++)rows.push(row);
+  }
+  return rows;
+}
+async function importerAstreintes(inp){
+  const f=inp.files[0];inp.value='';if(!f)return;
+  let rows;
+  try{
+    if(/\.(csv|txt)$/i.test(f.name)){rows=(await f.text()).split(/\r?\n/).map(l=>l.split(/[;\t]/).map(x=>x.trim()||null));rows.feuille='listing';}
+    else{
+      if(!window.XLSX)await script(XLSX_URL);
+      const buf=await f.arrayBuffer();
+      if(/\.ods$/i.test(f.name))rows=lireOds(buf,/listing/i);   // lecture directe : les cellules fusionnées ne décalent pas les colonnes
+      else{const wb=XLSX.read(buf,{type:'array',cellDates:true}),nf=wb.SheetNames.find(n=>/listing/i.test(n))||wb.SheetNames[0];
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[nf],{header:1,raw:true,defval:null});rows.feuille=nf;}
+    }
+  }catch(e){alert('Lecture impossible : '+e.message);return;}
+  // Liste : une ligne d'en-tête avec « Date … », puis une ligne par semaine
+  const hr=rows.slice(0,15).findIndex(r=>(r||[]).some(v=>typeof v==='string'&&/date/i.test(v)));
+  if(hr>=0&&/listing/i.test(rows.feuille||'')||hr>=0&&rows.length<120)return choixColonnes(rows,hr);
+  importGrille(rows);
+}
+function choixColonnes(rows,hr){
+  const H=rows[hr].map(v=>v==null?'':String(v)),corps=rows.slice(hr+1).filter(r=>r&&r.some(v=>v!=null));
+  const nc=Math.max(...rows.slice(hr,hr+60).map(r=>(r||[]).length));
+  const lib=c=>`${String.fromCharCode(65+c)} — ${H[c]&&H[c]!=='0'?H[c]:(corps.map(r=>r[c]).find(v=>v!=null&&String(v).trim()!=='')||'')}`.slice(0,60);
+  const cd=Math.max(0,H.findIndex(x=>/d[ée]but/i.test(x)));
+  const prenoms=new Set(AGP.map(a=>norm(a.nom)));
+  const score=c=>corps.filter(r=>String(r[c]??'').split(',').some(n=>prenoms.has(norm(n).split(' ')[0]))).length;
+  const ce=H.findIndex(x=>/encadrement astreinte technique/i.test(norm(x))&&/aep/i.test(norm(x)));
+  let ca=-1,best=0;for(let c=0;c<nc;c++){if(c===cd||c===ce)continue;const s=score(c);if(s>best){best=s;ca=c;}}
+  const sel=(id,cur)=>`<select class="sel" id="${id}"><option value="-1">— aucune —</option>${[...Array(nc).keys()].map(c=>`<option value="${c}" ${c===cur?'selected':''}>${esc(lib(c))}</option>`).join('')}</select>`;
+  window.__LST={rows,hr};
+  ouvrir(`<h2>Import des astreintes</h2><p class="sub2">Feuille « ${esc(rows.feuille||'')} » : ${corps.length} lignes. Vérifie les colonnes (les titres « 0 » sont remplacés par la première valeur trouvée).</p><div class="frm">
+   <label class="l">Date de début de semaine</label>${sel('ic-d',cd)}
+   <label class="l">Encadrant d'astreinte</label>${sel('ic-e',ce)}
+   <label class="l">Agent terrain (exploitation eau)</label>${sel('ic-a',ca)}</div>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="lireListe()">Continuer</button></div>`);
+}
+function lireListe(){
+  const {rows,hr}=window.__LST,cd=+$('ic-d').value,ce=+$('ic-e').value,ca=+$('ic-a').value,S={};
+  if(cd<0||(ce<0&&ca<0)){alert('Choisis la colonne des dates et au moins une colonne de noms.');return;}
+  for(const r of rows.slice(hr+1)){
+    const d=lireDate(r&&r[cd]);if(!d)continue;const s=iso(vendrediAvant(dt(d)));
+    for(const [c,role] of [[ce,'encadrant'],[ca,'agent']]){if(c<0||r[c]==null)continue;
+      for(const n of String(r[c]).split(',').map(x=>x.trim()).filter(Boolean)){S[s]??={encadrant:[],agent:[]};if(!S[s][role].includes(n))S[s][role].push(n);}}
+  }
+  apercuImport(S);
+}
+function importGrille(rows){
+  const S={},add=(day,role,nom)=>{const s=iso(vendrediAvant(dt(day)));S[s]??={encadrant:[],agent:[]};if(!S[s][role].includes(nom))S[s][role].push(nom);};
+  let dr=-1,best=0;rows.forEach((r,i)=>{const n=(r||[]).filter(v=>v instanceof Date).length;if(n>best){best=n;dr=i;}});
+  if(dr<0){alert('Ni liste ni grille d\'astreinte reconnue dans ce fichier.');return;}
+  let role=null;
+  for(let i=dr+1;i<rows.length;i++){
+    const r=rows[i]||[],lab=norm(r[0]);
+    if(lab)role=lab.startsWith('encadrement astreinte technique')&&lab.includes('aep')?'encadrant':lab.startsWith('agent exploitation eau')?'agent':null;
+    if(!role||!r[1])continue;
+    for(let c=2;c<r.length;c++){const v=r[c],d=rows[dr][c];if(v==null||!(d instanceof Date))continue;if(/^[A-Za-zÀ-ÿ]{1,3}$/.test(String(v).trim()))add(isoUTC(d),role,String(r[1]).trim());}
+  }
+  apercuImport(S);
+}
+function apercuImport(S){
+  const sem=Object.keys(S).sort();if(!sem.length){alert('Aucune astreinte trouvée.');return;}
+  const noms=[...new Set(sem.flatMap(s=>[...S[s].encadrant,...S[s].agent]))];
+  const trouve=n=>{const k=norm(n),p=k.split(' ')[0];return INT.find(i=>i.type==='agent'&&(norm(i.nom)===k||norm(i.nom)===p))||INT.find(i=>{const j=norm(i.nom);return i.type==='agent'&&j.length>2&&p.length>2&&(j.startsWith(p)||p.startsWith(j));});};
+  const anom=sem.filter(s=>S[s].encadrant.length!==1||S[s].agent.length!==1);
+  window.__IMP={S,sem};
+  ouvrir(`<h2>Import des astreintes</h2><p class="sub2">${sem.length} semaines, du ven. ${dt(sem[0]).toLocaleDateString('fr-FR')} au ven. ${dt(sem[sem.length-1]).toLocaleDateString('fr-FR')}. Les semaines déjà saisies sur cette période seront remplacées.</p>
+   ${anom.length?`<div class="banner">À vérifier : ${anom.map(s=>dt(s).toLocaleDateString('fr-FR')+' ('+[...S[s].encadrant,...S[s].agent].join(', ')+')').join(' · ')}</div>`:''}
+   <div class="tw"><table><thead><tr><th>Nom dans le fichier</th><th>Dans AquaPilot</th></tr></thead><tbody>
+   ${noms.map(n=>{const t=trouve(n);return `<tr><td>${esc(n)}</td><td><select class="sel imp-n" data-nom="${esc(n)}"><option value="nom" ${t?'':'selected'}>Nom seul, sans rôle dans l'appli</option><option value="skip">Ignorer</option>${INT.filter(i=>i.type==='agent').map(i=>`<option value="${i.id}" ${t&&t.id===i.id?'selected':''}>${esc(i.nom)}</option>`).join('')}</select></td></tr>`;}).join('')}
+   </tbody></table></div>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" id="imp-ok" onclick="validerImport()">Importer</button></div>`);
+}
+async function validerImport(){
+  const {S,sem}=window.__IMP,map={};$('imp-ok').disabled=true;
+  for(const s of dlg.querySelectorAll('.imp-n'))map[s.dataset.nom]=s.value;
+  const prenom=n=>{const w=n.trim().split(/\s+/);return w.length>1&&w.slice(1).every(x=>x===x.toUpperCase())?w[0]:n.trim();};   // « Patrice ALMEIDA » → « Patrice »
+  const rows=sem.flatMap(s=>['encadrant','agent'].flatMap(role=>S[s][role].filter(n=>map[n]!=='skip').map(n=>map[n]==='nom'?{semaine:s,role,nom:prenom(n)}:{semaine:s,role,intervenant_id:+map[n]})));
+  let {error}=await db.from('planning_astreintes').delete().gte('semaine',sem[0]).lte('semaine',sem[sem.length-1]);
+  if(!error)({error}=await db.from('planning_astreintes').insert(rows));
+  if(error){alert(msgErr(error));$('imp-ok').disabled=false;return;}
+  fermer();await apresReglage(rows.length+' lignes d\'astreinte importées');
 }
 async function apresReglage(msg){await chargerTout();vueReglages();if(msg)toast(msg);}
 async function renommer(id,el){
@@ -1024,13 +1338,16 @@ function formRou(id){
    <div class="two-c"><div><label class="l">Créneau</label><select class="sel" id="o-c">${opts(OPT_C,r.creneau)}</select></div><div><label class="l">Semaines</label><select class="sel" id="o-s">${opts(OPT_S,r.semaines)}</select></div></div>
    <label class="l">Dans le mois</label><select class="sel" id="o-m">${opts(OPT_M,r.mois)}</select>
    <div class="two-c"><div><label class="l">À partir du (facultatif)</label><input class="inp" type="date" id="o-d" value="${r.debut||''}"></div><div><label class="l">Jusqu'au (facultatif)</label><input class="inp" type="date" id="o-f" value="${r.fin||''}"></div></div>
+   <div class="two-c"><div><label class="l">Si le jour est férié</label><select class="sel" id="o-sf">${opts([['supprimer','Elle n\'a pas lieu'],['decaler','Elle est décalée au…']],r.si_ferie||'supprimer')}</select></div>
+   <div><label class="l">Jour de décalage</label><select class="sel" id="o-dj"><option value="">—</option>${opts(OPT_J,r.decale_jour||'')}</select></div></div>
    <label class="l"><input type="checkbox" id="o-x" ${r.actif?'checked':''}> Active (décocher pour la mettre en pause)</label></div>
    <p class="note">« Dernière semaine du mois » = la dernière semaine complète, du lundi au vendredi, dans le mois.</p>
    <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="saveRou(${id})">Enregistrer</button></div>`);
 }
 async function saveRou(id){
   const v=k=>[...dlg.querySelectorAll('#'+k+' input:checked')].map(x=>+x.value);
-  const row={titre:$('o-t').value.trim(),agents:v('o-a'),jours:v('o-j'),creneau:$('o-c').value,semaines:$('o-s').value,mois:$('o-m').value,debut:$('o-d').value||null,fin:$('o-f').value||null,actif:$('o-x').checked};
+  const row={titre:$('o-t').value.trim(),agents:v('o-a'),jours:v('o-j'),creneau:$('o-c').value,semaines:$('o-s').value,mois:$('o-m').value,debut:$('o-d').value||null,fin:$('o-f').value||null,actif:$('o-x').checked,si_ferie:$('o-sf').value,decale_jour:$('o-dj').value?+$('o-dj').value:null};
+  if(row.si_ferie==='decaler'&&!row.decale_jour){alert('Choisis le jour de décalage.');return;}
   if(!row.titre||!row.agents.length||!row.jours.length){alert('Intitulé, au moins un agent et au moins un jour sont nécessaires.');return;}
   const {error}=id?await db.from('planning_routines').update(row).eq('id',id):await db.from('planning_routines').insert(row);
   if(error){alert(msgErr(error));return;}
