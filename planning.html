@@ -187,6 +187,14 @@ main{max-width:none}
 .abs{border-radius:8px;padding:6px;font-size:.74rem;font-weight:700;text-align:center;background:repeating-linear-gradient(45deg,#EEE9E2,#EEE9E2 6px,#F6F2EC 6px,#F6F2EC 12px);color:var(--mute);cursor:pointer;margin-bottom:2px}
 .abs.att{background:repeating-linear-gradient(45deg,#fff,#fff 6px,#F6F2EC 6px,#F6F2EC 12px);border:1px dashed #B9AFA2}
 .abs small{display:block;font-weight:500;font-size:.66rem}
+.m.rou{background:#E8EEF2;border-left-color:#5B7A8C}
+.m.rou.conflit{box-shadow:inset 0 0 0 2px var(--bad)}
+.m .cf{color:var(--bad);font-weight:600}
+.rl{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.rl b{font-size:.95rem}.rl .d{font-size:.82rem;color:var(--mute);margin-top:2px}.rl .acts{margin-top:8px;justify-content:flex-start}
+.rl .xs{display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px;font-size:.78rem;margin:4px 4px 0 0}
+.rl .xs button{border:none;background:none;color:var(--acc);font-weight:700;padding:0 6px}
+tr.inactif td{opacity:.55}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:var(--mute);margin:10px 2px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 /* fenêtres du planning */
@@ -295,7 +303,7 @@ const cle=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxx
 const $=id=>document.getElementById(id);
 
 /* ── État ── */
-let user=null,INT=[],INTM={},AGP=[],TA={},EQ={},M=[],ABS=[],ATTR=[],ATTEX=new Set(),RDV=[];
+let user=null,INT=[],INTM={},AGP=[],TA={},EQ={},M=[],ABS=[],ATTR=[],ATTEX=new Set(),RDV=[],ROU=[];
 let wk=lundi(new Date()),vue=innerWidth<700?'M':'G',me=null,MOI=null,sel=null,hors=false,onglet='planning',fQ='',fP='';
 const P=()=>niv('planning');
 const dayOf=i=>addDays(wk,i);
@@ -350,9 +358,12 @@ async function chargerSemaine(){
 async function chargerTout(){
   try{
     const r=await Promise.all([db.from('intervenants').select('*').order('id'),db.from('planning_att_regles').select('*').order('id'),
-      db.from('planning_rdv').select('*').order('id'),db.from('planning_rdv_agents').select('rdv_id,agent_id'),db.from('planning_rdv_exceptions').select('rdv_id,jour')]);
+      db.from('planning_rdv').select('*').order('id'),db.from('planning_rdv_agents').select('rdv_id,agent_id'),db.from('planning_rdv_exceptions').select('rdv_id,jour'),
+      db.from('planning_routines').select('*').order('id'),db.from('planning_routine_exceptions').select('routine_id,jour')]);
     for(const x of r)if(x.error)throw x.error;
     INT=r[0].data;ATTR=r[1].data;
+    const rx={};for(const e of r[6].data)(rx[e.routine_id]??=[]).push(e.jour);
+    ROU=r[5].data.map(x=>({...x,ex:new Set(rx[x.id]||[])}));
     const ag={},ex={};for(const a of r[3].data)(ag[a.rdv_id]??=[]).push(a.agent_id);for(const e of r[4].data)(ex[e.rdv_id]??=[]).push(e.jour);
     RDV=r[2].data.map(x=>({...x,heure:(x.heure||'09:00').slice(0,5),agents:ag[x.id]||[],ex:new Set(ex[x.id]||[])}));
     await chargerTaches();await chargerSemaine();hors=false;sauverCache();
@@ -368,10 +379,10 @@ function indexer(){
   MOI=(INT.find(i=>i.user_id===user.id)||{}).id||null;
   if(me==null||!INTM[me])me=MOI||(AGP[0]&&AGP[0].id)||null;
 }
-function sauverCache(){try{localStorage.setItem(cleCache(),JSON.stringify({INT,ATTR,TA,EQ,M,ABS,ATTEX:[...ATTEX],wk:iso(wk),RDV:RDV.map(r=>({...r,ex:[...r.ex]}))}));}catch(e){}}
+function sauverCache(){try{localStorage.setItem(cleCache(),JSON.stringify({INT,ATTR,TA,EQ,M,ABS,ATTEX:[...ATTEX],wk:iso(wk),RDV:RDV.map(r=>({...r,ex:[...r.ex]})),ROU:ROU.map(r=>({...r,ex:[...r.ex]}))}));}catch(e){}}
 function lireCache(){
   try{const c=JSON.parse(localStorage.getItem(cleCache()));if(!c)return false;
-    INT=c.INT;ATTR=c.ATTR;TA=c.TA;EQ=c.EQ;M=c.M;ABS=c.ABS;ATTEX=new Set(c.ATTEX);RDV=c.RDV.map(r=>({...r,ex:new Set(r.ex)}));wk=dt(c.wk);return true;}catch(e){return false;}
+    INT=c.INT;ATTR=c.ATTR;TA=c.TA;EQ=c.EQ;M=c.M;ABS=c.ABS;ATTEX=new Set(c.ATTEX);RDV=c.RDV.map(r=>({...r,ex:new Set(r.ex)}));ROU=(c.ROU||[]).map(r=>({...r,ex:new Set(r.ex)}));wk=dt(c.wk);return true;}catch(e){return false;}
 }
 async function rafraichir(){
   try{await chargerTaches();await chargerSemaine();hors=false;sauverCache();}catch(e){hors=true;}
@@ -399,7 +410,7 @@ function vuePlanning(){
     <div class="vseg"><button id="vG">Grille équipe</button><button id="vM">Ma semaine</button></div>
     <select class="sel" id="who-me" aria-label="Agent"></select>
     <div class="wk"><button class="btn-l" id="wk-p" aria-label="Semaine précédente">←</button><b id="wl"></b><button class="btn-l" id="wk-n" aria-label="Semaine suivante">→</button><button class="btn-l" id="wk-t">Aujourd'hui</button></div></div>
-   <div class="grp"><button class="btn-l" id="b-att">Règles ATT</button>${P()>=2?'<button class="btn-p" id="b-rdv">+ Rendez-vous</button><button class="btn-l" id="b-lib">+ Mission libre</button>':''}<button class="btn-l" id="b-pdf">PDF</button><button class="btn-l" id="b-mail">Mail</button></div></div>
+   <div class="grp"><button class="btn-l" id="b-att">ATT et routines</button>${P()>=2?'<button class="btn-p" id="b-rdv">+ Rendez-vous</button><button class="btn-l" id="b-lib">+ Mission libre</button>':''}<button class="btn-l" id="b-pdf">PDF</button><button class="btn-l" id="b-mail">Envoyer (PDF)</button></div></div>
   <div id="vgrid" class="layout ${liste?'':'sans-liste'}">
    ${liste?`<aside class="box pl"><h2>À planifier <span id="cnt" style="color:var(--mute);font-weight:500"></span></h2><div class="hint">Glisse une tâche dans la grille, ou touche-la puis touche une case.</div>
      <div class="fl"><input class="inp" id="q" placeholder="Site, mot-clé…" value="${esc(fQ)}"><select class="sel" id="fp"><option value="">Toutes prio</option><option value="1">Prio 1</option><option value="2">Prio 2</option><option value="3">Prio 3</option></select></div>
@@ -411,7 +422,8 @@ function vuePlanning(){
   $('who-me').innerHTML=INT.filter(i=>i.type==='agent'&&i.actif).map(a=>`<option value="${a.id}" ${a.id===me?'selected':''}>${esc(a.nom)}</option>`).join('');
   $('who-me').onchange=e=>{me=+e.target.value;rendu()};
   $('wk-p').onclick=()=>changerSemaine(-7);$('wk-n').onclick=()=>changerSemaine(7);$('wk-t').onclick=()=>{wk=lundi(new Date());changerSemaine(0)};
-  $('b-att').onclick=reglesATT;$('b-pdf').onclick=exportPdf;$('b-mail').onclick=envoyerMail;
+  $('b-att').onclick=reglesATT;$('b-pdf').onclick=telechargerPdf;$('b-mail').onclick=envoyerPdf;
+  if(navigator.onLine)setTimeout(()=>chargerPdfLib().catch(()=>{}),2500);   // prêt avant le clic : le partage exige un geste récent
   if($('b-rdv')){$('b-rdv').onclick=()=>formRdv({jour:iso(wk),ags:MOI?[MOI]:[]});$('b-lib').onclick=()=>formLibre({});}
   if($('fp')){$('fp').value=fP;$('fp').onchange=e=>{fP=e.target.value;renderListe()};$('q').oninput=e=>{fQ=e.target.value;renderListe()};}
   rendu();
@@ -445,7 +457,24 @@ const slotsRegle=r=>r.creneau==='journee'?[0,1]:[r.creneau==='matin'?0:1];
 function attOn(r,day){const d=dt(day);return d.getDay()===r.jour_semaine&&(r.semaines==='toutes'||(semNum(d)%2===0)===(r.semaines==='paires'));}
 const attAt=(ag,day,sl)=>ATTR.some(r=>r.actif&&r.agent_id===ag&&slotsRegle(r).includes(sl)&&attOn(r,day))&&!ATTEX.has(ag+'|'+day);
 function aAt(ag,day,sl){const a=ABS.find(x=>x.agent_id===ag&&x.jour===day&&x.creneau===CRN[sl]);return a||(attAt(ag,day,sl)?{type:'ATT',auto:1}:undefined);}
-const occupe=(ag,day,sl)=>!!mAt(ag,day,sl)||!!aAt(ag,day,sl);
+/* Routines : « dernière semaine du mois » = dernière semaine complète (lundi → vendredi) dans le mois */
+function derniereSemaine(day){const mo=lundi(dt(day));if(addDays(mo,4).getMonth()!==mo.getMonth())return false;return addDays(mo,11).getMonth()!==mo.getMonth();}
+function rouOn(r,day){
+  const d=dt(day);
+  if(!r.actif||!r.jours.includes(d.getDay())||r.ex.has(day)||(r.debut&&day<r.debut)||(r.fin&&day>r.fin))return false;
+  if(r.semaines!=='toutes'&&(semNum(d)%2===0)!==(r.semaines==='paires'))return false;
+  if(r.mois==='derniere')return derniereSemaine(day);
+  if(r.mois==='sauf_derniere')return !derniereSemaine(day);
+  return true;
+}
+const rouAt=(ag,day,sl)=>ROU.find(r=>r.agents.includes(ag)&&slotsRegle(r).includes(sl)&&rouOn(r,day));
+const JC=['','lun','mar','mer','jeu','ven'];
+function decrire(r){
+  return r.jours.slice().sort().map(j=>JC[j]).join(' + ')+' · '+({journee:'journée',matin:'matin',aprem:'après-midi'})[r.creneau]+
+    ({toutes:'',paires:' · semaines paires',impaires:' · semaines impaires'})[r.semaines]+({tous:'',derniere:' · dernière semaine du mois',sauf_derniere:' · sauf la dernière semaine du mois'})[r.mois||'tous'];
+}
+function prochains(f,n=4){const o=[];let d=new Date();for(let k=0;k<200&&o.length<n;k++){const s=iso(d);if(d.getDay()%6&&f(s))o.push(d.getDate()+'/'+(d.getMonth()+1));d=addDays(d,1);}return o.join(' · ')||'—';}
+const occupe=(ag,day,sl)=>!!mAt(ag,day,sl)||!!aAt(ag,day,sl)||!!rouAt(ag,day,sl);
 const slotRdv=e=>(+e.heure.slice(0,2)*60+ +e.heure.slice(3,5))<750?0:1;
 function occurs(e,day){
   if(!e.recurrence)return e.jour===day;
@@ -464,6 +493,7 @@ function avec(m){const o=[...new Set(M.filter(x=>x.lot===m.lot&&x.jour===m.jour&
   return o.length?`<i>+ ${o.map(i=>esc((INTM[i]||{}).nom||'?')).join(', ')}</i>`:'';}
 const tuile=(m,compact)=>{const i=info(m);return `<div class="m p${i.prio}${m.statut==='fait'?' fait':''}" data-m="${m.id}" draggable="${P()>=2}"><b>${esc(i.site)}${m.nb_jours>1?` · j${m.rang}/${m.nb_jours}`:''}</b><span class="mt">${esc(compact?i.trav.slice(0,50):i.trav)}</span>${avec(m)}</div>`;};
 const chipRdv=e=>`<div class="ev" data-e="${e.id}"><b>${e.recurrence?'↻ ':''}${fh(e.heure)} · ${durTxt(e.duree_min)}</b> ${esc(e.titre)}</div>`;
+const tuileRou=(r,ag,day,ab)=>{const o=r.agents.filter(i=>i!==ag&&INTM[i]);return `<div class="m rou${ab?' conflit':''}" data-r="${r.id}"><b>↻ ${esc(r.titre)}</b>${o.length?`<i>+ ${o.map(i=>esc(INTM[i].nom)).join(', ')}</i>`:''}${ab?`<i class="cf">⚠ ${esc(ab.type)} ce jour-là</i>`:''}</div>`;};
 const chipAbs=(a,ag,day,sl)=>`<div class="abs${a.auto?' att':''}" data-a="${ag}|${day}|${sl}">${esc(a.type)}${a.auto?'<small>prévu</small>':''}</div>`;
 
 /* ── À planifier ── */
@@ -491,15 +521,15 @@ function renderGrille(){
   for(const a of AGP){
     h+=`<tr><td class="ag">${esc(a.nom)}</td>`;
     for(const d of ds){
-      const day=iso(d);let sauter=false;
-      for(const sl of [0,1]){
-        if(sauter){sauter=false;continue;}
-        const m=mAt(a.id,day,sl),ab=aAt(a.id,day,sl),evs=evOn(day,a.id,sl);
-        let span=1;
-        if(sl===0&&m&&m.creneau==='journee'&&!evOn(day,a.id,1).length){span=2;sauter=true;}
-        const inner=evs.map(chipRdv).join('')+(m?tuile(m,true):'')+(ab?chipAbs(ab,a.id,day,sl):'');
-        const libre=!m&&!ab;
-        h+=`<td class="c ${sl===0?'am':''}${sel&&libre&&peutPlanifier(a.id)?' target':''}" ${span>1?'colspan="2"':''} data-ag="${a.id}" data-day="${day}" data-sl="${sl}">${inner}</td>`;
+      const day=iso(d);
+      const cont=sl=>{const m=mAt(a.id,day,sl),ab=aAt(a.id,day,sl),ro=rouAt(a.id,day,sl),evs=evOn(day,a.id,sl);
+        return {m,ab,ro,evs,key:(m?'m'+m.id:'')+(ro?'r'+ro.id:'')+(ab?'a'+ab.type+(ab.auto?'*':''):''),
+          html:evs.map(chipRdv).join('')+(m?tuile(m,true):'')+(ro?tuileRou(ro,a.id,day,ab):'')+(ab?chipAbs(ab,a.id,day,sl):'')};};
+      const c=[cont(0),cont(1)];
+      const fus=c[0].key&&c[0].key===c[1].key&&!c[1].evs.length;
+      for(const sl of fus?[0]:[0,1]){
+        const x=c[sl],libre=!x.m&&!x.ab&&!x.ro;
+        h+=`<td class="c ${sl===0&&!fus?'am':''}${sel&&libre&&peutPlanifier(a.id)?' target':''}" ${fus?'colspan="2"':''} data-ag="${a.id}" data-day="${day}" data-sl="${sl}">${x.html}</td>`;
       }
     }
     h+='</tr>';
@@ -514,6 +544,8 @@ function renderGrille(){
     td.onclick=e=>{
       const ee=e.target.closest('[data-e]');if(ee)return ficheRdv(+ee.dataset.e,day);
       const mm=e.target.closest('[data-m]');if(mm)return ficheMission(+mm.dataset.m);
+      const rr=e.target.closest('[data-r]');if(rr&&!sel)return ficheRou(+rr.dataset.r,ag,day);
+      if(rr&&sel)return poserOuAtt(ag,day,sl);
       const ab=e.target.closest('[data-a]');
       if(ab&&sel&&(aAt(ag,day,sl)||{}).auto)return poserOuAtt(ag,day,sl);
       if(ab)return ficheAbs(ag,day,sl);
@@ -535,9 +567,10 @@ function renderMe(){
     const day=iso(d);
     h+=`<div class="day ${day===auj?'today':''}" data-day="${day}"><h3>${JOURS[i]} ${d.getDate()}${day===auj?' · aujourd\'hui':''}</h3>`;
     [0,1].forEach(sl=>{
-      const m=mAt(me,day,sl),ab=aAt(me,day,sl),evs=evOn(day,me,sl).map(chipRdv).join('');
+      const m=mAt(me,day,sl),ab=aAt(me,day,sl),ro=rouAt(me,day,sl),evs=evOn(day,me,sl).map(chipRdv).join('');
       let c;
       if(m){c=(m.creneau==='journee'&&sl===1)?'<div class="empty">↑ suite de la journée</div>':tuile(m,false);}
+      else if(ro)c=(ro.creneau==='journee'&&sl===1&&!ab)?'<div class="empty">↑ suite de la journée</div>':tuileRou(ro,me,day,ab)+(ab?chipAbs(ab,me,day,sl):'');
       else if(ab)c=chipAbs(ab,me,day,sl);
       else c='<div class="empty">Libre</div>';
       h+=`<div class="slot"><em>${sl?'APRÈM':'MATIN'}</em><div class="sc">${evs}${c}</div></div>`;
@@ -546,6 +579,7 @@ function renderMe(){
   });
   box.innerHTML=`<h2 style="margin-bottom:12px">Ma semaine — ${esc(a.nom)}</h2>`+h;
   box.querySelectorAll('[data-m]').forEach(e=>e.onclick=()=>ficheMission(+e.dataset.m));
+  box.querySelectorAll('[data-r]').forEach(e=>e.onclick=()=>ficheRou(+e.dataset.r,me,e.closest('.day').dataset.day));
   box.querySelectorAll('[data-e]').forEach(e=>e.onclick=()=>ficheRdv(+e.dataset.e,e.closest('.day').dataset.day));
   box.querySelectorAll('[data-a]').forEach(e=>e.onclick=()=>{const [ag,day,sl]=e.dataset.a.split('|');ficheAbs(+ag,day,+sl);});
 }
@@ -557,10 +591,30 @@ const annuler='<button onclick="fermer()">Annuler</button>';
 
 /* ── Poser une tâche ── */
 function poserOuAtt(ag,day,sl){
+  const ro=rouAt(ag,day,sl);
+  if(ro&&peutPlanifier(ag)&&sel)return ouvrir(`<h2>${esc(ro.titre)}</h2><p class="sub2">Prévue ce jour-là pour ${esc(ro.agents.map(i=>(INTM[i]||{}).nom).filter(Boolean).join(', '))}. Annuler cette occurrence pour poser la tâche ? Les autres jours ne bougent pas.</p><div class="opts"><button class="acc" onclick="rouEtPoser(${ro.id},${ag},'${day}',${sl})">Annuler cette occurrence et poser la tâche</button>${annuler}</div>`);
   const x=aAt(ag,day,sl);
   if(x&&x.auto&&peutPlanifier(ag))return ouvrir(`<h2>ATT prévu ce jour</h2><p class="sub2">${esc(INTM[ag].nom)} a un ATT prévu. Le supprimer pour poser la tâche ?</p><div class="opts"><button class="acc" onclick="attEtPoser(${ag},'${day}',${sl})">Supprimer l'ATT et poser la tâche</button>${annuler}</div>`);
   poser(ag,day,sl);
 }
+async function rouEtPoser(id,ag,day,sl){
+  if(!await exceptionRou(id,day))return;
+  fermer();rendu();poserOuAtt(ag,day,sl);
+}
+async function exceptionRou(id,day){
+  const {error}=await db.from('planning_routine_exceptions').upsert({routine_id:id,jour:day},{onConflict:'routine_id,jour',ignoreDuplicates:true});
+  if(error){alert(msgErr(error));return false;}
+  ROU.find(r=>r.id===id).ex.add(day);sauverCache();return true;
+}
+function ficheRou(id,ag,day){
+  const r=ROU.find(x=>x.id===id);if(!r)return;
+  const peut=P()>=3||(P()>=2&&r.agents.includes(MOI));
+  ouvrir(`<h2>↻ ${esc(r.titre)}</h2><p class="sub2">${dfr(day)}<br><b>${esc(r.agents.map(i=>(INTM[i]||{}).nom).filter(Boolean).join(', '))}</b><br>Routine : ${decrire(r)}<br>Prochaines : ${prochains(s=>rouOn(r,s))}</p><div class="opts">
+   ${peut?`<button onclick="annulerOccurrence(${id},'${day}')">Cette occurrence n'a pas lieu (${dt(day).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric'})})</button>`:''}
+   ${P()>=3?`<button onclick="fermer();location.hash='reglages'">Modifier la routine (Réglages)</button>`:''}
+   <button onclick="fermer()">Fermer</button></div>`);
+}
+async function annulerOccurrence(id,day){if(await exceptionRou(id,day)){fermer();rendu();toast('Occurrence annulée — la routine continue');}}
 async function attEtPoser(ag,day,sl){
   const {error}=await db.from('planning_att_exceptions').upsert({agent_id:ag,jour:day},{onConflict:'agent_id,jour',ignoreDuplicates:true});
   if(error){alert(msgErr(error));return;}
@@ -720,18 +774,11 @@ async function supAbs(ag,day){
   fermer();await rafraichir();
 }
 function reglesATT(){
-  const modif=P()>=3;
-  const prochains=r=>{const o=[];let d=new Date();for(let k=0;k<120&&o.length<3;k++){if(attOn(r,iso(d)))o.push(d.getDate()+'/'+(d.getMonth()+1));d=addDays(d,1);}return o.join(' · ');};
-  const s=(opts,cur,i,f)=>modif?`<select class="sel" onchange="majRegle(${i},'${f}',this.value)">${opts.map(([v,l])=>`<option value="${v}" ${String(v)===String(cur)?'selected':''}>${l}</option>`).join('')}</select>`:esc((opts.find(([v])=>String(v)===String(cur))||[])[1]||'');
-  ouvrir(`<h2>Règles d'ATT</h2><p class="sub2">Ce sont des ATT <b>prévus</b> : chacun peut sauter une semaine (formation, médecine du travail…) en touchant la case. Semaines paires / impaires = numéro de semaine ISO (cette semaine : ${semNum(wk)}).</p><div class="frm">
-   ${ATTR.map((r,i)=>`<label class="l">${esc((INTM[r.agent_id]||{}).nom||'?')}</label><div style="display:flex;gap:6px;flex-wrap:wrap">${s([[1,'lundi'],[2,'mardi'],[3,'mercredi'],[4,'jeudi'],[5,'vendredi']],r.jour_semaine,i,'jour_semaine')}${s([['toutes','Toutes les semaines'],['paires','Semaines paires'],['impaires','Semaines impaires']],r.semaines,i,'semaines')}${s([['journee','Journée'],['matin','Matin'],['aprem','Après-midi']],r.creneau,i,'creneau')}</div><small style="color:var(--mute)">Prochains : ${prochains(r)||'—'}</small>`).join('')}</div>
-   <div class="acts"><button class="btn-l" onclick="fermer()">Fermer</button></div>`);
-}
-async function majRegle(i,f,v){
-  const r=ATTR[i];const val=f==='jour_semaine'?+v:v;
-  const {error}=await db.from('planning_att_regles').update({[f]:val}).eq('id',r.id);
-  if(error){alert(msgErr(error));return;}
-  r[f]=val;rendu();reglesATT();toast('Règle enregistrée');
+  const n=semNum(wk);
+  ouvrir(`<h2>ATT et routines</h2><p class="sub2">Semaine ${n} (${n%2?'impaire':'paire'}). Les ATT sont <b>prévus</b> : chacun peut sauter en touchant la case. Une occurrence de routine peut aussi être annulée.</p>
+   <div class="grp-t">ATT</div>${ATTR.filter(r=>r.actif).map(r=>`<div class="rl"><b>${esc((INTM[r.agent_id]||{}).nom||'?')}</b><div class="d">${decrire({jours:[r.jour_semaine],creneau:r.creneau,semaines:r.semaines,mois:'tous'})}<br>Prochains : ${prochains(s=>attOn(r,s))}</div></div>`).join('')}
+   <div class="grp-t">Missions récurrentes</div>${ROU.filter(r=>r.actif).map(r=>`<div class="rl"><b>↻ ${esc(r.titre)}</b><div class="d">${esc(r.agents.map(i=>(INTM[i]||{}).nom).filter(Boolean).join(', '))} · ${decrire(r)}<br>Prochaines : ${prochains(s=>rouOn(r,s))}</div></div>`).join('')||'<p class="sub2">Aucune.</p>'}
+   <div class="acts">${P()>=3?`<button class="btn-l" onclick="fermer();location.hash='reglages'">Modifier dans Réglages</button>`:''}<button class="btn-l" onclick="fermer()">Fermer</button></div>`);
 }
 
 /* ── Rendez-vous ── */
@@ -831,60 +878,193 @@ window.addEventListener('online',()=>envoyerEnAttente());
 
 /* ── Export PDF et mail ── */
 function titrePage(){return (vue==='G'?'Planning équipe':'Ma semaine — '+(INTM[me]||{}).nom)+' — '+$('wl').textContent;}
-function exportPdf(){
-  $('ph').textContent=titrePage();
-  const st=document.createElement('style');st.textContent='@page{size:A4 '+(vue==='G'?'landscape':'portrait')+';margin:10mm}';document.head.appendChild(st);
-  const t=document.title;document.title='Planning-S'+semNum(wk);
-  window.print();document.title=t;st.remove();
+/* ── PDF (fabriqué dans le navigateur : rien ne sort de l'appli) et envoi par mail ── */
+const JSPDF_URL='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',AUTOT_URL='https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
+function script(src){return new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ko(new Error('bibliothèque PDF non chargée (réseau ?)'));document.head.appendChild(s);});}
+let pdfLib=null;
+function chargerPdfLib(){return pdfLib??=(async()=>{if(!window.jspdf)await script(JSPDF_URL);if(!window.jspdf.jsPDF.API.autoTable)await script(AUTOT_URL);})().catch(e=>{pdfLib=null;throw e;});}
+const pt=s=>String(s??'').replace(/[↻⚠]\s?/g,'').replace(/→/g,'->').replace(/[^\x00-\xFF€œŒ’‘“”–—…•]/g,'');
+function celLignes(ag,day,sl){
+  const l=[];
+  evOn(day,ag,sl).forEach(e=>l.push(fh(e.heure)+' '+e.titre+' ('+durTxt(e.duree_min)+')'));
+  const m=mAt(ag,day,sl),ro=rouAt(ag,day,sl),ab=aAt(ag,day,sl);
+  if(m){const x=info(m),o=[...new Set(M.filter(y=>y.lot===m.lot&&y.jour===m.jour&&y.agent_id!==ag&&y.statut!=='reporte').map(y=>(INTM[y.agent_id]||{}).nom))];
+    l.push(x.site+(x.trav?' – '+x.trav:'')+(o.length?' (avec '+o.join(', ')+')':'')+(m.statut==='fait'?' [fait]':''));}
+  if(ro)l.push('Routine : '+ro.titre);
+  if(ab)l.push(ab.type+(ab.auto?' (prévu)':''));
+  return l;
 }
-function texteSemaine(ids){
-  let s=titrePage()+'\n';
-  for(const id of ids){
-    s+='\n'+INTM[id].nom.toUpperCase()+'\n';
-    for(let i=0;i<5;i++){
-      const day=iso(dayOf(i)),l=[];
-      for(const sl of [0,1]){
-        const tag=sl?'ap-midi':'matin';
-        evOn(day,id,sl).forEach(e=>l.push(tag+' '+fh(e.heure)+' '+e.titre));
-        const m=mAt(id,day,sl),ab=aAt(id,day,sl);
-        if(m&&!(m.creneau==='journee'&&sl===1)){const x=info(m);l.push((m.creneau==='journee'?'journée':tag)+' '+x.site+(x.trav?' : '+x.trav.slice(0,60):''));}
-        else if(ab)l.push(tag+' '+ab.type);
-      }
-      s+=' '+JOURS[i].slice(0,3)+' '+dayOf(i).getDate()+' : '+(l.join(' ; ')||'—')+'\n';
-    }
+function couleurCel(ag,day,sl){
+  const m=mAt(ag,day,sl);
+  if(m){if(m.statut==='fait')return [227,241,232];return {1:[253,231,228],2:[252,241,220],3:[227,238,247]}[info(m).prio]||[227,238,247];}
+  if(rouAt(ag,day,sl))return [232,238,242];
+  if(aAt(ag,day,sl))return [238,233,226];
+  if(evOn(day,ag,sl).length)return [239,232,247];
+  return null;
+}
+async function fairePdf(){
+  await chargerPdfLib();
+  const {jsPDF}=window.jspdf,ds=[0,1,2,3,4].map(dayOf);
+  const cel=(ag,day,sl,span)=>{const f=couleurCel(ag,day,sl);return {content:pt(celLignes(ag,day,sl).join('\n')),colSpan:span,styles:f?{fillColor:f}:{}};};
+  const commun={theme:'grid',styles:{font:'helvetica',fontSize:7,cellPadding:1.4,valign:'top',overflow:'linebreak',lineColor:[215,208,198],lineWidth:.15,textColor:[38,34,30]},
+    headStyles:{fillColor:[244,241,236],textColor:[38,34,30],fontStyle:'bold',halign:'center'},margin:{left:8,right:8}};
+  let doc;
+  if(vue==='G'){
+    doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    doc.setFontSize(13);doc.text(pt(titrePage()),8,11);
+    const head=[[{content:'',rowSpan:2},...ds.map((d,i)=>({content:JOURS[i]+' '+d.getDate()+'/'+(d.getMonth()+1),colSpan:2}))],ds.flatMap(()=>['Matin','Après-midi'])];
+    const body=AGP.map(a=>{const row=[{content:pt(a.nom),styles:{fontStyle:'bold'}}];
+      for(const d of ds){const day=iso(d),l0=celLignes(a.id,day,0).join('|'),l1=celLignes(a.id,day,1).join('|');
+        if(l0&&l0===l1)row.push(cel(a.id,day,0,2));else row.push(cel(a.id,day,0,1),cel(a.id,day,1,1));}
+      return row;});
+    const cs={0:{cellWidth:20}};for(let i=1;i<=10;i++)cs[i]={cellWidth:(297-16-20)/10};   // colonnes égales
+    doc.autoTable({...commun,head,body,startY:15,columnStyles:cs});
+  }else{
+    doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    doc.setFontSize(13);doc.text(pt(titrePage()),10,12);
+    const body=ds.map((d,i)=>{const day=iso(d),l0=celLignes(me,day,0).join('|'),l1=celLignes(me,day,1).join('|'),j={content:JOURS[i]+' '+d.getDate()+'/'+(d.getMonth()+1),styles:{fontStyle:'bold'}};
+      return l0&&l0===l1?[j,cel(me,day,0,2)]:[j,cel(me,day,0,1),cel(me,day,1,1)];});
+    doc.autoTable({...commun,styles:{...commun.styles,fontSize:9,cellPadding:2.5,minCellHeight:18},head:[['','Matin','Après-midi']],body,startY:17,columnStyles:{0:{cellWidth:28},1:{cellWidth:(210-16-28)/2},2:{cellWidth:(210-16-28)/2}}});
   }
-  return s;
+  doc.setFontSize(7);doc.setTextColor(122,112,104);
+  doc.text('AquaPilot — édité le '+new Date().toLocaleDateString('fr-FR')+' à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),8,doc.internal.pageSize.getHeight()-5);
+  return doc;
 }
-function envoyerMail(){
-  const txt=texteSemaine(vue==='G'?AGP.map(a=>a.id):[me]),sujet=titrePage();
-  const url='mailto:?subject='+encodeURIComponent(sujet)+'&body='+encodeURIComponent(txt);
-  if(url.length<1900){location.href=url;return;}
-  try{navigator.clipboard.writeText(txt);}catch(e){}
-  location.href='mailto:?subject='+encodeURIComponent(sujet)+'&body='+encodeURIComponent('(Planning copié dans le presse-papiers : colle-le ici, ou joins le PDF.)');
-  toast('Planning trop long pour le mail : texte copié, colle-le dans le message');
+const nomPdf=()=>('Planning-S'+semNum(wk)+(vue==='M'?'-'+((INTM[me]||{}).nom||''):'')+'.pdf').replace(/\s+/g,'-');
+async function telechargerPdf(){
+  try{(await fairePdf()).save(nomPdf());}catch(e){alert('Impossible de préparer le PDF : '+e.message);}
+}
+async function envoyerPdf(){
+  let doc;try{doc=await fairePdf();}catch(e){alert('Impossible de préparer le PDF : '+e.message);return;}
+  const nom=nomPdf(),file=new File([doc.output('blob')],nom,{type:'application/pdf'});
+  // Téléphone (et Windows avec Chrome / Edge) : la feuille de partage propose la messagerie avec le PDF déjà joint
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:titrePage()});return;}catch(e){if(e.name==='AbortError')return;}
+  }
+  // Sinon : PDF téléchargé + mail préparé, il reste à joindre le fichier
+  doc.save(nom);
+  location.href='mailto:?subject='+encodeURIComponent(titrePage())+'&body='+encodeURIComponent('Bonjour,\n\nVoici le planning en pièce jointe ('+nom+').\n\n');
+  toast('PDF téléchargé : joins-le au mail qui vient de s\'ouvrir');
 }
 
-/* ═══ RÉGLAGES (gestion) : relier chaque compte à un agent ═══ */
+/* ═══ RÉGLAGES (gestion) : agents, ATT, routines ═══ */
+const OPT_J=[[1,'lundi'],[2,'mardi'],[3,'mercredi'],[4,'jeudi'],[5,'vendredi']],OPT_S=[['toutes','Toutes les semaines'],['paires','Semaines paires'],['impaires','Semaines impaires']],
+  OPT_C=[['journee','Journée'],['matin','Matin'],['aprem','Après-midi']],OPT_M=[['tous','Tous les mois, toutes les semaines'],['sauf_derniere','Sauf la dernière semaine du mois'],['derniere','Dernière semaine du mois seulement']];
+const opts=(o,cur)=>o.map(([v,l])=>`<option value="${v}" ${String(v)===String(cur)?'selected':''}>${l}</option>`).join('');
 async function vueReglages(){
   let profs=[];
   try{const {data}=await db.from('profils').select('user_id,email,role,actif');profs=data||[];}catch(e){}
-  const agents=INT.filter(i=>i.type==='agent'&&i.actif);
-  corps.innerHTML=`<div class="card exp"><h2>Comptes et agents</h2>
-   <p class="note" style="margin:0 0 10px">Relie chaque agent à son compte : c'est ce qui lui permet de marquer « fait » ou « reporter » ses propres missions, et d'ouvrir « Ma semaine » directement sur lui.</p>
-   <div class="tw"><table><thead><tr><th>Agent</th><th>Compte</th><th>Dans la grille</th></tr></thead><tbody>
-   ${agents.map(a=>`<tr><td><b>${esc(a.nom)}</b></td><td><select class="sel" onchange="lierCompte(${a.id},this.value)"><option value="">— non relié —</option>${profs.map(p=>`<option value="${esc(p.user_id)}" ${a.user_id===p.user_id?'selected':''}>${esc(p.email||p.user_id)}</option>`).join('')}</select></td>
-   <td><input type="checkbox" ${a.en_planning?'checked':''} onchange="majGrille(${a.id},this.checked)" aria-label="Dans la grille"></td></tr>`).join('')}
-   </tbody></table></div></div>`;
+  const agents=INT.filter(i=>i.type==='agent').sort((a,b)=>(b.actif-a.actif)||a.nom.localeCompare(b.nom));
+  const auj=iso(new Date());
+  corps.innerHTML=`<div class="card exp"><h2>Agents</h2>
+   <p class="note" style="margin:0 0 10px"><b>Nouvel arrivant</b> : ajoute-le (n'écrase pas le nom d'un ancien, sinon l'historique de ce dernier changerait de nom). <b>Départ</b> : décoche « Actif » ; il quitte la grille et les listes, son nom reste sur ses tâches passées. Le nom se corrige directement dans la case.</p>
+   <div class="tw"><table><thead><tr><th>Nom</th><th>Compte</th><th>Dans la grille</th><th>Actif</th></tr></thead><tbody>
+   ${agents.map(a=>`<tr class="${a.actif?'':'inactif'}"><td><input class="inp" value="${esc(a.nom)}" style="min-width:130px" onchange="renommer(${a.id},this)" aria-label="Nom"></td>
+   <td><select class="sel" onchange="lierCompte(${a.id},this.value)" ${a.actif?'':'disabled'}><option value="">— non relié —</option>${profs.map(p=>`<option value="${esc(p.user_id)}" ${a.user_id===p.user_id?'selected':''}>${esc(p.email||p.user_id)}</option>`).join('')}</select></td>
+   <td><input type="checkbox" ${a.en_planning?'checked':''} ${a.actif?'':'disabled'} onchange="majInt(${a.id},'en_planning',this.checked)" aria-label="Dans la grille"></td>
+   <td><input type="checkbox" ${a.actif?'checked':''} onchange="majActif(${a.id},this)" aria-label="Actif"></td></tr>`).join('')}
+   </tbody></table></div>
+   <div class="tools" style="margin:14px 0 0"><input class="inp" id="n-ag" placeholder="Prénom du nouvel agent" style="flex:1;min-width:180px"><button class="btn-l" onclick="ajouterAgent()">Ajouter un agent</button></div></div>
+
+  <div class="card exp"><h2>ATT</h2>
+   <p class="note" style="margin:0 0 10px">Semaines paires / impaires = numéro de semaine ISO. Une règle par agent (ou plusieurs si besoin).</p>
+   <div class="tw"><table><thead><tr><th>Agent</th><th>Jour</th><th>Semaines</th><th>Créneau</th><th>Active</th><th>Prochains</th><th></th></tr></thead><tbody>
+   ${ATTR.map(r=>`<tr><td><b>${esc((INTM[r.agent_id]||{}).nom||'?')}</b></td><td><select class="sel" onchange="majRegle(${r.id},'jour_semaine',this.value)">${opts(OPT_J,r.jour_semaine)}</select></td>
+   <td><select class="sel" onchange="majRegle(${r.id},'semaines',this.value)">${opts(OPT_S,r.semaines)}</select></td><td><select class="sel" onchange="majRegle(${r.id},'creneau',this.value)">${opts(OPT_C,r.creneau)}</select></td>
+   <td><input type="checkbox" ${r.actif?'checked':''} onchange="majRegle(${r.id},'actif',this.checked)" aria-label="Active"></td>
+   <td style="font-size:.8rem;color:var(--mute)">${r.actif?prochains(s=>attOn(r,s),3):'inactive'}</td><td><button class="btn-l" onclick="supprRegle(${r.id})">Supprimer</button></td></tr>`).join('')}
+   </tbody></table></div>
+   <div class="tools" style="margin:14px 0 0"><select class="sel" id="n-att">${INT.filter(i=>i.type==='agent'&&i.actif).map(a=>`<option value="${a.id}">${esc(a.nom)}</option>`).join('')}</select><button class="btn-l" onclick="ajouterRegle()">Ajouter un ATT</button></div></div>
+
+  <div class="card exp"><h2>Missions récurrentes</h2>
+   <p class="note" style="margin:0 0 10px">Tournées, mission technique… Elles s'affichent seules dans la grille et occupent le créneau. Une occurrence s'annule en touchant la case.</p>
+   ${ROU.map(r=>{const ex=[...r.ex].filter(d=>d>=auj).sort();return `<div class="rl"><b>↻ ${esc(r.titre)}</b>${r.actif?'':' <span class="badge b-mute">en pause</span>'}<div class="d">${esc(r.agents.map(i=>(INTM[i]||{}).nom).filter(Boolean).join(', '))} · ${decrire(r)}${r.debut?' · à partir du '+dt(r.debut).toLocaleDateString('fr-FR'):''}${r.fin?' · jusqu\'au '+dt(r.fin).toLocaleDateString('fr-FR'):''}<br>Prochaines : ${prochains(s=>rouOn(r,s))}</div>
+     ${ex.length?`<div class="d">Annulées : ${ex.map(d=>`<span class="xs">${dt(d).toLocaleDateString('fr-FR',{day:'numeric',month:'numeric'})}<button title="Rétablir" onclick="retablir(${r.id},'${d}')">↺</button></span>`).join('')}</div>`:''}
+     <div class="acts"><button class="btn-l" onclick="formRou(${r.id})">Modifier</button><button class="btn-l" onclick="supprRou(${r.id})">Supprimer</button></div></div>`;}).join('')||'<p class="note">Aucune pour l\'instant.</p>'}
+   <button class="btn-p" onclick="formRou(0)" style="margin-top:6px">+ Nouvelle mission récurrente</button></div>`;
+}
+async function apresReglage(msg){await chargerTout();vueReglages();if(msg)toast(msg);}
+async function renommer(id,el){
+  const v=el.value.trim();if(!v||v===INTM[id].nom){el.value=INTM[id].nom;return;}
+  const {error}=await db.from('intervenants').update({nom:v}).eq('id',id);
+  if(error){alert(error.code==='23505'?'Ce nom existe déjà.':msgErr(error));el.value=INTM[id].nom;return;}
+  INTM[id].nom=v;toast('Nom corrigé');
+}
+async function majInt(id,k,v){
+  const {error}=await db.from('intervenants').update({[k]:v}).eq('id',id);
+  if(error){alert(msgErr(error));vueReglages();return;}
+  INTM[id][k]=v;indexer();toast('Enregistré');
+}
+async function majActif(id,el){
+  const a=INTM[id];
+  if(!el.checked){
+    let n=0;try{const {data}=await db.from('planning_missions').select('id').eq('agent_id',id).eq('statut','prevu').gte('jour',iso(new Date()));n=(data||[]).length;}catch(e){}
+    const rou=ROU.filter(r=>r.agents.includes(id)).map(r=>r.titre);
+    if(!confirm(`Désactiver ${a.nom} ?\n\nIl quitte la grille et les listes ; son nom reste sur ses tâches passées.`+(n?`\n⚠ ${n} mission(s) à venir lui sont encore attribuées : pense à les déplacer.`:'')+(rou.length?`\n⚠ Il figure dans : ${rou.join(', ')}. Pense à modifier ces routines.`:''))){el.checked=true;return;}
+  }
+  const {error}=await db.from('intervenants').update({actif:el.checked}).eq('id',id);
+  if(error){alert(msgErr(error));el.checked=!el.checked;return;}
+  await apresReglage(el.checked?a.nom+' réactivé':a.nom+' désactivé');
+}
+async function ajouterAgent(){
+  const nom=$('n-ag').value.trim();if(!nom)return;
+  const {error}=await db.from('intervenants').insert({nom,type:'agent',actif:true,en_planning:true});
+  if(error){alert(error.code==='23505'?'Ce nom existe déjà (un ancien agent ? réactive-le, ou ajoute l\'initiale du nom).':msgErr(error));return;}
+  await apresReglage(nom+' ajouté — pense à son ATT et à relier son compte');
 }
 async function lierCompte(id,uid){
   const {error}=await db.from('intervenants').update({user_id:uid||null}).eq('id',id);
   if(error){alert(error.code==='23505'?'Ce compte est déjà relié à un autre agent.':msgErr(error));vueReglages();return;}
-  INTM[id].user_id=uid||null;toast('Enregistré');
+  INTM[id].user_id=uid||null;indexer();toast('Enregistré');
 }
-async function majGrille(id,v){
-  const {error}=await db.from('intervenants').update({en_planning:v}).eq('id',id);
-  if(error){alert(msgErr(error));vueReglages();return;}
-  INTM[id].en_planning=v;indexer();toast('Enregistré');
+async function majRegle(id,f,v){
+  const val=f==='jour_semaine'?+v:v;
+  const {error}=await db.from('planning_att_regles').update({[f]:val}).eq('id',id);
+  if(error){alert(msgErr(error));return;}
+  ATTR.find(r=>r.id===id)[f]=val;sauverCache();vueReglages();toast('ATT enregistré');
+}
+async function ajouterRegle(){
+  const {error}=await db.from('planning_att_regles').insert({agent_id:+$('n-att').value,jour_semaine:1,semaines:'toutes',creneau:'journee',actif:false});
+  if(error){alert(msgErr(error));return;}
+  await apresReglage('ATT ajouté, inactif : règle le jour, les semaines et le créneau, puis coche « Active »');
+}
+async function supprRegle(id){
+  if(!confirm('Supprimer cette règle d\'ATT ?'))return;
+  const {error}=await db.from('planning_att_regles').delete().eq('id',id);
+  if(error){alert(msgErr(error));return;}
+  await apresReglage('ATT supprimé');
+}
+function formRou(id){
+  const r=ROU.find(x=>x.id===id)||{titre:'',agents:[],jours:[],creneau:'journee',semaines:'toutes',mois:'tous',debut:'',fin:'',actif:true};
+  ouvrir(`<h2>${id?'Modifier la mission récurrente':'Nouvelle mission récurrente'}</h2><div class="frm">
+   <label class="l">Intitulé</label><input class="inp" id="o-t" value="${esc(r.titre)}" placeholder="Ex. TOURNÉES TRAITEMENT">
+   <label class="l">Agents</label><div class="chk" id="o-a">${AGP.concat(INT.filter(i=>r.agents.includes(i.id)&&!AGP.includes(i))).map(a=>`<label><input type="checkbox" value="${a.id}" ${r.agents.includes(a.id)?'checked':''}>${esc(a.nom)}</label>`).join('')}</div>
+   <label class="l">Jours</label><div class="chk" id="o-j">${OPT_J.map(([v,l])=>`<label><input type="checkbox" value="${v}" ${r.jours.includes(v)?'checked':''}>${l}</label>`).join('')}</div>
+   <div class="two-c"><div><label class="l">Créneau</label><select class="sel" id="o-c">${opts(OPT_C,r.creneau)}</select></div><div><label class="l">Semaines</label><select class="sel" id="o-s">${opts(OPT_S,r.semaines)}</select></div></div>
+   <label class="l">Dans le mois</label><select class="sel" id="o-m">${opts(OPT_M,r.mois)}</select>
+   <div class="two-c"><div><label class="l">À partir du (facultatif)</label><input class="inp" type="date" id="o-d" value="${r.debut||''}"></div><div><label class="l">Jusqu'au (facultatif)</label><input class="inp" type="date" id="o-f" value="${r.fin||''}"></div></div>
+   <label class="l"><input type="checkbox" id="o-x" ${r.actif?'checked':''}> Active (décocher pour la mettre en pause)</label></div>
+   <p class="note">« Dernière semaine du mois » = la dernière semaine complète, du lundi au vendredi, dans le mois.</p>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="saveRou(${id})">Enregistrer</button></div>`);
+}
+async function saveRou(id){
+  const v=k=>[...dlg.querySelectorAll('#'+k+' input:checked')].map(x=>+x.value);
+  const row={titre:$('o-t').value.trim(),agents:v('o-a'),jours:v('o-j'),creneau:$('o-c').value,semaines:$('o-s').value,mois:$('o-m').value,debut:$('o-d').value||null,fin:$('o-f').value||null,actif:$('o-x').checked};
+  if(!row.titre||!row.agents.length||!row.jours.length){alert('Intitulé, au moins un agent et au moins un jour sont nécessaires.');return;}
+  const {error}=id?await db.from('planning_routines').update(row).eq('id',id):await db.from('planning_routines').insert(row);
+  if(error){alert(msgErr(error));return;}
+  fermer();await apresReglage('Mission récurrente enregistrée');
+}
+async function supprRou(id){
+  if(!confirm('Supprimer cette mission récurrente ? (Pour une pause, utilise plutôt « Modifier » › Active.)'))return;
+  const {error}=await db.from('planning_routines').delete().eq('id',id);
+  if(error){alert(msgErr(error));return;}
+  await apresReglage('Mission récurrente supprimée');
+}
+async function retablir(id,day){
+  const {error}=await db.from('planning_routine_exceptions').delete().eq('routine_id',id).eq('jour',day);
+  if(error){alert(msgErr(error));return;}
+  ROU.find(r=>r.id===id).ex.delete(day);sauverCache();vueReglages();toast('Occurrence rétablie');
 }
 start();
 </script>
