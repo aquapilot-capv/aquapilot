@@ -1,9 +1,9 @@
 // Service worker : garde les écrans et bibliothèques en cache pour le travail sans réseau.
 // Les données (Supabase) ne passent jamais par ce cache.
-const CACHE='portail-eau-v13';
+const CACHE='portail-eau-v14';
 const FILES=['./','./index.html','./profil.js','./menu.js','./saisie-jaugeages.html','./jaugeages.html','./saisie-piezos.html','./piezos.html','./saisie-traitement.html','./compteurs.html','./taches.html','./planning.html',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
-  'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+  'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(FILES.map(f=>c.add(f)))));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{

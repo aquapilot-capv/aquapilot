@@ -223,6 +223,13 @@ dialog .sub2{color:var(--mute);font-size:.85rem;margin-bottom:12px}
 .sum{display:flex;gap:10px;margin-bottom:14px}
 .sum div{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .sum b{font-size:1.4rem;display:block}.sum small{color:var(--mute)}
+.pdfcap{position:fixed;left:-20000px;top:0;background:#fff;padding:22px;font-family:var(--font);color:var(--ink)}
+.pdfcap .pdft{font-size:22px;font-weight:700;margin-bottom:14px}
+.pdfcap .box{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pdfcap .pg{min-width:0}.pdfcap .pg th,.pdfcap .pg td.ag{position:static}
+.pdfcap .pg td.c{height:60px}.pdfcap .pg td.c.target{background:none}
+.pdfcap.me h2{display:none}
+.pdfcap .abs{background:#ECE6DE}.pdfcap .abs.att{background:#F7F3EE}
 .ph{display:none}
 @media print{
  .side,.bnav,.fab,.crumb,.head,.bar,.pl,.tabs,#bandeaux,.legend,.toast,dialog,.login{display:none!important}
@@ -879,55 +886,29 @@ window.addEventListener('online',()=>envoyerEnAttente());
 /* ── Export PDF et mail ── */
 function titrePage(){return (vue==='G'?'Planning équipe':'Ma semaine — '+(INTM[me]||{}).nom)+' — '+$('wl').textContent;}
 /* ── PDF (fabriqué dans le navigateur : rien ne sort de l'appli) et envoi par mail ── */
-const JSPDF_URL='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',AUTOT_URL='https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
+const JSPDF_URL='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',H2C_URL='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 function script(src){return new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ko(new Error('bibliothèque PDF non chargée (réseau ?)'));document.head.appendChild(s);});}
 let pdfLib=null;
-function chargerPdfLib(){return pdfLib??=(async()=>{if(!window.jspdf)await script(JSPDF_URL);if(!window.jspdf.jsPDF.API.autoTable)await script(AUTOT_URL);})().catch(e=>{pdfLib=null;throw e;});}
-const pt=s=>String(s??'').replace(/[↻⚠]\s?/g,'').replace(/→/g,'->').replace(/[^\x00-\xFF€œŒ’‘“”–—…•]/g,'');
-function celLignes(ag,day,sl){
-  const l=[];
-  evOn(day,ag,sl).forEach(e=>l.push(fh(e.heure)+' '+e.titre+' ('+durTxt(e.duree_min)+')'));
-  const m=mAt(ag,day,sl),ro=rouAt(ag,day,sl),ab=aAt(ag,day,sl);
-  if(m){const x=info(m),o=[...new Set(M.filter(y=>y.lot===m.lot&&y.jour===m.jour&&y.agent_id!==ag&&y.statut!=='reporte').map(y=>(INTM[y.agent_id]||{}).nom))];
-    l.push(x.site+(x.trav?' – '+x.trav:'')+(o.length?' (avec '+o.join(', ')+')':'')+(m.statut==='fait'?' [fait]':''));}
-  if(ro)l.push('Routine : '+ro.titre);
-  if(ab)l.push(ab.type+(ab.auto?' (prévu)':''));
-  return l;
-}
-function couleurCel(ag,day,sl){
-  const m=mAt(ag,day,sl);
-  if(m){if(m.statut==='fait')return [227,241,232];return {1:[253,231,228],2:[252,241,220],3:[227,238,247]}[info(m).prio]||[227,238,247];}
-  if(rouAt(ag,day,sl))return [232,238,242];
-  if(aAt(ag,day,sl))return [238,233,226];
-  if(evOn(day,ag,sl).length)return [239,232,247];
-  return null;
+function chargerPdfLib(){return pdfLib??=(async()=>{if(!window.jspdf)await script(JSPDF_URL);if(!window.html2canvas)await script(H2C_URL);})().catch(e=>{pdfLib=null;throw e;});}
+/* Le PDF reprend exactement l'affichage de l'écran (couleurs, tuiles), photographié en haute définition puis centré sur la page */
+async function capturer(){
+  const g=vue==='G',box=document.createElement('div');
+  box.className='pdfcap'+(g?'':' me');
+  box.style.width=(g?1250:760)+'px';
+  box.innerHTML=`<div class="pdft">${esc(titrePage())}</div>`+(g?`<div class="box"><table class="pg">${$('tb').innerHTML}</table></div>`:$('vme').innerHTML);
+  document.body.appendChild(box);
+  try{await (document.fonts?document.fonts.ready:null);return await html2canvas(box,{scale:2,backgroundColor:'#ffffff',logging:false});}
+  finally{box.remove();}
 }
 async function fairePdf(){
   await chargerPdfLib();
-  const {jsPDF}=window.jspdf,ds=[0,1,2,3,4].map(dayOf);
-  const cel=(ag,day,sl,span)=>{const f=couleurCel(ag,day,sl);return {content:pt(celLignes(ag,day,sl).join('\n')),colSpan:span,styles:f?{fillColor:f}:{}};};
-  const commun={theme:'grid',styles:{font:'helvetica',fontSize:7,cellPadding:1.4,valign:'top',overflow:'linebreak',lineColor:[215,208,198],lineWidth:.15,textColor:[38,34,30]},
-    headStyles:{fillColor:[244,241,236],textColor:[38,34,30],fontStyle:'bold',halign:'center'},margin:{left:8,right:8}};
-  let doc;
-  if(vue==='G'){
-    doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    doc.setFontSize(13);doc.text(pt(titrePage()),8,11);
-    const head=[[{content:'',rowSpan:2},...ds.map((d,i)=>({content:JOURS[i]+' '+d.getDate()+'/'+(d.getMonth()+1),colSpan:2}))],ds.flatMap(()=>['Matin','Après-midi'])];
-    const body=AGP.map(a=>{const row=[{content:pt(a.nom),styles:{fontStyle:'bold'}}];
-      for(const d of ds){const day=iso(d),l0=celLignes(a.id,day,0).join('|'),l1=celLignes(a.id,day,1).join('|');
-        if(l0&&l0===l1)row.push(cel(a.id,day,0,2));else row.push(cel(a.id,day,0,1),cel(a.id,day,1,1));}
-      return row;});
-    const cs={0:{cellWidth:20}};for(let i=1;i<=10;i++)cs[i]={cellWidth:(297-16-20)/10};   // colonnes égales
-    doc.autoTable({...commun,head,body,startY:15,columnStyles:cs});
-  }else{
-    doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    doc.setFontSize(13);doc.text(pt(titrePage()),10,12);
-    const body=ds.map((d,i)=>{const day=iso(d),l0=celLignes(me,day,0).join('|'),l1=celLignes(me,day,1).join('|'),j={content:JOURS[i]+' '+d.getDate()+'/'+(d.getMonth()+1),styles:{fontStyle:'bold'}};
-      return l0&&l0===l1?[j,cel(me,day,0,2)]:[j,cel(me,day,0,1),cel(me,day,1,1)];});
-    doc.autoTable({...commun,styles:{...commun.styles,fontSize:9,cellPadding:2.5,minCellHeight:18},head:[['','Matin','Après-midi']],body,startY:17,columnStyles:{0:{cellWidth:28},1:{cellWidth:(210-16-28)/2},2:{cellWidth:(210-16-28)/2}}});
-  }
+  const cv=await capturer(),{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:vue==='G'?'landscape':'portrait',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),mg=10,pied=6;
+  const r=Math.min((W-2*mg)/cv.width,(H-2*mg-pied)/cv.height),w=cv.width*r,hh=cv.height*r;
+  doc.addImage(cv.toDataURL('image/jpeg',0.95),'JPEG',(W-w)/2,(H-pied-hh)/2,w,hh);
   doc.setFontSize(7);doc.setTextColor(122,112,104);
-  doc.text('AquaPilot — édité le '+new Date().toLocaleDateString('fr-FR')+' à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),8,doc.internal.pageSize.getHeight()-5);
+  doc.text('AquaPilot — édité le '+new Date().toLocaleDateString('fr-FR')+' à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),W/2,H-5,{align:'center'});
   return doc;
 }
 const nomPdf=()=>('Planning-S'+semNum(wk)+(vue==='M'?'-'+((INTM[me]||{}).nom||''):'')+'.pdf').replace(/\s+/g,'-');
