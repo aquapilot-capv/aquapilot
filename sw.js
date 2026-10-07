@@ -1,7 +1,7 @@
 // Service worker : garde les écrans et bibliothèques en cache pour le travail sans réseau.
 // Les données (Supabase) ne passent jamais par ce cache.
-const CACHE='portail-eau-v16';
-const FILES=['./','./index.html','./profil.js','./menu.js','./saisie-jaugeages.html','./jaugeages.html','./saisie-piezos.html','./piezos.html','./saisie-traitement.html','./compteurs.html','./taches.html','./planning.html',
+const CACHE='portail-eau-v17';
+const FILES=['./','./index.html','./profil.js','./menu.js','./saisie-jaugeages.html','./jaugeages.html','./saisie-piezos.html','./piezos.html','./saisie-traitement.html','./compteurs.html','./taches.html','./planning.html','./chlore.html','./uv.html',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
   'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(FILES.map(f=>c.add(f)))));self.skipWaiting();});

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Bouteilles de chlore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+<script src="menu.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-soft:#FBE9DC;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4; --blue:#2F6F9F; --blue-soft:#E3EEF7;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;min-height:100%}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* Charpente (identique aux autres pages) */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute)}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav svg{width:28px;height:28px;margin:-4px;flex:none}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.side .who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.side .who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0;max-width:1180px}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+.crumb a{color:var(--mute);text-decoration:none}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;align-items:flex-end;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.head-l{display:flex;gap:14px;align-items:center}
+.hico{width:56px;height:56px;border-radius:14px;flex:none}
+.bnav{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search,.sel,.inp{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font:inherit;color:var(--ink)}
+.search{flex:1;min-width:180px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:500;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip small{opacity:.65;font-weight:600;margin-left:3px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:none;padding:10px 16px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem}
+.btn-p{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:600}
+.btn-p:disabled{opacity:.5}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}.b-mute{background:#EFEBE5;color:var(--mute)}.b-blue{background:var(--blue-soft);color:var(--blue)}
+.note{font-size:.8rem;color:var(--mute);margin-top:12px}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:.86rem;font-weight:500;margin-bottom:14px}
+
+/* Indicateurs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:14px 18px}
+.kpi .l{font-size:.78rem;color:var(--mute);font-weight:500}
+.kpi .v{font-size:1.5rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.78rem;color:var(--mute)}
+
+/* Liste */
+.gh{display:flex;justify-content:space-between;gap:8px;padding:9px 14px;background:#F7F3EE;font-size:.78rem;font-weight:700;color:var(--mute);border-bottom:1px solid var(--line)}
+.trow{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;align-items:start}
+.trow:last-child{border-bottom:none}
+.trow:hover{background:#FBF8F4}
+.trow.clos{opacity:.72}
+.tt{font-weight:600;white-space:pre-line;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ts{font-size:.8rem;color:var(--mute)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.pcol{padding-top:1px}
+
+/* Fenêtres */
+dialog{border:none;border-radius:16px;padding:22px;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto;color:var(--ink);font-family:var(--font);max-height:92vh;overflow:auto}
+dialog::backdrop{background:rgba(38,34,30,.45)}
+dialog h2{font-size:1.1rem;margin-bottom:12px}
+dialog .f{margin-bottom:12px}dialog .f>label,.lab{display:block;font-size:.78rem;font-weight:600;margin-bottom:4px}
+dialog .f .inp,dialog .f .sel{width:100%}
+textarea.inp{resize:vertical;min-height:84px}
+dialog .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.btn-d{background:var(--bad-soft);color:var(--bad);border:none;border-radius:10px;padding:10px 14px;font-weight:600;margin-right:auto}
+.two-c{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:6px}
+.seg label{position:relative;flex:1;text-align:center;border:1px solid var(--line);border-radius:10px;padding:9px 6px;font-weight:600;font-size:.85rem;cursor:pointer;margin:0!important}
+.seg input,.ck input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.seg label:has(input:focus-visible),.ck:has(input:focus-visible){outline:2px solid var(--acc);outline-offset:2px}
+.cks{display:flex;flex-wrap:wrap;gap:6px}
+.ck{position:relative;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.84rem;cursor:pointer}
+.ck:has(input:checked){background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:600}
+.grp-t{font-size:.72rem;font-weight:700;color:var(--mute);margin:8px 0 4px}
+.more{border:none;background:none;color:var(--acc);font-weight:600;padding:0;margin:2px 0 10px}
+.etat{background:#FBF9F6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.etat .inp{padding:7px 10px}
+
+/* Réglages */
+.tw{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:.74rem;font-weight:600;color:var(--mute);text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#FBF9F6}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:.86rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.exp{padding:18px;margin-bottom:16px}
+.exp h2{font-size:1.02rem;margin-bottom:10px}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:.88rem;font-weight:500;transition:.2s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0);opacity:1}
+.fab[hidden]{display:none!important}
+.fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom,0));z-index:15;border:none;background:var(--acc);color:#fff;border-radius:999px;padding:14px 20px;font-weight:700;box-shadow:0 6px 20px rgba(184,71,18,.4);display:none}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}.side{display:none}
+  main{padding:calc(16px + env(safe-area-inset-top,0)) 14px calc(90px + env(safe-area-inset-bottom,0))}
+  h1{font-size:1.4rem}.hico{width:46px;height:46px}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:10px 14px}.kpi .v{font-size:1.25rem}
+  .head .btn-p{display:none}.fab{display:block}
+  .two-c{grid-template-columns:1fr}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}.bnav svg{width:32px;height:32px;margin:-4px}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.toast{transition:none}}
+
+/* ═══ Maintenance ═══ */
+main{max-width:1280px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px}
+.sc{padding:14px 16px;cursor:default}.sc.bad{border-left:5px solid var(--bad)}.sc.warn{border-left:5px solid var(--warn)}.sc.ok{border-left:5px solid var(--ok)}
+.sc h3{font-size:1rem}.sh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.bl{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;cursor:pointer;background:#fff}.bl:hover{background:#FBF8F4}
+.bar{height:8px;background:#EFEBE5;border-radius:999px;overflow:hidden;margin:6px 0 4px}.bar i{display:block;height:100%;border-radius:999px}
+.lg{margin-top:8px}.lg>b{font-size:.82rem}.obs{margin-top:8px;font-style:italic}
+.al{padding:6px 10px;margin-bottom:14px}.ali{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 6px;border-bottom:1px solid var(--line);font-size:.9rem}
+.ali:last-child{border-bottom:none}.ali.bad span::before{content:'● ';color:var(--bad)}.ali.warn span::before{content:'● ';color:var(--warn)}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem;margin:10px 0}.kv span{color:var(--mute)}
+.etape{background:#FBF9F6;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+.hl{font-size:.86rem;padding:5px 0;border-bottom:1px dashed var(--line)}.hl a{color:var(--acc);font-weight:600}
+.ph-th{display:flex;gap:6px;flex-wrap:wrap}.ph-th img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+input.num{width:84px;padding:6px 8px}
+tr.exclu td{opacity:.5}tbody tr{cursor:pointer}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cl" viewBox="0 0 96 96"><path d="M36.766 24H59.234M40.5106 24V40L25.5319 62.6667C21.7872 68.8889 24.9078 72 34.8936 72H61.1064C71.0922 72 74.2128 68.8889 70.4681 62.6667L55.4894 40V24M33.0213 56H62.9787M40.5106 62.6667H55.4894" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+</svg>
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav" id="sidenav"></nav>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+  <main><div id="view"><div class="loading"><div class="spin"></div>Chargement…</div></div></main>
+</div>
+<nav class="bnav" id="bnav"></nav>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"></dialog>
+<script>
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+const $=id=>document.getElementById(id);
+const dt=s=>new Date(s+'T12:00:00');
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const auj=()=>iso(new Date());
+const addDays=(s,n)=>{const d=dt(s);d.setDate(d.getDate()+n);return iso(d);};
+const diffJ=(a,b)=>Math.round((dt(a)-dt(b))/864e5);
+const dfr=s=>s?dt(s).toLocaleDateString('fr-FR'):'—';
+const eur=n=>(Math.round(n*100)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const cle=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);});
+const horsReseau=e=>!navigator.onLine||/fetch|network|load failed/i.test((e&&e.message)||'');
+const msgErr=e=>horsReseau(e)?'Hors connexion : cette action demande le réseau.':refusDroits(e)?'Action refusée par tes droits.':(e&&e.message)||'Erreur';
+const N=()=>niv('maintenance');
+const STOCK='CENTRE TECHNIQUE';
+const STATUTS={commandee:['Commandée','b-blue'],stock:['En réserve','b-mute'],en_service:['En service','b-ok'],vide:['Vide, à rendre','b-warn'],rendue:['Rendue','b-mute']};
+const POIDS=[6,14,30,49];
+let user=null,B=[],TAR=[],LOC=[],PAR={},onglet='sites',hors=false;
+
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){$('login').classList.remove('off');return;}
+  user=session.user;$('login').classList.add('off');$('who').textContent=user.email;
+  await chargerProfil(db,user);montrerMenu('maintenance');
+  if(N()<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à la maintenance.');return;}
+  await charger();route();
+}
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
+async function logout(){await db.auth.signOut();location.reload();}
+$('pw').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3200);}
+const ouvrir=h=>{dlg.innerHTML=h;if(!dlg.open)dlg.showModal();};
+const fermer=()=>{if(dlg.open)dlg.close();};
+
+async function charger(){
+  const ck='chlore-cache-'+user.id;
+  try{
+    const r=await Promise.all([db.from('chlore_bouteilles').select('*').order('id'),db.from('chlore_tarifs').select('*'),db.from('chlore_location').select('*'),db.from('maintenance_params').select('*')]);
+    for(const x of r)if(x.error)throw x.error;
+    B=r[0].data;TAR=r[1].data;LOC=r[2].data;PAR=Object.fromEntries(r[3].data.map(p=>[p.cle,p.valeur]));hors=false;
+    try{localStorage.setItem(ck,JSON.stringify({B,TAR,LOC,PAR}));}catch(e){}
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem(ck));B=c.B;TAR=c.TAR;LOC=c.LOC;PAR=c.PAR;hors=true;}
+    catch(_){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;throw e;}
+  }
+}
+
+/* ── Calculs ── */
+const annee=s=>s?+s.slice(0,4):new Date().getFullYear();
+const tarifKg=(poids,an)=>{const t=TAR.filter(x=>x.poids===poids).sort((a,b)=>b.annee-a.annee);return (t.find(x=>x.annee<=an)||t[t.length-1]||{}).prix_kg??null;};
+const tarifLoc=an=>{const l=LOC.slice().sort((a,b)=>b.annee-a.annee);return l.find(x=>x.annee<=an)||l[l.length-1]||{prix_jour:0,jours_gratuits:60};};
+// consommation moyenne d'un site : kg/jour sur ses 5 dernières rotations complètes (hors rotations écartées)
+function consoSite(site){
+  const R=B.filter(b=>b.site===site&&b.date_pose&&b.date_fin&&!b.exclure&&['vide','rendue'].includes(b.statut)&&diffJ(b.date_fin,b.date_pose)>0)
+    .sort((a,b)=>a.date_fin<b.date_fin?1:-1).slice(0,5);
+  if(!R.length)return null;
+  const k=R.reduce((s,b)=>s+b.poids/diffJ(b.date_fin,b.date_pose),0)/R.length;
+  return {kgj:k,n:R.length};
+}
+const finProjetee=b=>b.fin_projetee||(b.statut==='en_service'&&b.date_pose&&consoSite(b.site)?addDays(b.date_pose,Math.round(b.poids/consoSite(b.site).kgj)):null);
+const finGratuite=b=>b.date_location?addDays(b.date_location,b.jours_gratuits??60):null;
+function coutLoc(b){
+  if(!b.date_location)return 0;
+  const fin=b.date_retour||auj(),j=Math.max(0,diffJ(fin,b.date_location)-(b.jours_gratuits??60));
+  return j*(b.prix_jour??tarifLoc(annee(b.date_location)).prix_jour);
+}
+const coutChlore=b=>b.poids*(b.prix_kg??tarifKg(b.poids,annee(b.date_location))??0);
+const seuil=()=>+(PAR.chlore_alerte_jours||15);
+const sites=()=>[...new Set(B.map(b=>b.site))].filter(s=>s!==STOCK).sort().concat(B.some(b=>b.site===STOCK)?[STOCK]:[]);
+
+function alertes(){
+  const A=[],a=auj();
+  for(const b of B){
+    if(b.statut==='en_service'){const f=finProjetee(b);if(f){const r=diffJ(f,a);
+      if(r<=seuil())A.push({niv:r<0?'bad':'warn',b,txt:`${b.site} : bouteille ${b.poids} kg ${r<0?'normalement vide depuis le '+dfr(f):'vide vers le '+dfr(f)+' ('+r+' j)'}`,tache:true});
+      if(r<=30&&!B.some(x=>x.site===b.site&&x.statut==='stock'))A.push({niv:'warn',b,txt:`${b.site} : pas de bouteille de réserve sur place`,cmd:true});}}
+    if(b.statut==='stock'){const g=finGratuite(b);if(g){const r=diffJ(g,a);if(r>=0&&r<=10)A.push({niv:'warn',b,txt:`${b.site} : la location gratuite de la bouteille ${b.numero||''} (${b.poids} kg) se termine le ${dfr(g)}`});}}
+    if(b.statut==='vide')A.push({niv:'warn',b,txt:`${b.site} : bouteille ${b.numero||''} vide depuis le ${dfr(b.date_fin)}, à rendre (location ${eur(b.prix_jour??tarifLoc(annee(b.date_location)).prix_jour)} / jour)`});
+  }
+  return A.sort((x,y)=>(x.niv==='bad'?0:1)-(y.niv==='bad'?0:1));
+}
+
+/* ── Pages ── */
+window.addEventListener('hashchange',route);
+function route(){const h=location.hash.slice(1);onglet=['historique','tarifs'].includes(h)?h:'sites';if(onglet==='tarifs'&&N()<3)onglet='sites';page();}
+function page(){
+  view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › <a href="index.html#maintenance">Maintenance</a> › Bouteilles de chlore</div>
+  <div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-cl" style="color:var(--acc)"/></svg>
+   <div><h1>Bouteilles de chlore</h1><div class="sub">Location Gazechim : en service, réserves, fin projetée, coûts</div></div></div>
+   ${N()>=2?'<button class="btn-p" onclick="formCommande()">Commander</button>':''}</div>
+  ${hors?'<div class="banner">Hors connexion : dernières données connues, consultation seule.</div>':''}
+  <div class="tabs"><button class="${onglet==='sites'?'on':''}" onclick="location.hash=''">Sites</button><button class="${onglet==='historique'?'on':''}" onclick="location.hash='historique'">Rotations et coûts</button>${N()>=3?`<button class="${onglet==='tarifs'?'on':''}" onclick="location.hash='tarifs'">Tarifs et réglages</button>`:''}</div>
+  <div id="corps"></div>`;
+  ({sites:vueSites,historique:vueHisto,tarifs:vueTarifs})[onglet]();
+}
+function ligneB(b){
+  const f=finProjetee(b),g=finGratuite(b),a=auj();
+  let det='';
+  if(b.statut==='en_service'&&f){const tot=Math.max(1,diffJ(f,b.date_pose)),pas=Math.min(tot,Math.max(0,diffJ(a,b.date_pose))),r=diffJ(f,a),pc=Math.round(pas/tot*100);
+    det=`<div class="bar"><i style="width:${pc}%;background:${r<0?'var(--bad)':r<=seuil()?'var(--warn)':'var(--ok)'}"></i></div><div class="ts">posée le ${dfr(b.date_pose)} · fin projetée <b>${dfr(f)}</b> (${r>=0?r+' j restants':'dépassée de '+(-r)+' j'})${b.fin_projetee?'':' · estimation'}</div>`;}
+  else if(b.statut==='stock'&&g){const r=diffJ(g,a);det=`<div class="ts">louée le ${dfr(b.date_location)} · ${r>=0?'gratuite jusqu\'au '+dfr(g):'location payante depuis le '+dfr(g)+' ('+eur(coutLoc(b))+')'}</div>`;}
+  else if(b.statut==='vide')det=`<div class="ts">vide depuis le ${dfr(b.date_fin)} · location en cours : ${eur(coutLoc(b))}</div>`;
+  else if(b.statut==='commandee')det=`<div class="ts">commandée${b.date_commande?' le '+dfr(b.date_commande):''}</div>`;
+  return `<div class="bl" onclick="fiche(${b.id})"><div><b>${b.poids} kg</b> <span class="ts">${esc(b.numero||'(sans n°)')}</span> <span class="badge ${STATUTS[b.statut][1]}">${STATUTS[b.statut][0]}</span></div>${det}</div>`;
+}
+function vueSites(){
+  const A=alertes();
+  corps.innerHTML=(A.length?`<div class="card al">${A.map((x,i)=>`<div class="ali ${x.niv}"><span>${esc(x.txt)}</span>${N()>=2&&x.tache?`<button class="btn-l" onclick="tacheRemplacement(${x.b.id})">Créer la tâche</button>`:''}${N()>=2&&x.cmd?`<button class="btn-l" onclick="formCommande(${x.b.poids})">Commander</button>`:''}</div>`).join('')}</div>`:'<div class="banner ok">Aucune alerte : toutes les bouteilles en service ont de la marge.</div>')+
+  `<div class="grid">${sites().map(s=>{
+    const L=B.filter(b=>b.site===s&&b.statut!=='rendue').sort((a,b)=>['en_service','vide','stock','commandee'].indexOf(a.statut)-['en_service','vide','stock','commandee'].indexOf(b.statut));
+    const c=consoSite(s);
+    return `<div class="card sc"><div class="sh"><h3>${s===STOCK?'Réserve — centre technique':esc(s)}</h3>${c?`<span class="ts" title="Moyenne des ${c.n} dernières rotations">${c.kgj.toFixed(2).replace('.',',')} kg/j</span>`:''}</div>${L.map(ligneB).join('')||'<div class="ts">Aucune bouteille.</div>'}</div>`;}).join('')}</div>
+  <p class="note">La fin projetée est calculée à la pose avec la consommation moyenne du site (5 dernières rotations, en kg par jour), puis figée. Une rotation faussée (fuite, travaux) peut être écartée de la moyenne depuis sa fiche.</p>`;
+}
+function vueHisto(){
+  const an=new Date().getFullYear(),L=B.filter(b=>annee(b.date_location)===an&&b.date_location);
+  const tot=L.reduce((s,b)=>s+coutChlore(b)+coutLoc(b),0);
+  corps.innerHTML=`<div class="kpis"><div class="card kpi"><div class="l">Louées en ${an}</div><div class="v">${L.length}</div></div><div class="card kpi"><div class="l">Chlore ${an}</div><div class="v">${eur(L.reduce((s,b)=>s+coutChlore(b),0))}</div></div><div class="card kpi"><div class="l">Location ${an} (à ce jour)</div><div class="v">${eur(L.reduce((s,b)=>s+coutLoc(b),0))}</div></div><div class="card kpi"><div class="l">Total ${an}</div><div class="v">${eur(tot)}</div></div></div>
+  ${sites().filter(s=>s!==STOCK).map(s=>{const R=B.filter(b=>b.site===s&&b.date_pose&&b.date_fin).sort((a,b)=>a.date_fin<b.date_fin?1:-1),c=consoSite(s);
+   return `<div class="card exp"><h2>${esc(s)} ${c?`<span class="ts">· moyenne ${c.kgj.toFixed(2).replace('.',',')} kg/j sur ${c.n} rotation${c.n>1?'s':''}</span>`:''}</h2><div class="tw"><table><thead><tr><th>N°</th><th>Poids</th><th>Posée</th><th>Vide</th><th>Durée</th><th>kg/j</th><th>Chlore</th><th>Location</th><th></th></tr></thead><tbody>
+   ${R.map(b=>{const d=diffJ(b.date_fin,b.date_pose);return `<tr class="${b.exclure?'exclu':''}" onclick="fiche(${b.id})"><td>${esc(b.numero||'')}</td><td>${b.poids} kg</td><td>${dfr(b.date_pose)}</td><td>${dfr(b.date_fin)}</td><td>${d} j</td><td>${d>0?(b.poids/d).toFixed(2).replace('.',','):'—'}</td><td>${eur(coutChlore(b))}</td><td>${eur(coutLoc(b))}</td><td>${b.exclure?'<span class="badge b-mute">écartée</span>':''}</td></tr>`;}).join('')||'<tr><td colspan="9" class="ts">Aucune rotation complète.</td></tr>'}
+   </tbody></table></div></div>`;}).join('')}
+  <p class="note">Seules les 5 dernières rotations rendues de chaque site sont gardées : elles servent à la projection. Les coûts de location suivent la règle Gazechim (${tarifLoc(an).jours_gratuits} premiers jours offerts, puis prix de l'année de location).</p>`;
+}
+function vueTarifs(){
+  const ans=[...new Set(TAR.map(t=>t.annee).concat(LOC.map(l=>l.annee)))].sort((a,b)=>b-a),an=new Date().getFullYear();
+  corps.innerHTML=`<div class="card exp"><h2>Tarifs Gazechim</h2><p class="note" style="margin:0 0 10px">Chaque bouteille garde le tarif de l'année de sa date de location. Ajoute l'année suivante quand les prix changent.</p>
+   <div class="tw"><table><thead><tr><th>Année</th>${POIDS.map(p=>`<th>${p} kg (€/kg)</th>`).join('')}<th>Location (€/jour)</th><th>Jours offerts</th></tr></thead><tbody>
+   ${(ans.includes(an)?ans:[an,...ans]).map(a=>{const l=LOC.find(x=>x.annee===a)||{};return `<tr><td><b>${a}</b></td>${POIDS.map(p=>{const t=TAR.find(x=>x.annee===a&&x.poids===p);return `<td><input class="inp num" value="${t?String(t.prix_kg).replace('.',','):''}" onchange="majTarif(${a},${p},this.value)"></td>`;}).join('')}
+   <td><input class="inp num" value="${l.prix_jour!=null?String(l.prix_jour).replace('.',','):''}" onchange="majLoc(${a},'prix_jour',this.value)"></td><td><input class="inp num" value="${l.jours_gratuits??''}" onchange="majLoc(${a},'jours_gratuits',this.value)"></td></tr>`;}).join('')}
+   <tr><td colspan="7"><button class="btn-l" onclick="ajoutAnnee()">+ Ajouter l'année ${Math.max(an,...ans)+1}</button></td></tr></tbody></table></div></div>
+  <div class="card exp"><h2>Réglages</h2><div class="tw"><table><tbody>${Object.entries(PAR).filter(([k])=>k.startsWith('gaz_')||k.startsWith('chlore_')).map(([k,v])=>`<tr><td>${esc(k)}</td><td><input class="inp" style="width:100%" value="${esc(v||'')}" onchange="majPar('${k}',this.value)"></td></tr>`).join('')}</tbody></table></div>
+   <p class="note">Le n° de bon de commande (gaz_bc) change chaque année : pense à le mettre à jour en janvier.</p></div>`;
+}
+const num=v=>v===''?null:+String(v).replace(',','.');
+async function majTarif(a,p,v){const {error}=await db.from('chlore_tarifs').upsert({annee:a,poids:p,prix_kg:num(v)});if(error)return alert(msgErr(error));await charger();toast('Tarif enregistré');}
+async function majLoc(a,k,v){const l=LOC.find(x=>x.annee===a)||{annee:a,prix_jour:0,jours_gratuits:60};const {error}=await db.from('chlore_location').upsert({...l,[k]:num(v)});if(error)return alert(msgErr(error));await charger();toast('Tarif enregistré');}
+async function ajoutAnnee(){const a=Math.max(new Date().getFullYear(),...TAR.map(t=>t.annee),...LOC.map(l=>l.annee))+1,l=tarifLoc(a);
+  const {error}=await db.from('chlore_location').upsert({annee:a,prix_jour:l.prix_jour,jours_gratuits:l.jours_gratuits});if(error)return alert(msgErr(error));
+  await db.from('chlore_tarifs').upsert(POIDS.map(p=>({annee:a,poids:p,prix_kg:tarifKg(p,a)})).filter(x=>x.prix_kg!=null));await charger();vueTarifs();toast('Année '+a+' ajoutée (prix repris de l\'année précédente : à corriger)');}
+async function majPar(k,v){const {error}=await db.from('maintenance_params').update({valeur:v}).eq('cle',k);if(error)return alert(msgErr(error));PAR[k]=v;toast('Enregistré');}
+
+/* ── Fiche d'une bouteille et ses étapes ── */
+function fiche(id){
+  const b=B.find(x=>x.id===id);if(!b)return;
+  const s=N()>=2,f=finProjetee(b);
+  const sitesOpt=cur=>sites().concat(['+ autre…']).map(x=>`<option ${x===cur?'selected':''}>${esc(x)}</option>`).join('');
+  let act='';
+  if(s&&b.statut==='commandee')act=`<div class="grp-t">Réception</div><div class="two-c"><div class="f"><label>N° de série</label><input class="inp" id="f-num"></div><div class="f"><label>Date de location (livraison)</label><input class="inp" type="date" id="f-dl" value="${auj()}"></div></div>
+     <div class="f"><label>Rangée à</label><select class="sel" id="f-site">${sitesOpt(STOCK)}</select></div><button class="btn-p" onclick="etape(${id},'stock')">Réceptionnée</button>`;
+  if(s&&b.statut==='stock')act=`<div class="grp-t">Pose</div><div class="two-c"><div class="f"><label>Site</label><select class="sel" id="f-site">${sitesOpt(b.site===STOCK?'':b.site)}</select></div><div class="f"><label>Date de pose</label><input class="inp" type="date" id="f-dp" value="${auj()}"></div></div>
+     <div class="acts" style="justify-content:flex-start"><button class="btn-p" onclick="etape(${id},'en_service')">Posée : mise en service</button><button class="btn-l" onclick="etape(${id},'deplacer')">Seulement changer de site</button></div>`;
+  if(s&&b.statut==='en_service')act=`<div class="grp-t">Fin d'utilisation</div><div class="f"><label>Vide le</label><input class="inp" type="date" id="f-df" value="${auj()}"></div><button class="btn-p" onclick="etape(${id},'vide')">Bouteille vide</button>`;
+  if(s&&b.statut==='vide')act=`<div class="grp-t">Retour Gazechim</div><div class="f"><label>Récupérée le</label><input class="inp" type="date" id="f-dr" value="${auj()}"></div><button class="btn-p" onclick="etape(${id},'rendue')">Rendue (fin de location)</button>`;
+  ouvrir(`<h2>Bouteille ${b.poids} kg — ${esc(b.site)}</h2>
+   <p class="ts">${esc(b.numero||'(sans n° de série)')} · <span class="badge ${STATUTS[b.statut][1]}">${STATUTS[b.statut][0]}</span></p>
+   <div class="kv"><span>Louée le</span><b>${dfr(b.date_location)}</b><span>Posée le</span><b>${dfr(b.date_pose)}</b><span>Vide le</span><b>${dfr(b.date_fin)}</b><span>Rendue le</span><b>${dfr(b.date_retour)}</b>
+    <span>Fin projetée</span><b>${f?dfr(f)+(b.fin_projetee?' (figée à la pose)':' (estimation)'):'—'}</b><span>Gratuité jusqu'au</span><b>${dfr(finGratuite(b))}</b>
+    <span>Chlore</span><b>${eur(coutChlore(b))}</b><span>Location</span><b>${eur(coutLoc(b))}${b.statut==='rendue'?'':' à ce jour'}</b></div>
+   ${act?`<div class="etape">${act}</div>`:''}
+   ${s&&['vide','rendue'].includes(b.statut)?`<div class="f" style="margin-top:12px"><label><input type="checkbox" id="f-ex" ${b.exclure?'checked':''} onchange="exclure(${id})"> Écarter cette rotation de la moyenne</label><input class="inp" id="f-mo" placeholder="Motif (fuite, travaux réseau…)" value="${esc(b.motif||'')}" onchange="exclure(${id})" style="margin-top:6px;width:100%"></div>`:''}
+   <div class="acts">${N()>=3?`<button class="btn-d" onclick="suppr(${id})">Supprimer</button>`:''}${s&&b.statut==='en_service'?`<button class="btn-l" onclick="tacheRemplacement(${id})">Créer la tâche de remplacement</button>`:''}<button class="btn-l" onclick="fermer()">Fermer</button></div>`);
+}
+function siteChoisi(){let s=$('f-site').value;if(s==='+ autre…'){s=(prompt('Nom du site :')||'').trim().toUpperCase();}return s;}
+async function etape(id,quoi){
+  const b=B.find(x=>x.id===id);let p={};
+  if(quoi==='stock'){const s=siteChoisi();if(!s)return;const dl=$('f-dl').value;if(!dl)return alert('Date de location ?');
+    p={statut:'stock',numero:$('f-num').value.trim()||null,date_location:dl,site:s,prix_kg:tarifKg(b.poids,annee(dl)),prix_jour:tarifLoc(annee(dl)).prix_jour,jours_gratuits:tarifLoc(annee(dl)).jours_gratuits};}
+  if(quoi==='deplacer'){const s=siteChoisi();if(!s)return;p={site:s};}
+  if(quoi==='en_service'){const s=siteChoisi(),dp=$('f-dp').value;if(!s||!dp)return alert('Site et date de pose ?');
+    if(B.some(x=>x.site===s&&x.statut==='en_service'&&x.id!==id)&&!confirm('Une autre bouteille est déjà en service à '+s+'. Continuer quand même ?'))return;
+    const c=consoSite(s);p={statut:'en_service',site:s,date_pose:dp,conso_ref:c?+c.kgj.toFixed(3):null,fin_projetee:c?addDays(dp,Math.round(b.poids/c.kgj)):null};}
+  if(quoi==='vide'){const d=$('f-df').value;if(!d)return;if(d<b.date_pose)return alert('La date de fin est avant la pose.');p={statut:'vide',date_fin:d};}
+  if(quoi==='rendue'){const d=$('f-dr').value;if(!d)return;p={statut:'rendue',date_retour:d};}
+  const {error}=await db.from('chlore_bouteilles').update(p).eq('id',id);
+  if(error)return alert(msgErr(error));
+  fermer();await charger();page();
+  toast(quoi==='en_service'?(p.fin_projetee?'En service — fin projetée le '+dfr(p.fin_projetee):'En service (pas encore d\'historique pour projeter)'):quoi==='rendue'?'Rotation close : elle entre dans la moyenne du site':'Enregistré');
+}
+async function exclure(id){
+  const {error}=await db.from('chlore_bouteilles').update({exclure:$('f-ex').checked,motif:$('f-mo').value.trim()||null}).eq('id',id);
+  if(error)return alert(msgErr(error));await charger();toast($('f-ex').checked?'Rotation écartée de la moyenne':'Rotation reprise dans la moyenne');
+}
+async function suppr(id){if(!confirm('Supprimer cette bouteille ?'))return;const {error}=await db.from('chlore_bouteilles').delete().eq('id',id);if(error)return alert(msgErr(error));fermer();await charger();page();}
+
+/* ── Tâche de remplacement dans « À faire » (elle arrive dans « À planifier ») ── */
+async function tacheRemplacement(id){
+  const b=B.find(x=>x.id===id),f=finProjetee(b),site=b.site.toUpperCase();
+  const travaux=`Remplacer la bouteille de chlore ${b.poids} kg${f?' (fin projetée le '+dfr(f)+')':''}`;
+  const {data:ex,error:e1}=await db.from('taches').select('id').eq('site_nom',site).in('statut',['a_faire','planifie']).ilike('travaux','Remplacer la bouteille de chlore%');
+  if(e1)return alert(msgErr(e1));
+  if(ex&&ex.length){fermer();return toast('Une tâche de remplacement est déjà ouverte pour '+b.site);}
+  const {error}=await db.from('taches').insert({travaux,priorite:f&&diffJ(f,auj())<0?1:2,site_nom:site,famille:'traitement',source:'maintenance',echeance:f||null,cle_client:cle()});
+  if(error)return alert(msgErr(error));
+  fermer();toast('Tâche créée : elle est dans « À planifier »');
+}
+
+/* ── Commande Gazechim : mail prêt + bouteille « commandée » ── */
+function formCommande(poids){
+  ouvrir(`<h2>Commander chez Gazechim</h2><div class="two-c"><div class="f"><label>Taille</label><select class="sel" id="c-p">${POIDS.map(p=>`<option value="${p}" ${p===(poids||49)?'selected':''}>${p} kg</option>`).join('')}</select></div>
+   <div class="f"><label>Nombre</label><select class="sel" id="c-n">${[1,2,3].map(n=>`<option>${n}</option>`).join('')}</select></div></div>
+   <p class="note">Le mail s'ouvre prêt à partir (bon de commande ${esc(PAR.gaz_bc||'?')} à joindre). La bouteille apparaît « commandée » dans la réserve du centre technique.</p>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="commander()">Préparer le mail</button></div>`);
+}
+async function commander(){
+  const p=+$('c-p').value,n=+$('c-n').value,an=new Date().getFullYear();
+  const corpsMail=`Bonjour ${PAR.gaz_contact||''},\n\npouvez-vous passer à la commande ${n>1?n+' bouteilles':'une bouteille'} de ${p} kg pour le ${PAR.gaz_livraison||'centre technique'} ?\n\nVous trouverez en PJ le BC ${PAR.gaz_bc||''} qui correspond à la provision sur commande pour l'achat et la location ${an}.\n\nMerci\n\nCordialement,`;
+  const {error}=await db.from('chlore_bouteilles').insert([...Array(n)].map(()=>({poids:p,site:STOCK,statut:'commandee',date_commande:auj(),prix_kg:tarifKg(p,an),cle_client:cle()})));
+  if(error)return alert(msgErr(error));
+  fermer();await charger();page();
+  location.href='mailto:'+(PAR.gaz_email||'')+'?subject='+encodeURIComponent('Commande bouteille chlore '+p+' kg')+'&body='+encodeURIComponent(corpsMail);
+  toast('Bouteille commandée — le mail est prêt');
+}
+start();
+</script>
+</body>
+</html>

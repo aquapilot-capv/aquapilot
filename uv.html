@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Lampes UV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+<script src="menu.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC; --card:#FFFFFF; --line:#E7E1D8; --ink:#26221E; --mute:#7A7068;
+  --acc:#B84712; --acc-soft:#FBE9DC;
+  --ok:#2F7D4F; --ok-soft:#E3F1E8; --warn:#B7791F; --warn-soft:#FCF1DC; --bad:#B42318; --bad-soft:#FDE7E4; --blue:#2F6F9F; --blue-soft:#E3EEF7;
+  --font:'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;min-height:100%}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* Charpente (identique aux autres pages) */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute)}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav svg{width:28px;height:28px;margin:-4px;flex:none}
+.ic{fill:none;stroke:currentColor;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+.side .who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.side .who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0;max-width:1180px}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+.crumb a{color:var(--mute);text-decoration:none}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;align-items:flex-end;gap:16px;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.head-l{display:flex;gap:14px;align-items:center}
+.hico{width:56px;height:56px;border-radius:14px;flex:none}
+.bnav{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search,.sel,.inp{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font:inherit;color:var(--ink)}
+.search{flex:1;min-width:180px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:500;white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip small{opacity:.65;font-weight:600;margin-left:3px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:none;padding:10px 16px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.88rem}
+.btn-p{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:600}
+.btn-p:disabled{opacity:.5}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-soft);color:var(--ok)}.b-warn{background:var(--warn-soft);color:var(--warn)}
+.b-bad{background:var(--bad-soft);color:var(--bad)}.b-mute{background:#EFEBE5;color:var(--mute)}.b-blue{background:var(--blue-soft);color:var(--blue)}
+.note{font-size:.8rem;color:var(--mute);margin-top:12px}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:.86rem;font-weight:500;margin-bottom:14px}
+
+/* Indicateurs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{padding:14px 18px}
+.kpi .l{font-size:.78rem;color:var(--mute);font-weight:500}
+.kpi .v{font-size:1.5rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.78rem;color:var(--mute)}
+
+/* Liste */
+.gh{display:flex;justify-content:space-between;gap:8px;padding:9px 14px;background:#F7F3EE;font-size:.78rem;font-weight:700;color:var(--mute);border-bottom:1px solid var(--line)}
+.trow{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;align-items:start}
+.trow:last-child{border-bottom:none}
+.trow:hover{background:#FBF8F4}
+.trow.clos{opacity:.72}
+.tt{font-weight:600;white-space:pre-line;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ts{font-size:.8rem;color:var(--mute)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.pcol{padding-top:1px}
+
+/* Fenêtres */
+dialog{border:none;border-radius:16px;padding:22px;max-width:560px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto;color:var(--ink);font-family:var(--font);max-height:92vh;overflow:auto}
+dialog::backdrop{background:rgba(38,34,30,.45)}
+dialog h2{font-size:1.1rem;margin-bottom:12px}
+dialog .f{margin-bottom:12px}dialog .f>label,.lab{display:block;font-size:.78rem;font-weight:600;margin-bottom:4px}
+dialog .f .inp,dialog .f .sel{width:100%}
+textarea.inp{resize:vertical;min-height:84px}
+dialog .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.btn-d{background:var(--bad-soft);color:var(--bad);border:none;border-radius:10px;padding:10px 14px;font-weight:600;margin-right:auto}
+.two-c{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:6px}
+.seg label{position:relative;flex:1;text-align:center;border:1px solid var(--line);border-radius:10px;padding:9px 6px;font-weight:600;font-size:.85rem;cursor:pointer;margin:0!important}
+.seg input,.ck input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+.seg label:has(input:focus-visible),.ck:has(input:focus-visible){outline:2px solid var(--acc);outline-offset:2px}
+.cks{display:flex;flex-wrap:wrap;gap:6px}
+.ck{position:relative;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.84rem;cursor:pointer}
+.ck:has(input:checked){background:var(--acc-soft);border-color:var(--acc);color:var(--acc);font-weight:600}
+.grp-t{font-size:.72rem;font-weight:700;color:var(--mute);margin:8px 0 4px}
+.more{border:none;background:none;color:var(--acc);font-weight:600;padding:0;margin:2px 0 10px}
+.etat{background:#FBF9F6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.etat .inp{padding:7px 10px}
+
+/* Réglages */
+.tw{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:.74rem;font-weight:600;color:var(--mute);text-align:left;padding:10px;border-bottom:1px solid var(--line);background:#FBF9F6}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:.86rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.exp{padding:18px;margin-bottom:16px}
+.exp h2{font-size:1.02rem;margin-bottom:10px}
+
+/* Connexion */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:.88rem;font-weight:500;transition:.2s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{transform:translate(-50%,0);opacity:1}
+.fab[hidden]{display:none!important}
+.fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom,0));z-index:15;border:none;background:var(--acc);color:#fff;border-radius:999px;padding:14px 20px;font-weight:700;box-shadow:0 6px 20px rgba(184,71,18,.4);display:none}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}.side{display:none}
+  main{padding:calc(16px + env(safe-area-inset-top,0)) 14px calc(90px + env(safe-area-inset-bottom,0))}
+  h1{font-size:1.4rem}.hico{width:46px;height:46px}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:10px 14px}.kpi .v{font-size:1.25rem}
+  .head .btn-p{display:none}.fab{display:block}
+  .two-c{grid-template-columns:1fr}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}.bnav svg{width:32px;height:32px;margin:-4px}
+}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.toast{transition:none}}
+
+/* ═══ Maintenance ═══ */
+main{max-width:1280px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:4px}
+.sc{padding:14px 16px;cursor:default}.sc.bad{border-left:5px solid var(--bad)}.sc.warn{border-left:5px solid var(--warn)}.sc.ok{border-left:5px solid var(--ok)}
+.sc h3{font-size:1rem}.sh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.bl{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;cursor:pointer;background:#fff}.bl:hover{background:#FBF8F4}
+.bar{height:8px;background:#EFEBE5;border-radius:999px;overflow:hidden;margin:6px 0 4px}.bar i{display:block;height:100%;border-radius:999px}
+.lg{margin-top:8px}.lg>b{font-size:.82rem}.obs{margin-top:8px;font-style:italic}
+.al{padding:6px 10px;margin-bottom:14px}.ali{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 6px;border-bottom:1px solid var(--line);font-size:.9rem}
+.ali:last-child{border-bottom:none}.ali.bad span::before{content:'● ';color:var(--bad)}.ali.warn span::before{content:'● ';color:var(--warn)}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.88rem;margin:10px 0}.kv span{color:var(--mute)}
+.etape{background:#FBF9F6;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+.hl{font-size:.86rem;padding:5px 0;border-bottom:1px dashed var(--line)}.hl a{color:var(--acc);font-weight:600}
+.ph-th{display:flex;gap:6px;flex-wrap:wrap}.ph-th img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+input.num{width:84px;padding:6px 8px}
+tr.exclu td{opacity:.5}tbody tr{cursor:pointer}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-uv" viewBox="0 0 96 96"><path d="M40.9412 32H55.0588M40.9412 64H55.0588M48 36.8V59.2M26.8235 33.6L32.4706 38.4M24 48H32.4706M26.8235 62.4L32.4706 57.6M69.1765 33.6L63.5294 38.4M72 48H63.5294M69.1765 62.4L63.5294 57.6M40.9412 24H55.0588V72H40.9412V24Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <linearGradient id="tile" x1="0" y1="0" x2="96" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF1E5"/><stop offset="1" stop-color="#F3D0B5"/></linearGradient>
+</svg>
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav" id="sidenav"></nav>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+  <main><div id="view"><div class="loading"><div class="spin"></div>Chargement…</div></div></main>
+</div>
+<nav class="bnav" id="bnav"></nav>
+<div class="toast" id="toast"></div>
+<dialog id="dlg"></dialog>
+<script>
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
+const $=id=>document.getElementById(id);
+const dt=s=>new Date(s+'T12:00:00');
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const auj=()=>iso(new Date());
+const addDays=(s,n)=>{const d=dt(s);d.setDate(d.getDate()+Math.round(n));return iso(d);};
+const addMois=(s,n)=>{const d=dt(s);d.setMonth(d.getMonth()+n);return iso(d);};
+const diffJ=(a,b)=>Math.round((dt(a)-dt(b))/864e5);
+const dfr=s=>s?dt(s).toLocaleDateString('fr-FR'):'—';
+const nf=n=>Math.round(n).toLocaleString('fr-FR');
+const cle=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16);});
+const horsReseau=e=>!navigator.onLine||/fetch|network|load failed/i.test((e&&e.message)||'');
+const msgErr=e=>horsReseau(e)?'Hors connexion : cette action demande le réseau.':refusDroits(e)?'Action refusée par tes droits.':(e&&e.message)||'Erreur';
+const N=()=>niv('maintenance');
+const TYPES={lampes:'Changement des lampes',quartz:'Nettoyage des quartz',joints:'Changement des joints',releve:'Relevé (heures, irradiance)'};
+let user=null,I=[],V=[],PH=[],PAR={},SITES=[],hors=false;
+
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){$('login').classList.remove('off');return;}
+  user=session.user;$('login').classList.add('off');$('who').textContent=user.email;
+  await chargerProfil(db,user);montrerMenu('maintenance');
+  if(N()<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à la maintenance.');return;}
+  await charger();page();
+  const m=location.hash.match(/^#i=(\d+)/);if(m)fiche(+m[1]);
+}
+async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
+async function logout(){await db.auth.signOut();location.reload();}
+$('pw').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3200);}
+const ouvrir=h=>{dlg.innerHTML=h;if(!dlg.open)dlg.showModal();};
+const fermer=()=>{if(dlg.open)dlg.close();};
+
+async function charger(){
+  const ck='uv-cache-'+user.id;
+  try{
+    const r=await Promise.all([db.from('uv_installations').select('*').order('site_nom'),db.from('uv_interventions').select('*').order('jour'),db.from('uv_photos').select('*').order('created_at'),db.from('maintenance_params').select('*')]);
+    for(const x of r)if(x.error)throw x.error;
+    I=r[0].data;V=r[1].data;PH=r[2].data;PAR=Object.fromEntries(r[3].data.map(p=>[p.cle,p.valeur]));hors=false;
+    try{localStorage.setItem(ck,JSON.stringify({I,V,PH,PAR}));}catch(e){}
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem(ck));I=c.I;V=c.V;PH=c.PH;PAR=c.PAR;hors=true;}
+    catch(_){view.innerHTML=`<div class="card loading">Impossible de charger : ${esc(e.message)}</div>`;throw e;}
+  }
+  if(niv('documentation')>=1&&!SITES.length){try{const {data}=await db.from('sites').select('id,nom,commune').order('nom');SITES=data||[];}catch(e){}}
+}
+
+/* ── État d'une installation : les lampes tournent 24 h/24 ; un relevé de compteur corrige l'estimation ── */
+function etat(x){
+  const iv=V.filter(v=>v.installation_id===x.id),a=auj(),seuil=+(PAR.uv_alerte_jours||30);
+  const lp=iv.filter(v=>v.type==='lampes').sort((p,q)=>p.jour<q.jour?1:p.jour>q.jour?-1:q.id-p.id)[0];
+  const qz=iv.filter(v=>v.type==='quartz'||v.type==='lampes').sort((p,q)=>p.jour<q.jour?1:-1)[0];
+  const apres=v=>!lp||v.jour>lp.jour||(v.jour===lp.jour&&v.id>lp.id);   // même jour : seul un relevé saisi après le changement compte
+  const rel=iv.filter(v=>v.type==='releve'&&v.heures!=null&&apres(v)).sort((p,q)=>p.jour<q.jour?1:p.jour>q.jour?-1:q.id-p.id)[0];
+  const irr=iv.filter(v=>v.irradiance!=null).sort((p,q)=>p.jour<q.jour?1:-1)[0];
+  let h=null,reste=null,lampesLe=null;
+  if(rel)h=+rel.heures+Math.max(0,diffJ(a,rel.jour))*24;else if(lp)h=Math.max(0,diffJ(a,lp.jour))*24;
+  if(h!=null){reste=x.heures_max-h;lampesLe=addDays(a,reste/24);}
+  const quartzLe=qz?addMois(qz.jour,x.quartz_mois):null;
+  const nivL=reste==null?null:reste<=0?'bad':reste<=seuil*24?'warn':'ok';
+  const nivQ=!quartzLe?null:quartzLe<a?'bad':diffJ(quartzLe,a)<=seuil?'warn':'ok';
+  const nivI=irr&&x.irradiance_min!=null?(+irr.irradiance<+x.irradiance_min?'bad':'ok'):null;
+  return {lp,qz,rel,irr,h,reste,lampesLe,quartzLe,nivL,nivQ,nivI};
+}
+const pire=e=>['bad','warn'].find(n=>[e.nivL,e.nivQ,e.nivI].includes(n))||'ok';
+function alertes(){
+  const A=[];
+  for(const x of I.filter(x=>x.actif)){const e=etat(x);
+    if(e.nivL&&e.nivL!=='ok')A.push({niv:e.nivL,x,quoi:'lampes',txt:`${x.site_nom} : lampes à changer ${e.reste<=0?'(durée de vie dépassée de '+nf(-e.reste)+' h)':'avant le '+dfr(e.lampesLe)+' ('+nf(e.reste)+' h restantes)'}`});
+    if(e.nivQ&&e.nivQ!=='ok')A.push({niv:e.nivQ,x,quoi:'quartz',txt:`${x.site_nom} : nettoyage des quartz ${e.quartzLe<auj()?'en retard depuis le ':'prévu le '}${dfr(e.quartzLe)}`});
+    if(e.nivI==='bad')A.push({niv:'bad',x,quoi:'irradiance',txt:`${x.site_nom} : irradiance ${String(e.irr.irradiance).replace('.',',')} ${x.irradiance_unite} sous le seuil (${String(x.irradiance_min).replace('.',',')}) le ${dfr(e.irr.jour)}`});
+  }
+  return A.sort((p,q)=>(p.niv==='bad'?0:1)-(q.niv==='bad'?0:1));
+}
+
+function page(){
+  const A=alertes();
+  view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › <a href="index.html#maintenance">Maintenance</a> › Lampes UV</div>
+  <div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-uv" style="color:var(--acc)"/></svg>
+   <div><h1>Lampes UV</h1><div class="sub">Heures des lampes, nettoyage des quartz, irradiance, devis</div></div></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap">${N()>=2?'<button class="btn-l" onclick="formDevis()">Demander un devis</button>':''}${N()>=3?'<button class="btn-p" onclick="formInst(0)">+ Installation</button>':''}</div></div>
+  ${hors?'<div class="banner">Hors connexion : dernières données connues, consultation seule.</div>':''}
+  ${A.length?`<div class="card al">${A.map(a=>`<div class="ali ${a.niv}"><span>${esc(a.txt)}</span>${N()>=2&&a.quoi!=='irradiance'?`<button class="btn-l" onclick="tacheUV(${a.x.id},'${a.quoi}')">Créer la tâche</button>`:''}</div>`).join('')}</div>`:'<div class="banner ok">Aucune échéance proche.</div>'}
+  <div class="grid">${I.filter(x=>x.actif).map(carte).join('')}</div>
+  <p class="note">Les lampes tournent 24 h/24 : les heures sont estimées depuis le dernier changement, et un relevé du compteur horaire corrige l'estimation. Quartz : nettoyage tous les ${I[0]?I[0].quartz_mois:6} mois par défaut (réglable par installation).</p>`;
+}
+function carte(x){
+  const e=etat(x),pc=e.h!=null?Math.min(100,Math.round(e.h/x.heures_max*100)):0,col={bad:'var(--bad)',warn:'var(--warn)',ok:'var(--ok)'};
+  return `<div class="card sc ${pire(e)}" onclick="fiche(${x.id})"><div class="sh"><h3>${esc(x.site_nom)}</h3><span class="ts">${x.nb_lampes} lampe${x.nb_lampes>1?'s':''}</span></div>
+   <div class="ts">${esc(x.reacteur_ref||'')}</div>
+   <div class="lg"><b>Lampes</b>${e.h!=null?`<div class="bar"><i style="width:${pc}%;background:${col[e.nivL]}"></i></div><div class="ts">${nf(e.h)} h / ${nf(x.heures_max)} h · à changer vers le <b>${dfr(e.lampesLe)}</b>${e.rel?'':' (estimé)'}</div>`:'<div class="ts">Pas de date de changement connue.</div>'}</div>
+   <div class="lg"><b>Quartz</b><div class="ts">nettoyés le ${dfr(e.qz&&e.qz.jour)} · prochain <b style="color:${col[e.nivQ]||'inherit'}">${dfr(e.quartzLe)}</b></div></div>
+   ${x.irradiance_min!=null||e.irr?`<div class="lg"><b>Irradiance</b><div class="ts">${e.irr?String(e.irr.irradiance).replace('.',',')+' '+esc(x.irradiance_unite)+' le '+dfr(e.irr.jour):'pas de relevé'}${x.irradiance_min!=null?' · seuil '+String(x.irradiance_min).replace('.',','):''}</div></div>`:''}
+   ${x.observation?`<div class="ts obs">${esc(x.observation)}</div>`:''}</div>`;
+}
+
+/* ── Fiche ── */
+async function fiche(id){
+  const x=I.find(i=>i.id===id);if(!x)return;const e=etat(x);
+  history.replaceState(null,'','#i='+id);
+  const iv=V.filter(v=>v.installation_id===id).sort((p,q)=>p.jour<q.jour?1:-1),ph=PH.filter(p=>p.installation_id===id);
+  ouvrir(`<h2>${esc(x.site_nom)}</h2>
+   <div class="kv"><span>Réacteur</span><b>${esc(x.reacteur_ref||'—')}</b><span>Lampes</span><b>${x.nb_lampes} × ${esc(x.lampe_ref||'—')}</b><span>Joints</span><b>${esc(x.joint_ref||'—')}</b><span>Quartz</span><b>${esc(x.quartz_ref||'—')}</b>
+    <span>Durée de vie</span><b>${nf(x.heures_max)} h (fabricant)</b><span>Irradiance mini</span><b>${x.irradiance_min!=null?String(x.irradiance_min).replace('.',',')+' '+esc(x.irradiance_unite):'à renseigner'}</b>
+    <span>Mise en service</span><b>${x.annee_install||'—'}</b><span>Prix lampes + joints</span><b>${x.prix_lampes!=null?x.prix_lampes.toLocaleString('fr-FR')+' €':'—'}</b></div>
+   <div class="etat"><span class="badge b-${e.nivL==='bad'?'bad':e.nivL==='warn'?'warn':'ok'}">Lampes : ${e.h!=null?nf(e.h)+' h':'?'}</span><span class="badge b-${e.nivQ==='bad'?'bad':e.nivQ==='warn'?'warn':'ok'}">Quartz : ${dfr(e.quartzLe)}</span>${e.irr?`<span class="badge b-${e.nivI==='bad'?'bad':'ok'}">Irradiance : ${String(e.irr.irradiance).replace('.',',')}</span>`:''}</div>
+   ${N()>=2?`<div class="etape"><div class="grp-t">Nouvelle intervention</div><div class="two-c"><div class="f"><label>Type</label><select class="sel" id="v-t">${Object.entries(TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="f"><label>Date</label><input class="inp" type="date" id="v-d" value="${auj()}"></div></div>
+    <div class="two-c"><div class="f"><label>Compteur horaire (h)</label><input class="inp" inputmode="decimal" id="v-h" placeholder="facultatif"></div><div class="f"><label>Irradiance (${esc(x.irradiance_unite)})</label><input class="inp" inputmode="decimal" id="v-i" placeholder="facultatif"></div></div>
+    <div class="f"><label>Note</label><input class="inp" id="v-n" style="width:100%"></div><button class="btn-p" onclick="saveInt(${id})">Enregistrer</button></div>`:''}
+   <div class="grp-t">Historique</div>${iv.map(v=>`<div class="hl"><b>${dfr(v.jour)}</b> · ${TYPES[v.type]}${v.heures!=null?' · '+nf(v.heures)+' h':''}${v.irradiance!=null?' · '+String(v.irradiance).replace('.',',')+' '+esc(x.irradiance_unite):''}${v.note?' · '+esc(v.note):''}</div>`).join('')||'<div class="ts">Aucune intervention.</div>'}
+   <div class="grp-t">Photos</div><div class="ph-th" id="ph"></div>${N()>=2?`<label class="btn-l" style="display:inline-block;margin-top:6px;cursor:pointer">+ Photos<input type="file" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this,${id})"></label> <span class="ts" id="pst"></span>`:''}
+   <div class="grp-t">Documents du site</div><div id="docs" class="ts">${x.site_ref?'Chargement…':N()>=3?'Relie la fiche à un site (Modifier) pour voir ses notices et procédures.':'Pas de site relié.'}</div>
+   <div class="acts">${N()>=3?`<button class="btn-l" onclick="formInst(${id})">Modifier la fiche</button>`:''}<button class="btn-l" onclick="fermer()">Fermer</button></div>`);
+  galerie(ph);documents(x);
+}
+dlg.addEventListener('close',()=>{if(location.hash.startsWith('#i='))history.replaceState(null,'',location.pathname);});
+async function saveInt(id){
+  const n=v=>v.trim()===''?null:+v.replace(',','.');
+  const row={installation_id:id,type:$('v-t').value,jour:$('v-d').value,heures:n($('v-h').value),irradiance:n($('v-i').value),note:$('v-n').value.trim()||null,cle_client:cle()};
+  if(!row.jour)return alert('Date ?');
+  if(row.type==='releve'&&row.heures==null&&row.irradiance==null)return alert('Un relevé demande au moins le compteur ou l\'irradiance.');
+  const {error}=await db.from('uv_interventions').insert(row);
+  if(error)return alert(msgErr(error));
+  await charger();page();fiche(id);toast(row.type==='lampes'?'Lampes changées : compteur remis à zéro':'Intervention enregistrée');
+}
+async function galerie(ph){
+  const box=$('ph');if(!box)return;if(!ph.length){box.innerHTML='<span class="ts">Aucune photo.</span>';return;}
+  let U={};try{const {data}=await db.storage.from('photos').createSignedUrls(ph.map(p=>p.chemin),3600);(data||[]).forEach(d=>{if(d.signedUrl)U[d.path]=d.signedUrl;});}catch(e){}
+  box.innerHTML=ph.map(p=>U[p.chemin]?`<a href="${esc(U[p.chemin])}" target="_blank" rel="noopener"><img src="${esc(U[p.chemin])}" alt="${esc(p.legende||'')}"></a>`:'').join('');
+}
+async function documents(x){
+  const box=$('docs');if(!box||!x.site_ref)return;
+  try{const {data:l}=await db.from('document_sites').select('document_id').eq('site_id',x.site_ref);
+    const ids=(l||[]).map(r=>r.document_id);if(!ids.length){box.textContent='Aucun document rattaché à ce site dans Documentation.';return;}
+    const {data:d}=await db.from('documents').select('*').in('id',ids);
+    box.innerHTML=(d||[]).map(doc=>`<div class="hl"><a href="#" onclick="ouvrirDoc(${JSON.stringify(doc.fichier).replace(/"/g,'&quot;')});return false">${esc(doc.titre||doc.nom||doc.nom_fichier||'Document')}</a></div>`).join('')+'<div class="ts"><a href="documentation.html">Ouvrir la documentation</a></div>';
+  }catch(e){box.textContent='Documents indisponibles.';}
+}
+async function ouvrirDoc(f){const {data,error}=await db.storage.from('documents').createSignedUrl(f,600);if(error)return alert(msgErr(error));window.open(data.signedUrl,'_blank');}
+function compresser(file){return new Promise((ok,ko)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const M=1600,k=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?ok(b):ko(new Error('compression')),'image/jpeg',0.75);};
+  im.onerror=()=>ko(new Error('image illisible'));im.src=u;});}
+async function ajouterPhotos(inp,id){
+  const fs=[...inp.files];inp.value='';let ok=0;
+  for(const [i,f] of fs.entries()){$('pst').textContent=`Envoi ${i+1} / ${fs.length}…`;
+    try{const b=await compresser(f),ch=`uv/${id}/${Date.now()}_${i}.jpg`;
+      const up=await db.storage.from('photos').upload(ch,b,{contentType:'image/jpeg'});if(up.error)throw up.error;
+      const {error}=await db.from('uv_photos').insert({installation_id:id,chemin:ch,taille:b.size,legende:f.name});if(error)throw error;ok++;}
+    catch(e){toast(f.name+' : '+msgErr(e));}}
+  await charger();fiche(id);toast(ok+' photo(s) ajoutée(s)');
+}
+
+/* ── Fiche installation (gestion) ── */
+function formInst(id){
+  const x=I.find(i=>i.id===id)||{site_nom:'',nb_lampes:1,heures_max:8700,quartz_mois:6,irradiance_unite:'W/m²',actif:true};
+  const t=(k,l,type='text')=>`<div class="f"><label>${l}</label><input class="inp" type="${type}" id="i-${k}" value="${esc(x[k]??'')}" style="width:100%"></div>`;
+  ouvrir(`<h2>${id?'Modifier la fiche':'Nouvelle installation UV'}</h2>${t('site_nom','Site')}
+   <div class="f"><label>Site dans le référentiel (pour ses documents)</label><select class="sel" id="i-site_ref" style="width:100%"><option value="">— aucun —</option>${SITES.map(s=>`<option value="${s.id}" ${String(s.id)===String(x.site_ref)?'selected':''}>${esc(s.nom)}${s.commune?' ('+esc(s.commune)+')':''}</option>`).join('')}</select></div>
+   <div class="two-c">${t('reacteur_ref','Réacteur')}${t('annee_install','Année de mise en service','number')}</div>
+   <div class="two-c">${t('nb_lampes','Nombre de lampes','number')}${t('lampe_ref','Référence des lampes')}</div>
+   <div class="two-c">${t('joint_ref','Référence des joints')}${t('quartz_ref','Référence des quartz')}</div>
+   <div class="two-c">${t('heures_max','Durée de vie des lampes (h, fabricant)','number')}${t('quartz_mois','Nettoyage des quartz tous les (mois)','number')}</div>
+   <div class="two-c">${t('irradiance_min','Irradiance minimale')}${t('irradiance_unite','Unité')}</div>
+   ${t('prix_lampes','Prix lampes + joints (€)')}${t('observation','Observation')}
+   <label class="f"><input type="checkbox" id="i-actif" ${x.actif?'checked':''}> Installation active</label>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="saveInst(${id})">Enregistrer</button></div>`);
+}
+async function saveInst(id){
+  const v=k=>$('i-'+k).value.trim(),n=k=>v(k)===''?null:+v(k).replace(',','.');
+  const row={site_nom:v('site_nom'),site_ref:v('site_ref')||null,reacteur_ref:v('reacteur_ref')||null,annee_install:n('annee_install'),nb_lampes:n('nb_lampes')||1,lampe_ref:v('lampe_ref')||null,joint_ref:v('joint_ref')||null,
+    quartz_ref:v('quartz_ref')||null,heures_max:n('heures_max')||8700,quartz_mois:n('quartz_mois')||6,irradiance_min:n('irradiance_min'),irradiance_unite:v('irradiance_unite')||'W/m²',prix_lampes:n('prix_lampes'),observation:v('observation')||null,actif:$('i-actif').checked};
+  if(!row.site_nom)return alert('Nom du site ?');
+  const {error}=id?await db.from('uv_installations').update(row).eq('id',id):await db.from('uv_installations').insert(row);
+  if(error)return alert(msgErr(error));
+  await charger();page();fermer();toast('Fiche enregistrée');
+}
+
+/* ── Tâche dans « À faire » et devis fournisseur ── */
+async function tacheUV(id,quoi){
+  const x=I.find(i=>i.id===id),e=etat(x),site=x.site_nom.split(/ à /i)[0].trim().toUpperCase();
+  const travaux=quoi==='lampes'?`UV : changer les ${x.nb_lampes} lampe${x.nb_lampes>1?'s':''} ${x.lampe_ref||''} (échéance ${dfr(e.lampesLe)})`:`UV : nettoyer les quartz (prévu le ${dfr(e.quartzLe)})`;
+  const {data:ex,error:e1}=await db.from('taches').select('id').eq('site_nom',site).in('statut',['a_faire','planifie']).ilike('travaux',travaux.slice(0,14)+'%');
+  if(e1)return alert(msgErr(e1));
+  if(ex&&ex.length)return toast('Une tâche identique est déjà ouverte pour ce site');
+  const ech=quoi==='lampes'?e.lampesLe:e.quartzLe;
+  const {error}=await db.from('taches').insert({travaux,priorite:ech&&ech<auj()?1:2,site_nom:site,famille:'traitement',source:'maintenance',echeance:ech,cle_client:cle()});
+  if(error)return alert(msgErr(error));
+  toast('Tâche créée : elle est dans « À planifier »');
+}
+function formDevis(){
+  const a=auj();
+  ouvrir(`<h2>Demander un devis de lampes</h2><p class="ts">Coche les sites à inclure (pré-cochés : lampes à changer dans les 6 mois).</p>
+   <div class="cks" style="flex-direction:column;align-items:flex-start">${I.filter(x=>x.actif).map(x=>{const e=etat(x),pre=e.lampesLe&&diffJ(e.lampesLe,a)<=183;return `<label class="ck" style="border-radius:10px"><input type="checkbox" value="${x.id}" ${pre?'checked':''}> ${esc(x.site_nom)} — ${x.nb_lampes} × ${esc(x.lampe_ref||'')} ${e.lampesLe?'(vers le '+dfr(e.lampesLe)+')':''}</label>`;}).join('')}</div>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Annuler</button><button class="btn-p" onclick="envoyerDevis()">Préparer le mail</button></div>`);
+}
+function envoyerDevis(){
+  const ids=[...dlg.querySelectorAll('.cks input:checked')].map(c=>+c.value);if(!ids.length)return alert('Aucun site coché.');
+  const L=ids.map(id=>{const x=I.find(i=>i.id===id);return `- ${x.nb_lampes} ${x.nb_lampes>1?'LAMPES':'LAMPE'} ${(x.lampe_ref||'').trim()} pour le réacteur ${(x.reacteur_ref||'').trim()} pour notre site de ${x.site_nom}`;});
+  const corps=`Bonjour ${PAR.uv_contact||''},\n\npeux-tu me faire une offre de prix pour :\n${L.join('\n')}\n\nMerci à toi, cordialement`;
+  fermer();location.href='mailto:'+(PAR.uv_email||'')+'?subject='+encodeURIComponent('Demande de prix lampes UV')+'&body='+encodeURIComponent(corps);
+}
+start();
+</script>
+</body>
+</html>
