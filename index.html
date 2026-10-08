@@ -148,6 +148,7 @@ h2{font-size:1.1rem;font-weight:700}
 <symbol id="ic-procedures" viewBox="0 0 96 96"><path d="M28 32h4M28 48h4M28 64h4M40 32h28M40 48h28M40 64h28"/></symbol>
 <symbol id="ic-ouvrages" viewBox="0 0 96 96"><path d="M26 50V28h22l22 22-22 22zM37 36a2 2 0 1 0 0 .1"/></symbol>
 <symbol id="ic-chlore" viewBox="0 0 96 96"><path d="M36.766 24H59.234M40.5106 24V40L25.5319 62.6667C21.7872 68.8889 24.9078 72 34.8936 72H61.1064C71.0922 72 74.2128 68.8889 70.4681 62.6667L55.4894 40V24M33.0213 56H62.9787M40.5106 62.6667H55.4894"/></symbol>
+<symbol id="ic-bouteille" viewBox="0 0 96 96"><path d="M42 24v-6a6 6 0 0 1 12 0v6zM41 24h14M44 24v4M52 24v4M44 28c-6 1-10 5-10 11v38a3 3 0 0 0 3 3h22a3 3 0 0 0 3-3V39c0-6-4-10-10-11zM41 46h14v12H41z"/></symbol>
 <symbol id="ic-compteur" viewBox="0 0 96 96"><path d="M24 41.4545H32.7273M24 54.5455H32.7273M63.2727 41.4545H72M63.2727 54.5455H72M43.6364 39.2727V45.8182M48 39.2727V45.8182M52.3636 39.2727V45.8182M43.6364 61.0909H52.3636M32.7273 24H63.2727V72H32.7273V24ZM39.2727 34.9091H56.7273V50.1818H39.2727V34.9091Z"/></symbol>
 <symbol id="ic-jaugeage" viewBox="0 0 96 96"><path d="M24 54.5455C28 48.7273 32 48.7273 36 54.5455C40 60.3636 44 60.3636 48 54.5455C52 48.7273 56 48.7273 60 54.5455C64 60.3636 68 60.3636 72 54.5455M24 67.6364C28 61.8182 32 61.8182 36 67.6364C40 73.4545 44 73.4545 48 67.6364C52 61.8182 56 61.8182 60 67.6364C64 73.4545 68 73.4545 72 67.6364M24 34.1818H51.6M44.4 42.9091L51.6 34.1818L44.4 25.4545M61.2 24V47.2727M61.2 28.3636H68.4M61.2 37.0909H66M61.2 45.8182H68.4"/></symbol>
 <symbol id="ic-piezo" viewBox="0 0 96 96"><path d="M24 38.6667H42M54 38.6667H72M46.8 28V61.3333M46.8 49.3333H52.8M24 60C28 55.5556 32 55.5556 36 60M57.6 60C61.6 55.5556 66.4 55.5556 72 60M24 72C28.8 67.5556 33.6 67.5556 38.4 72M57.6 72C62.4 67.5556 67.2 67.5556 72 72M42 24H54V68H42V24Z"/></symbol>
@@ -193,9 +194,9 @@ const M={
   r_jaugeage:{ic:'jaugeage',label:'Saisir un jaugeage',desc:'Mesure terrain du débit',url:'saisie-jaugeages.html'},
   r_piezo:{ic:'piezo',label:'Relever les piézos',desc:'Niveau de nappe',url:'saisie-piezos.html'},
   r_compteur:{ic:'compteur',label:'Index compteurs',desc:'Lecture d\'index',url:'compteurs.html'},
-  r_uv:{ic:'lampe_uv',label:'Lampes UV',desc:'Heures, état des lampes',url:'uv.html'},
+  r_uv:{ic:'lampe_uv',label:'Relevé UV',desc:'Compteur, irradiance',url:'uv.html#releve'},
   maintenance:{ic:'maintenance',label:'Maintenance',desc:'Contrôles périodiques',items:['m_chlore','m_uv','m_antibelier','m_visite','m_filtres','m_pi']},
-  m_chlore:{ic:'chlore',label:'Bouteilles de chlore',desc:'Réserves, fin projetée, commande',url:'chlore.html'},
+  m_chlore:{ic:'bouteille',label:'Bouteilles de chlore',desc:'Réserves, fin projetée, commande',url:'chlore.html'},
   m_uv:{ic:'lampe_uv',label:'Lampes UV',desc:'Heures, quartz, irradiance',url:'uv.html'},
   m_antibelier:{ic:'antibelier',label:'Ballons',desc:'Anti-béliers et hydrophores',url:'ballons.html'},
   m_visite:{ic:'visite',label:'Visites d\'ouvrages',desc:'Réservoirs, stations'},

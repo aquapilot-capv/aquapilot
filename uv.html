@@ -217,6 +217,7 @@ async function start(){
   if(N()<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à la maintenance.');return;}
   await charger();page();
   const m=location.hash.match(/^#i=(\d+)/);if(m)fiche(+m[1]);
+  if(location.hash==='#releve'&&N()>=2)formReleve();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
 async function logout(){await db.auth.signOut();location.reload();}
@@ -345,6 +346,21 @@ async function ajouterPhotos(inp,id){
   await charger();fiche(id);toast(ok+' photo(s) ajoutée(s)');
 }
 
+/* ── Relevé rapide (entrée « Relevés » de l'accueil) : site, compteur, irradiance ── */
+function formReleve(){
+  ouvrir(`<h2>Relevé UV</h2><div class="f"><label>Site</label><select class="sel" id="r-s" style="width:100%">${I.filter(x=>x.actif).map(x=>`<option value="${x.id}">${esc(x.site_nom)}</option>`).join('')}</select></div>
+   <div class="two-c"><div class="f"><label>Date</label><input class="inp" type="date" id="r-d" value="${auj()}"></div><div class="f"><label>Compteur horaire (h)</label><input class="inp" inputmode="decimal" id="r-h"></div></div>
+   <div class="two-c"><div class="f"><label>Irradiance</label><input class="inp" inputmode="decimal" id="r-i"></div><div class="f"><label>Note</label><input class="inp" id="r-n"></div></div>
+   <div class="acts"><button class="btn-l" onclick="fermer()">Fermer</button><button class="btn-p" onclick="saveReleve()">Enregistrer le relevé</button></div>`);
+}
+async function saveReleve(){
+  const n=v=>v.trim()===''?null:+v.replace(',','.'),id=+$('r-s').value;
+  const row={installation_id:id,type:'releve',jour:$('r-d').value,heures:n($('r-h').value),irradiance:n($('r-i').value),note:$('r-n').value.trim()||null,cle_client:cle()};
+  if(row.heures==null&&row.irradiance==null)return alert('Saisis au moins le compteur ou l\'irradiance.');
+  const {error}=await db.from('uv_interventions').insert(row);if(error)return alert(msgErr(error));
+  await charger();page();const x=I.find(i=>i.id===id),e=etat(x);
+  toast(e.nivI==='bad'?'Relevé enregistré — irradiance SOUS le seuil':'Relevé enregistré');formReleve();
+}
 /* ── Fiche installation (gestion) ── */
 function formInst(id){
   const x=I.find(i=>i.id===id)||{site_nom:'',nb_lampes:1,heures_max:8700,quartz_mois:6,irradiance_unite:'W/m²',actif:true};
