@@ -82,32 +82,70 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .up{color:var(--bad)}.dn{color:var(--blue)}
 
 /* ── Calculateurs ── */
-#calc-modal{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;background:var(--bg)}
+#calc-backdrop{position:fixed;inset:0;z-index:290;background:rgba(0,0,0,.45);display:none}
+#calc-backdrop.on{display:block}
+#calc-modal{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:300;
+  width:min(500px,100vw);max-height:92vh;border-radius:14px 14px 0 0;
+  background:var(--bg);display:none;flex-direction:column;
+  box-shadow:0 -4px 32px rgba(0,0,0,.18)}
 #calc-modal.on{display:flex}
-.calc-head{display:flex;align-items:center;gap:10px;padding:12px 16px 0;border-bottom:1px solid var(--line)}
-.calc-head h2{flex:1;margin:0;font-size:1rem}
-.calc-head button.close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--mute);padding:4px 8px}
-.calc-tabs{display:flex;gap:4px;padding:10px 16px 0}
-.calc-tabs button{flex:1;padding:8px;border:1px solid var(--line);background:var(--card);border-radius:6px 6px 0 0;cursor:pointer;font-size:.85rem;color:var(--mute)}
-.calc-tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
-.calc-body{flex:1;overflow-y:auto;padding:14px 16px}
+@media(min-width:600px){
+  #calc-modal{bottom:auto;top:50%;transform:translate(-50%,-50%);border-radius:14px;max-height:88vh}
+}
+.calc-head{display:flex;align-items:center;padding:14px 16px 10px;border-bottom:1px solid var(--line);gap:10px}
+.calc-head h2{flex:1;margin:0;font-size:.95rem;font-weight:700}
+.calc-head button.close{background:none;border:none;font-size:1.3rem;line-height:1;cursor:pointer;color:var(--mute);padding:2px 6px;border-radius:4px}
+.calc-head button.close:hover{background:var(--line)}
+.calc-tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin:0 16px}
+.calc-tabs button{flex:1;padding:9px 6px;border:none;background:none;cursor:pointer;font-size:.83rem;
+  color:var(--mute);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px}
+.calc-tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+.calc-body{flex:1;overflow-y:auto;padding:14px 16px 20px}
 .calc-panel{display:none}.calc-panel.on{display:block}
-.calc-res{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
-.calc-res .val{font-size:1.5rem;font-weight:700;color:var(--acc)}
-.calc-res .val small{font-size:.85rem;font-weight:400;margin-left:4px;color:var(--mute)}
-.calc-res .row{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;font-size:.85rem}
-.calc-res .row span{color:var(--mute)}
-.abaque{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:8px}
-.abaque th{background:var(--line);padding:5px 8px;text-align:right}
+.c-field{margin-bottom:10px}
+.c-field label{font-size:.78rem;font-weight:600;color:var(--mute);display:block;margin-bottom:4px}
+.c-field input,.c-field select{width:100%;padding:9px 10px;border:1.5px solid var(--line);
+  border-radius:8px;background:var(--card);font-size:.9rem;box-sizing:border-box}
+.c-field input:focus,.c-field select:focus{outline:none;border-color:var(--acc)}
+.c-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.c-info{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  font-size:.78rem;color:var(--mute);line-height:1.7;margin:10px 0}
+.c-info b{color:#3C3530}
+.calc-res{background:linear-gradient(135deg,var(--acc) 0%,#9a3a0e 100%);
+  border-radius:10px;padding:14px 16px;margin:10px 0;color:#fff}
+.calc-res .res-label{font-size:.73rem;opacity:.8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.calc-res .res-val{font-size:2rem;font-weight:800;line-height:1}
+.calc-res .res-unit{font-size:.9rem;font-weight:400;margin-left:5px;opacity:.85}
+.calc-res .res-rows{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25)}
+.calc-res .res-row{display:flex;justify-content:space-between;font-size:.8rem;padding:2px 0;opacity:.9}
+.calc-res .res-row b{opacity:1;font-weight:700}
+.calc-warn{background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:8px 10px;
+  font-size:.78rem;color:#b91c1c;margin-top:8px}
+.c-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn-save{background:var(--acc);color:#fff;border:none;border-radius:8px;
+  padding:10px 16px;cursor:pointer;font-size:.85rem;font-weight:600;flex:1}
+.btn-save:hover{opacity:.9}
+.btn-switch{background:var(--card);color:var(--acc);border:1.5px solid var(--acc);border-radius:8px;
+  padding:10px 16px;cursor:pointer;font-size:.85rem;font-weight:600}
+.calc-log{font-size:.72rem;color:var(--mute);margin-top:8px;font-style:italic;text-align:center}
+.abaque-wrap details{margin-top:10px}
+.abaque-wrap summary{cursor:pointer;font-size:.78rem;color:var(--mute);padding:4px 0}
+.abaque{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:6px}
+.abaque th{background:var(--line);padding:5px 10px;text-align:right;font-weight:600}
 .abaque th:first-child{text-align:left}
-.abaque td{padding:5px 8px;text-align:right;border-top:1px solid var(--line)}
+.abaque td{padding:5px 10px;text-align:right;border-top:1px solid var(--line)}
 .abaque td:first-child{text-align:left}
 .abaque tr.hl td{background:#fef3ee;font-weight:700;color:var(--acc)}
-.calc-log{font-size:.75rem;color:var(--mute);margin-top:10px;font-style:italic}
-.calc-warn{color:var(--bad);font-size:.8rem;margin-top:6px}
-.btn-calc{background:var(--acc);color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:.85rem;margin-top:8px}
-.btn-sec{background:var(--card);color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:.85rem;margin-top:8px;margin-left:6px}
-.btn-open-calc{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--acc);color:var(--acc);border-radius:6px;padding:7px 12px;cursor:pointer;font-size:.82rem;margin-top:8px}
+.btn-open-calc{display:inline-flex;align-items:center;gap:6px;background:none;
+  border:1.5px solid var(--acc);color:var(--acc);border-radius:8px;
+  padding:7px 12px;cursor:pointer;font-size:.82rem;font-weight:600;margin-top:10px}
+.btn-open-calc:hover{background:#fef3ee}
+.c-sep{height:1px;background:var(--line);margin:12px 0}
+.conc-row{display:flex;gap:8px;align-items:flex-end}
+.conc-row .c-field{flex:0 0 auto}
+.conc-row .c-field:first-child{flex:0 0 110px}
+.conc-row .c-field:nth-child(2){flex:1}
+.conc-conv{font-size:.75rem;color:var(--mute);margin-top:6px;text-align:right}
 </style>
 </head>
 <body>
@@ -120,10 +158,11 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 <div class="wrap"><div id="net"></div><div id="view"><div class="loading">Chargement…</div></div></div>
 <div class="foot" id="foot" style="display:none"></div>
 
-<div id="calc-modal">
+<div id="calc-backdrop" onclick="fermerCalc()"></div>
+<div id="calc-modal" role="dialog" aria-modal="true">
   <div class="calc-head">
     <h2>🧮 Calculateurs chlore</h2>
-    <button class="close" onclick="fermerCalc()">✕</button>
+    <button class="close" onclick="fermerCalc()" title="Fermer">✕</button>
   </div>
   <div class="calc-tabs">
     <button id="tab-pompe" class="on" onclick="switchCalcTab('pompe')">Pompe doseuse</button>
@@ -131,64 +170,99 @@ button,input,textarea{font:inherit}button{cursor:pointer}
   </div>
   <div class="calc-body">
 
-    <!-- POMPE DOSEUSE -->
+    <!-- ── POMPE DOSEUSE ── -->
     <div id="panel-pompe" class="calc-panel on">
-      <div style="margin-bottom:10px">
-        <label>Site / configuration</label>
-        <select id="cp-site" onchange="onConfigChange()" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-top:4px"></select>
+      <div class="c-field" style="margin-top:4px">
+        <label>Site / configuration pompe</label>
+        <select id="cp-site" onchange="onConfigChange()"></select>
       </div>
-      <div class="g4" style="margin-bottom:10px">
-        <div class="f"><label>Débit instantané (m³/h)</label><input id="cp-debit" type="text" inputmode="decimal" placeholder="ex. 12.5" oninput="calcPompe()"></div>
-        <div class="f"><label>Marge sécurité (%)</label><input id="cp-marge" type="text" inputmode="decimal" value="40" oninput="calcPompe()"></div>
+      <div id="cp-info" class="c-info" style="display:none"></div>
+      <div class="c-grid">
+        <div class="c-field">
+          <label>Débit instantané (m³/h)</label>
+          <input id="cp-debit" type="text" inputmode="decimal" placeholder="ex. 12.5" oninput="calcPompe()">
+        </div>
+        <div class="c-field">
+          <label>Marge sécurité (%)</label>
+          <input id="cp-marge" type="text" inputmode="decimal" value="40" oninput="calcPompe()">
+        </div>
       </div>
       <div id="cp-res" style="display:none">
         <div class="calc-res">
-          <div class="val" id="cp-val">–<small id="cp-unit">L/h</small></div>
-          <div class="row"><span>Débit théorique</span><b id="cp-theo">–</b></div>
-          <div class="row"><span>Autonomie cuve</span><b id="cp-auto">–</b></div>
-          <div class="row"><span>Modèle pompe</span><b id="cp-modele">–</b></div>
-          <div id="cp-warn" class="calc-warn"></div>
+          <div class="res-label">Débit à programmer</div>
+          <div><span class="res-val" id="cp-val">–</span><span class="res-unit" id="cp-unit">L/h</span></div>
+          <div class="res-rows">
+            <div class="res-row"><span>Débit théorique (sans marge)</span><b id="cp-theo">–</b></div>
+            <div class="res-row"><span>Autonomie cuve estimée</span><b id="cp-auto">–</b></div>
+            <div class="res-row"><span>Besoin par impulsion</span><b id="cp-besoin">–</b></div>
+          </div>
         </div>
-        <div id="cp-params" style="font-size:.78rem;color:var(--mute);line-height:1.6"></div>
-        <button class="btn-calc" onclick="sauverLogPompe()">💾 Enregistrer</button>
-        <button class="btn-sec" onclick="switchCalcTab('choc')">→ Choc réservoir</button>
+        <div id="cp-warn"></div>
+        <div class="c-actions">
+          <button class="btn-save" onclick="sauverLogPompe()">💾 Enregistrer le calcul</button>
+          <button class="btn-switch" onclick="switchCalcTab('choc')">Choc →</button>
+        </div>
         <div id="cp-log" class="calc-log"></div>
       </div>
-      <div id="cp-noconfig" style="display:none;color:var(--mute);font-size:.85rem;margin-top:12px">Aucune configuration pompe trouvée pour ce site.</div>
+      <div id="cp-noconfig" style="display:none;color:var(--mute);font-size:.85rem;margin-top:12px">
+        Aucune configuration pompe dans la base. Demande à un gestionnaire d'en ajouter une.
+      </div>
     </div>
 
-    <!-- CHOC RÉSERVOIR -->
+    <!-- ── CHOC RÉSERVOIR ── -->
     <div id="panel-choc" class="calc-panel">
-      <div class="g4" style="margin-bottom:10px">
-        <div class="f"><label>Nom réservoir</label><input id="cc-nom" type="text" placeholder="ex. Réservoir des Mîtes"></div>
-        <div class="f"><label>Volume réservoir (m³)</label><input id="cc-vol" type="text" inputmode="decimal" placeholder="ex. 100" oninput="calcChoc()"></div>
-        <div class="f"><label>Chlore résiduel (mg/L)</label><input id="cc-res" type="text" inputmode="decimal" placeholder="0.0" oninput="calcChoc()"></div>
-        <div class="f"><label>Chlore cible (mg/L)</label><input id="cc-cible" type="text" inputmode="decimal" value="0.3" oninput="calcChoc()"></div>
+      <div class="c-field" style="margin-top:4px">
+        <label>Nom du réservoir</label>
+        <input id="cc-nom" type="text" placeholder="ex. Réservoir des Mîtes">
       </div>
-      <div style="margin-bottom:10px">
-        <label>Concentration Javel</label>
-        <div style="display:flex;gap:8px;margin-top:4px;align-items:center;flex-wrap:wrap">
-          <select id="cc-mode" onchange="onChocModeChange()" style="padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--card)">
-            <option value="gl">g/L (Cl actif)</option>
+      <div class="c-grid">
+        <div class="c-field">
+          <label>Volume réservoir (m³)</label>
+          <input id="cc-vol" type="text" inputmode="decimal" placeholder="ex. 100" oninput="calcChoc()">
+        </div>
+        <div class="c-field">
+          <label>Chlore résiduel (mg/L)</label>
+          <input id="cc-residu" type="text" inputmode="decimal" placeholder="0.0" oninput="calcChoc()">
+        </div>
+        <div class="c-field">
+          <label>Chlore cible (mg/L)</label>
+          <input id="cc-cible" type="text" inputmode="decimal" value="0.3" oninput="calcChoc()">
+        </div>
+      </div>
+      <div class="c-sep"></div>
+      <div class="conc-row">
+        <div class="c-field">
+          <label>Unité Javel</label>
+          <select id="cc-mode" onchange="onChocModeChange()">
+            <option value="gl">g/L</option>
             <option value="chl">°Chl</option>
           </select>
-          <input id="cc-conc-val" type="text" inputmode="decimal" value="151.42" placeholder="ex. 151.42" oninput="calcChoc()" style="width:100px;padding:7px;border:1px solid var(--line);border-radius:6px">
-          <span id="cc-conc-unit" style="color:var(--mute);font-size:.85rem">g/L</span>
-          <span id="cc-chl-conv" style="font-size:.78rem;color:var(--mute)"></span>
+        </div>
+        <div class="c-field">
+          <label id="cc-conc-lbl">Concentration (g/L)</label>
+          <input id="cc-conc-val" type="text" inputmode="decimal" value="151.42" oninput="calcChoc()">
         </div>
       </div>
+      <div id="cc-chl-conv" class="conc-conv"></div>
       <div id="cc-res-bloc" style="display:none">
         <div class="calc-res">
-          <div class="val" id="cc-val">–<small id="cc-unit">L</small></div>
-          <div class="row"><span>Volume Javel à verser</span><b id="cc-vol-javel">–</b></div>
-          <div class="row"><span>Masse Cl actif</span><b id="cc-masse">–</b></div>
-          <div class="row"><span>ΔC résiduel → cible</span><b id="cc-delta">–</b></div>
+          <div class="res-label">Volume de Javel à verser</div>
+          <div><span class="res-val" id="cc-val">–</span><span class="res-unit" id="cc-unit">L</span></div>
+          <div class="res-rows">
+            <div class="res-row"><span>Masse Cl actif nécessaire</span><b id="cc-masse">–</b></div>
+            <div class="res-row"><span>ΔC (résiduel → cible)</span><b id="cc-delta">–</b></div>
+            <div class="res-row"><span>Concentration Javel utilisée</span><b id="cc-gl-used">–</b></div>
+          </div>
         </div>
-        <details style="margin-top:10px">
-          <summary style="cursor:pointer;font-size:.8rem;color:var(--mute)">Abaque volumes Javel</summary>
-          <div id="cc-abaque" style="overflow-x:auto;margin-top:6px"></div>
-        </details>
-        <button class="btn-calc" onclick="sauverLogChoc()">💾 Enregistrer</button>
+        <div class="abaque-wrap">
+          <details>
+            <summary>Abaque — autres volumes de réservoir</summary>
+            <div id="cc-abaque"></div>
+          </details>
+        </div>
+        <div class="c-actions">
+          <button class="btn-save" onclick="sauverLogChoc()">💾 Enregistrer le calcul</button>
+        </div>
         <div id="cc-log" class="calc-log"></div>
       </div>
     </div>
@@ -451,23 +525,22 @@ function supprimer(){
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800);}
 
 /* ── Calculateurs chlore ── */
-let CONFIGS = null;          // cache des configs pompe
-let CALC_POINT_ID = null;    // point courant au moment de l'ouverture
+let CONFIGS=null, CALC_PID=null;
 
 async function loadConfigs(){
   if(CONFIGS!==null)return;
-  const {data,error}=await db.from('config_pompe_doseuse').select('*').eq('actif',true).order('nom_site');
+  const{data,error}=await db.from('config_pompe_doseuse').select('*').eq('actif',true).order('nom_site');
   CONFIGS=error?[]:data;
 }
 
-function ouvrirCalc(pointId){
-  CALC_POINT_ID=pointId;
-  const modal=document.getElementById('calc-modal');
-  modal.classList.add('on');
-  // pré-remplir chlore résiduel depuis la saisie en cours
-  if(FS&&FS.v[pointId]){
-    const cl=FS.v[pointId].chlore_libre;
-    if(cl)document.getElementById('cc-res').value=String(cl).replace(',','.');
+function ouvrirCalc(pid){
+  CALC_PID=pid;
+  document.getElementById('calc-backdrop').classList.add('on');
+  document.getElementById('calc-modal').classList.add('on');
+  // pré-remplir résiduel depuis la saisie
+  if(FS&&FS.v[pid]){
+    const cl=FS.v[pid].chlore_libre;
+    if(cl)document.getElementById('cc-residu').value=String(cl).replace(',','.');
   }
   switchCalcTab('pompe');
   loadConfigs().then(()=>remplirSelectSite());
@@ -475,6 +548,7 @@ function ouvrirCalc(pointId){
 }
 
 function fermerCalc(){
+  document.getElementById('calc-backdrop').classList.remove('on');
   document.getElementById('calc-modal').classList.remove('on');
 }
 
@@ -490,156 +564,138 @@ function remplirSelectSite(){
   if(!CONFIGS||!CONFIGS.length){
     sel.innerHTML='<option value="">Aucune configuration</option>';
     document.getElementById('cp-noconfig').style.display='';
+    document.getElementById('cp-info').style.display='none';
     return;
   }
   document.getElementById('cp-noconfig').style.display='none';
-  // chercher le site correspondant au point courant
-  const siteName=CALC_POINT_ID&&REF?REF.sites?.find(s=>REF.points?.find(p=>p.id===CALC_POINT_ID&&p.site_id===s.id))?.nom:'';
+  // sélection auto par nom approché
+  const siteName=CALC_PID&&REF?(REF.sites||[]).find(s=>(REF.points||[]).find(p=>p.id===CALC_PID&&p.site_id===s.id))?.nom||'':'';
   sel.innerHTML=CONFIGS.map(c=>`<option value="${c.id}">${c.nom_site} — ${c.modele_pompe}</option>`).join('');
-  // essai de sélection auto par nom approché
-  const match=CONFIGS.findIndex(c=>siteName&&c.nom_site.toLowerCase().includes(siteName.toLowerCase().slice(0,6)));
+  const match=CONFIGS.findIndex(c=>siteName&&c.nom_site.toLowerCase().includes(siteName.toLowerCase().slice(0,5)));
   if(match>=0)sel.selectedIndex=match;
   onConfigChange();
 }
 
 function onConfigChange(){
+  if(!CONFIGS)return;
+  const cfg=CONFIGS.find(c=>c.id===+document.getElementById('cp-site').value);
+  const info=document.getElementById('cp-info');
+  if(cfg){
+    info.style.display='';
+    info.innerHTML=`<b>${cfg.modele_pompe}</b> · K = ${cfg.k_compteur} L/imp · taux cible = <b>${cfg.taux_cible} mg/L</b><br>
+      Javel : ${cfg.conc_javel_gl} g/L · Cuve : ${cfg.volume_cuve_l} L · Débit max : ${cfg.debit_max_lh} L/h${cfg.note?`<br><span>${cfg.note}</span>`:''}`;
+  } else { info.style.display='none'; }
   calcPompe();
 }
 
-function nbF(s){const n=parseFloat(String(s).replace(',','.'));return isNaN(n)?null:n;}
-function fmtDebit(lh){const ml=lh*1000;return ml<100?{val:ml.toFixed(1),unit:'mL/h'}:{val:lh.toFixed(3),unit:'L/h'};}
+function nbF(s){const n=parseFloat(String(s||'').replace(',','.'));return isNaN(n)?null:n;}
+function fmtQ(lh){const ml=lh*1000;return ml<100?{v:ml.toFixed(1),u:'mL/h'}:{v:lh.toFixed(3),u:'L/h'};}
 
 function calcPompe(){
-  const sel=document.getElementById('cp-site');
-  if(!CONFIGS||!CONFIGS.length){document.getElementById('cp-res').style.display='none';return;}
-  const cfg=CONFIGS.find(c=>c.id===+sel.value);
-  if(!cfg){document.getElementById('cp-res').style.display='none';return;}
-
+  if(!CONFIGS)return;
+  const cfg=CONFIGS.find(c=>c.id===+document.getElementById('cp-site').value);
+  const res=document.getElementById('cp-res');
+  if(!cfg){res.style.display='none';return;}
   const Q=nbF(document.getElementById('cp-debit').value);
   const marge=nbF(document.getElementById('cp-marge').value)??40;
-  document.getElementById('cp-params').innerHTML=
-    `K=${cfg.k_compteur} L/imp · taux=${cfg.taux_cible} mg/L · Javel=${cfg.conc_javel_gl} g/L · cuve=${cfg.volume_cuve_l} L`;
-
-  if(Q===null||Q<=0){document.getElementById('cp-res').style.display='none';return;}
-  document.getElementById('cp-res').style.display='';
-
-  const besoin=cfg.taux_cible*cfg.k_compteur/cfg.conc_javel_gl;  // mL/imp
-  const vitesse=Q*1000/cfg.k_compteur;                             // imp/h
-  const qTheo=besoin*vitesse/1000;                                 // L/h
-  const qRegle=qTheo*(1+marge/100);                               // L/h avec marge
-  const auto=cfg.volume_cuve_l/qRegle;                            // h → jours
-  const {val,unit}=fmtDebit(qRegle);
-  const {val:vt,unit:ut}=fmtDebit(qTheo);
-
-  document.getElementById('cp-val').innerHTML=`${val}<small>${unit}</small>`;
-  document.getElementById('cp-theo').textContent=`${vt} ${ut}`;
-  document.getElementById('cp-auto').textContent=auto>=48?`${(auto/24).toFixed(1)} j`:`${auto.toFixed(1)} h`;
-  document.getElementById('cp-modele').textContent=cfg.modele_pompe;
-
-  const warn=document.getElementById('cp-warn');
-  if(qRegle>cfg.debit_max_lh){
-    warn.textContent=`⚠ Débit réglé (${val} ${unit}) dépasse le max pompe (${fmtDebit(cfg.debit_max_lh).val} ${fmtDebit(cfg.debit_max_lh).unit})`;
-  } else {warn.textContent='';}
-}
-
-async function sauverLogPompe(){
-  const sel=document.getElementById('cp-site');
-  const cfg=CONFIGS&&CONFIGS.find(c=>c.id===+sel.value);
-  if(!cfg)return;
-  const Q=nbF(document.getElementById('cp-debit').value);
-  if(!Q)return;
-  const marge=nbF(document.getElementById('cp-marge').value)??40;
+  if(Q===null||Q<=0){res.style.display='none';return;}
+  res.style.display='';
   const besoin=cfg.taux_cible*cfg.k_compteur/cfg.conc_javel_gl;
   const vitesse=Q*1000/cfg.k_compteur;
   const qTheo=besoin*vitesse/1000;
   const qRegle=qTheo*(1+marge/100);
-  const auto=cfg.volume_cuve_l/qRegle/24;
-  const {data:sess}=await db.auth.getSession();
-  const uid=sess?.session?.user?.id;
-  const {error}=await db.from('log_calcul_pompe').insert({
-    config_id:cfg.id,nom_site_snap:cfg.nom_site,
-    debit_eau_m3h:Q,marge_pct:Math.round(marge),
-    debit_theorique_lh:qTheo,debit_regle_lh:qRegle,
-    autonomie_jours:auto,saisi_par:uid
-  });
-  const el=document.getElementById('cp-log');
-  el.textContent=error?`Erreur : ${error.message}`:`Calcul enregistré ✓ (${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})`;
+  const auto=cfg.volume_cuve_l/qRegle;
+  const{v,u}=fmtQ(qRegle),{v:vt,u:ut}=fmtQ(qTheo);
+  document.getElementById('cp-val').textContent=v;
+  document.getElementById('cp-unit').textContent=u;
+  document.getElementById('cp-theo').textContent=`${vt} ${ut}`;
+  document.getElementById('cp-auto').textContent=auto>=48?`${(auto/24).toFixed(1)} j`:`${auto.toFixed(1)} h`;
+  document.getElementById('cp-besoin').textContent=`${besoin.toFixed(4)} mL/imp`;
+  const warn=document.getElementById('cp-warn');
+  warn.innerHTML=qRegle>cfg.debit_max_lh?
+    `<div class="calc-warn">⚠ Débit calculé (${v} ${u}) dépasse le max pompe (${fmtQ(cfg.debit_max_lh).v} ${fmtQ(cfg.debit_max_lh).u}) — vérifier le débit ou le site</div>`:'';
 }
 
-function getGLChoc(){
-  const mode=document.getElementById('cc-mode').value;
+async function sauverLogPompe(){
+  if(!CONFIGS)return;
+  const cfg=CONFIGS.find(c=>c.id===+document.getElementById('cp-site').value);
+  const Q=nbF(document.getElementById('cp-debit').value);
+  if(!cfg||!Q)return;
+  const marge=nbF(document.getElementById('cp-marge').value)??40;
+  const besoin=cfg.taux_cible*cfg.k_compteur/cfg.conc_javel_gl;
+  const qTheo=besoin*(Q*1000/cfg.k_compteur)/1000;
+  const qRegle=qTheo*(1+marge/100);
+  const auto=cfg.volume_cuve_l/qRegle/24;
+  const{data:sess}=await db.auth.getSession();
+  const uid=sess?.session?.user?.id;
+  const{error}=await db.from('log_calcul_pompe').insert({
+    config_id:cfg.id,nom_site_snap:cfg.nom_site,debit_eau_m3h:Q,marge_pct:Math.round(marge),
+    debit_theorique_lh:qTheo,debit_regle_lh:qRegle,autonomie_jours:auto,saisi_par:uid
+  });
+  document.getElementById('cp-log').textContent=error?`Erreur : ${error.message}`:`Calcul enregistré ✓`;
+}
+
+function getGL(){
   const v=nbF(document.getElementById('cc-conc-val').value);
   if(v===null)return null;
-  return mode==='chl'?v*3.1542:v;
+  return document.getElementById('cc-mode').value==='chl'?v*3.1542:v;
 }
 
 function onChocModeChange(){
-  const mode=document.getElementById('cc-mode').value;
-  const unitEl=document.getElementById('cc-conc-unit');
-  const convEl=document.getElementById('cc-chl-conv');
-  if(mode==='chl'){
-    unitEl.textContent='°Chl';
-    document.getElementById('cc-conc-val').value='48';
-    const gl=48*3.1542;convEl.textContent=`= ${gl.toFixed(2)} g/L`;
-  } else {
-    unitEl.textContent='g/L';
-    document.getElementById('cc-conc-val').value='151.42';
-    convEl.textContent='';
-  }
+  const chl=document.getElementById('cc-mode').value==='chl';
+  document.getElementById('cc-conc-lbl').textContent=chl?'Concentration (°Chl)':'Concentration (g/L)';
+  document.getElementById('cc-conc-val').value=chl?'48':'151.42';
   calcChoc();
 }
 
 function calcChoc(){
   const V2=nbF(document.getElementById('cc-vol').value);
-  const res=nbF(document.getElementById('cc-res').value)??0;
+  const res=nbF(document.getElementById('cc-residu').value)??0;
   const cible=nbF(document.getElementById('cc-cible').value);
-  const gl=getGLChoc();
-  // update conversion display
+  const gl=getGL();
+  const conv=document.getElementById('cc-chl-conv');
   if(document.getElementById('cc-mode').value==='chl'){
     const v=nbF(document.getElementById('cc-conc-val').value);
-    document.getElementById('cc-chl-conv').textContent=v?`= ${(v*3.1542).toFixed(2)} g/L`:'';
-  }
+    conv.textContent=v?`= ${(v*3.1542).toFixed(2)} g/L (AFNOR NF T90-108)`:'';
+  } else { conv.textContent=''; }
   const bloc=document.getElementById('cc-res-bloc');
   if(V2===null||cible===null||gl===null||gl<=0||cible<=res){bloc.style.display='none';return;}
   bloc.style.display='';
-  const dC=cible-res;
-  const masseG=dC*V2*1000/1000;   // (mg/L)*(m³)*1000L/m³ /1000mg/g = g
-  const volL=masseG/gl;
-  const volML=volL*1000;
-  const disp=volML<500?`${volML.toFixed(0)} mL`:volL>=1?`${volL.toFixed(2)} L`:`${volML.toFixed(0)} mL`;
-  const dispUnit=volML<500?'mL':volL>=1?'L':'mL';
-  document.getElementById('cc-val').innerHTML=`${volML<500?volML.toFixed(0):volL.toFixed(2)}<small>${dispUnit}</small>`;
-  document.getElementById('cc-vol-javel').textContent=volML<500?`${volML.toFixed(0)} mL`:`${volL.toFixed(2)} L`;
+  const dC=cible-res, masseG=dC*V2*1000.0/1000.0, volL=masseG/gl, volML=volL*1000;
+  const{v:rv,u:ru}=volML<500?{v:volML.toFixed(0),u:'mL'}:{v:volL.toFixed(2),u:'L'};
+  document.getElementById('cc-val').textContent=rv;
+  document.getElementById('cc-unit').textContent=ru;
   document.getElementById('cc-masse').textContent=`${masseG.toFixed(1)} g Cl actif`;
   document.getElementById('cc-delta').textContent=`${dC.toFixed(2)} mg/L`;
+  document.getElementById('cc-gl-used').textContent=`${gl.toFixed(2)} g/L`;
   // abaque
-  const abaqueVols=[50,100,200,300,500,1000,2000,5000];
-  const rows=abaqueVols.map(v=>{
-    const vJ=(dC*v/1000)*1000/gl;  // V2 en m³ = v/1000
-    const hl=Math.abs(v-V2*1000)<V2*50;
-    const d=vJ<0.5?`${(vJ*1000).toFixed(0)} mL`:`${vJ.toFixed(2)} L`;
+  const vols=[10,25,50,100,200,300,500,1000,2000,5000];
+  const rows=vols.map(v=>{
+    const vJ=dC*(v/1000.0)*1000.0/gl/1000; // L
+    const ml=vJ*1000;
+    const d=ml<500?`${ml.toFixed(0)} mL`:`${vJ.toFixed(2)} L`;
+    const hl=V2&&Math.abs(v-V2*1000)<V2*1000*0.15;
     return `<tr${hl?' class="hl"':''}><td>${v} m³</td><td>${d}</td></tr>`;
   }).join('');
   document.getElementById('cc-abaque').innerHTML=
-    `<table class="abaque"><thead><tr><th>Volume réservoir</th><th>Javel à verser</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<table class="abaque"><thead><tr><th>Réservoir</th><th>Javel à verser</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 async function sauverLogChoc(){
   const nom=document.getElementById('cc-nom').value.trim();
   const V2=nbF(document.getElementById('cc-vol').value);
-  const res=nbF(document.getElementById('cc-res').value)??0;
+  const res=nbF(document.getElementById('cc-residu').value)??0;
   const cible=nbF(document.getElementById('cc-cible').value);
-  const gl=getGLChoc();
+  const gl=getGL();
   if(!nom){toast('Saisis le nom du réservoir');return;}
   if(!V2||!cible||!gl)return;
-  const {data:sess}=await db.auth.getSession();
+  const{data:sess}=await db.auth.getSession();
   const uid=sess?.session?.user?.id;
-  const {error}=await db.from('log_calcul_choc_reservoir').insert({
+  const{error}=await db.from('log_calcul_choc_reservoir').insert({
     nom_reservoir:nom,vol_reservoir_m3:V2,conc_javel_gl:gl,
     chlore_residuel:res,chlore_cible:cible,saisi_par:uid
   });
-  const el=document.getElementById('cc-log');
-  el.textContent=error?`Erreur : ${error.message}`:`Calcul enregistré ✓ (${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})`;
+  document.getElementById('cc-log').textContent=error?`Erreur : ${error.message}`:`Calcul enregistré ✓`;
 }
 
 start().catch(e=>{view.innerHTML=`<div class="loading">Chargement impossible : ${e.message}</div>`;});
