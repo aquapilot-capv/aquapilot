@@ -80,6 +80,34 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .hist .chip{padding:1px 7px}
 .hist caption{text-align:left;font-size:.75rem;font-weight:600;color:var(--mute);padding-bottom:4px}
 .up{color:var(--bad)}.dn{color:var(--blue)}
+
+/* ── Calculateurs ── */
+#calc-modal{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;background:var(--bg)}
+#calc-modal.on{display:flex}
+.calc-head{display:flex;align-items:center;gap:10px;padding:12px 16px 0;border-bottom:1px solid var(--line)}
+.calc-head h2{flex:1;margin:0;font-size:1rem}
+.calc-head button.close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--mute);padding:4px 8px}
+.calc-tabs{display:flex;gap:4px;padding:10px 16px 0}
+.calc-tabs button{flex:1;padding:8px;border:1px solid var(--line);background:var(--card);border-radius:6px 6px 0 0;cursor:pointer;font-size:.85rem;color:var(--mute)}
+.calc-tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.calc-body{flex:1;overflow-y:auto;padding:14px 16px}
+.calc-panel{display:none}.calc-panel.on{display:block}
+.calc-res{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+.calc-res .val{font-size:1.5rem;font-weight:700;color:var(--acc)}
+.calc-res .val small{font-size:.85rem;font-weight:400;margin-left:4px;color:var(--mute)}
+.calc-res .row{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;font-size:.85rem}
+.calc-res .row span{color:var(--mute)}
+.abaque{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:8px}
+.abaque th{background:var(--line);padding:5px 8px;text-align:right}
+.abaque th:first-child{text-align:left}
+.abaque td{padding:5px 8px;text-align:right;border-top:1px solid var(--line)}
+.abaque td:first-child{text-align:left}
+.abaque tr.hl td{background:#fef3ee;font-weight:700;color:var(--acc)}
+.calc-log{font-size:.75rem;color:var(--mute);margin-top:10px;font-style:italic}
+.calc-warn{color:var(--bad);font-size:.8rem;margin-top:6px}
+.btn-calc{background:var(--acc);color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:.85rem;margin-top:8px}
+.btn-sec{background:var(--card);color:var(--acc);border:1px solid var(--acc);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:.85rem;margin-top:8px;margin-left:6px}
+.btn-open-calc{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--acc);color:var(--acc);border-radius:6px;padding:7px 12px;cursor:pointer;font-size:.82rem;margin-top:8px}
 </style>
 </head>
 <body>
@@ -91,6 +119,82 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 </div></div>
 <div class="wrap"><div id="net"></div><div id="view"><div class="loading">Chargement…</div></div></div>
 <div class="foot" id="foot" style="display:none"></div>
+
+<div id="calc-modal">
+  <div class="calc-head">
+    <h2>🧮 Calculateurs chlore</h2>
+    <button class="close" onclick="fermerCalc()">✕</button>
+  </div>
+  <div class="calc-tabs">
+    <button id="tab-pompe" class="on" onclick="switchCalcTab('pompe')">Pompe doseuse</button>
+    <button id="tab-choc" onclick="switchCalcTab('choc')">Choc réservoir</button>
+  </div>
+  <div class="calc-body">
+
+    <!-- POMPE DOSEUSE -->
+    <div id="panel-pompe" class="calc-panel on">
+      <div style="margin-bottom:10px">
+        <label>Site / configuration</label>
+        <select id="cp-site" onchange="onConfigChange()" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--card);margin-top:4px"></select>
+      </div>
+      <div class="g4" style="margin-bottom:10px">
+        <div class="f"><label>Débit instantané (m³/h)</label><input id="cp-debit" type="text" inputmode="decimal" placeholder="ex. 12.5" oninput="calcPompe()"></div>
+        <div class="f"><label>Marge sécurité (%)</label><input id="cp-marge" type="text" inputmode="decimal" value="40" oninput="calcPompe()"></div>
+      </div>
+      <div id="cp-res" style="display:none">
+        <div class="calc-res">
+          <div class="val" id="cp-val">–<small id="cp-unit">L/h</small></div>
+          <div class="row"><span>Débit théorique</span><b id="cp-theo">–</b></div>
+          <div class="row"><span>Autonomie cuve</span><b id="cp-auto">–</b></div>
+          <div class="row"><span>Modèle pompe</span><b id="cp-modele">–</b></div>
+          <div id="cp-warn" class="calc-warn"></div>
+        </div>
+        <div id="cp-params" style="font-size:.78rem;color:var(--mute);line-height:1.6"></div>
+        <button class="btn-calc" onclick="sauverLogPompe()">💾 Enregistrer</button>
+        <button class="btn-sec" onclick="switchCalcTab('choc')">→ Choc réservoir</button>
+        <div id="cp-log" class="calc-log"></div>
+      </div>
+      <div id="cp-noconfig" style="display:none;color:var(--mute);font-size:.85rem;margin-top:12px">Aucune configuration pompe trouvée pour ce site.</div>
+    </div>
+
+    <!-- CHOC RÉSERVOIR -->
+    <div id="panel-choc" class="calc-panel">
+      <div class="g4" style="margin-bottom:10px">
+        <div class="f"><label>Nom réservoir</label><input id="cc-nom" type="text" placeholder="ex. Réservoir des Mîtes"></div>
+        <div class="f"><label>Volume réservoir (m³)</label><input id="cc-vol" type="text" inputmode="decimal" placeholder="ex. 100" oninput="calcChoc()"></div>
+        <div class="f"><label>Chlore résiduel (mg/L)</label><input id="cc-res" type="text" inputmode="decimal" placeholder="0.0" oninput="calcChoc()"></div>
+        <div class="f"><label>Chlore cible (mg/L)</label><input id="cc-cible" type="text" inputmode="decimal" value="0.3" oninput="calcChoc()"></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label>Concentration Javel</label>
+        <div style="display:flex;gap:8px;margin-top:4px;align-items:center;flex-wrap:wrap">
+          <select id="cc-mode" onchange="onChocModeChange()" style="padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--card)">
+            <option value="gl">g/L (Cl actif)</option>
+            <option value="chl">°Chl</option>
+          </select>
+          <input id="cc-conc-val" type="text" inputmode="decimal" value="151.42" placeholder="ex. 151.42" oninput="calcChoc()" style="width:100px;padding:7px;border:1px solid var(--line);border-radius:6px">
+          <span id="cc-conc-unit" style="color:var(--mute);font-size:.85rem">g/L</span>
+          <span id="cc-chl-conv" style="font-size:.78rem;color:var(--mute)"></span>
+        </div>
+      </div>
+      <div id="cc-res-bloc" style="display:none">
+        <div class="calc-res">
+          <div class="val" id="cc-val">–<small id="cc-unit">L</small></div>
+          <div class="row"><span>Volume Javel à verser</span><b id="cc-vol-javel">–</b></div>
+          <div class="row"><span>Masse Cl actif</span><b id="cc-masse">–</b></div>
+          <div class="row"><span>ΔC résiduel → cible</span><b id="cc-delta">–</b></div>
+        </div>
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;font-size:.8rem;color:var(--mute)">Abaque volumes Javel</summary>
+          <div id="cc-abaque" style="overflow-x:auto;margin-top:6px"></div>
+        </details>
+        <button class="btn-calc" onclick="sauverLogChoc()">💾 Enregistrer</button>
+        <div id="cc-log" class="calc-log"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 const db=supabase.createClient('https://xvdryqptuejenspbypvy.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs');
@@ -289,6 +393,7 @@ function bloc(p){
     ${p.params.reglages?`<div class="g5">${RG.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${l}</label><input id="i${p.id}${k}" ${k==='reglage'?'':'inputmode="decimal"'} value="${v[k]}" placeholder="${ph(k)}" oninput="FS.v[${p.id}]['${k}']=this.value"><div class="u">${u}</div></div>`).join('')}</div>`:''}
     <div id="w${p.id}"></div>`}
     ${tableHisto(p,H)}
+    <button class="btn-open-calc" onclick="ouvrirCalc(${p.id})">🧮 Calculateurs chlore</button>
   </div>`;
 }
 function calc(id){
@@ -344,6 +449,199 @@ function supprimer(){
   toast('Relevé supprimé');FS=null;history.back();sync();
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800);}
+
+/* ── Calculateurs chlore ── */
+let CONFIGS = null;          // cache des configs pompe
+let CALC_POINT_ID = null;    // point courant au moment de l'ouverture
+
+async function loadConfigs(){
+  if(CONFIGS!==null)return;
+  const {data,error}=await db.from('config_pompe_doseuse').select('*').eq('actif',true).order('nom_site');
+  CONFIGS=error?[]:data;
+}
+
+function ouvrirCalc(pointId){
+  CALC_POINT_ID=pointId;
+  const modal=document.getElementById('calc-modal');
+  modal.classList.add('on');
+  // pré-remplir chlore résiduel depuis la saisie en cours
+  if(FS&&FS.v[pointId]){
+    const cl=FS.v[pointId].chlore_libre;
+    if(cl)document.getElementById('cc-res').value=String(cl).replace(',','.');
+  }
+  switchCalcTab('pompe');
+  loadConfigs().then(()=>remplirSelectSite());
+  calcChoc();
+}
+
+function fermerCalc(){
+  document.getElementById('calc-modal').classList.remove('on');
+}
+
+function switchCalcTab(t){
+  ['pompe','choc'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('on',x===t);
+    document.getElementById('panel-'+x).classList.toggle('on',x===t);
+  });
+}
+
+function remplirSelectSite(){
+  const sel=document.getElementById('cp-site');
+  if(!CONFIGS||!CONFIGS.length){
+    sel.innerHTML='<option value="">Aucune configuration</option>';
+    document.getElementById('cp-noconfig').style.display='';
+    return;
+  }
+  document.getElementById('cp-noconfig').style.display='none';
+  // chercher le site correspondant au point courant
+  const siteName=CALC_POINT_ID&&REF?REF.sites?.find(s=>REF.points?.find(p=>p.id===CALC_POINT_ID&&p.site_id===s.id))?.nom:'';
+  sel.innerHTML=CONFIGS.map(c=>`<option value="${c.id}">${c.nom_site} — ${c.modele_pompe}</option>`).join('');
+  // essai de sélection auto par nom approché
+  const match=CONFIGS.findIndex(c=>siteName&&c.nom_site.toLowerCase().includes(siteName.toLowerCase().slice(0,6)));
+  if(match>=0)sel.selectedIndex=match;
+  onConfigChange();
+}
+
+function onConfigChange(){
+  calcPompe();
+}
+
+function nbF(s){const n=parseFloat(String(s).replace(',','.'));return isNaN(n)?null:n;}
+function fmtDebit(lh){const ml=lh*1000;return ml<100?{val:ml.toFixed(1),unit:'mL/h'}:{val:lh.toFixed(3),unit:'L/h'};}
+
+function calcPompe(){
+  const sel=document.getElementById('cp-site');
+  if(!CONFIGS||!CONFIGS.length){document.getElementById('cp-res').style.display='none';return;}
+  const cfg=CONFIGS.find(c=>c.id===+sel.value);
+  if(!cfg){document.getElementById('cp-res').style.display='none';return;}
+
+  const Q=nbF(document.getElementById('cp-debit').value);
+  const marge=nbF(document.getElementById('cp-marge').value)??40;
+  document.getElementById('cp-params').innerHTML=
+    `K=${cfg.k_compteur} L/imp · taux=${cfg.taux_cible} mg/L · Javel=${cfg.conc_javel_gl} g/L · cuve=${cfg.volume_cuve_l} L`;
+
+  if(Q===null||Q<=0){document.getElementById('cp-res').style.display='none';return;}
+  document.getElementById('cp-res').style.display='';
+
+  const besoin=cfg.taux_cible*cfg.k_compteur/cfg.conc_javel_gl;  // mL/imp
+  const vitesse=Q*1000/cfg.k_compteur;                             // imp/h
+  const qTheo=besoin*vitesse/1000;                                 // L/h
+  const qRegle=qTheo*(1+marge/100);                               // L/h avec marge
+  const auto=cfg.volume_cuve_l/qRegle;                            // h → jours
+  const {val,unit}=fmtDebit(qRegle);
+  const {val:vt,unit:ut}=fmtDebit(qTheo);
+
+  document.getElementById('cp-val').innerHTML=`${val}<small>${unit}</small>`;
+  document.getElementById('cp-theo').textContent=`${vt} ${ut}`;
+  document.getElementById('cp-auto').textContent=auto>=48?`${(auto/24).toFixed(1)} j`:`${auto.toFixed(1)} h`;
+  document.getElementById('cp-modele').textContent=cfg.modele_pompe;
+
+  const warn=document.getElementById('cp-warn');
+  if(qRegle>cfg.debit_max_lh){
+    warn.textContent=`⚠ Débit réglé (${val} ${unit}) dépasse le max pompe (${fmtDebit(cfg.debit_max_lh).val} ${fmtDebit(cfg.debit_max_lh).unit})`;
+  } else {warn.textContent='';}
+}
+
+async function sauverLogPompe(){
+  const sel=document.getElementById('cp-site');
+  const cfg=CONFIGS&&CONFIGS.find(c=>c.id===+sel.value);
+  if(!cfg)return;
+  const Q=nbF(document.getElementById('cp-debit').value);
+  if(!Q)return;
+  const marge=nbF(document.getElementById('cp-marge').value)??40;
+  const besoin=cfg.taux_cible*cfg.k_compteur/cfg.conc_javel_gl;
+  const vitesse=Q*1000/cfg.k_compteur;
+  const qTheo=besoin*vitesse/1000;
+  const qRegle=qTheo*(1+marge/100);
+  const auto=cfg.volume_cuve_l/qRegle/24;
+  const {data:sess}=await db.auth.getSession();
+  const uid=sess?.session?.user?.id;
+  const {error}=await db.from('log_calcul_pompe').insert({
+    config_id:cfg.id,nom_site_snap:cfg.nom_site,
+    debit_eau_m3h:Q,marge_pct:Math.round(marge),
+    debit_theorique_lh:qTheo,debit_regle_lh:qRegle,
+    autonomie_jours:auto,saisi_par:uid
+  });
+  const el=document.getElementById('cp-log');
+  el.textContent=error?`Erreur : ${error.message}`:`Calcul enregistré ✓ (${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})`;
+}
+
+function getGLChoc(){
+  const mode=document.getElementById('cc-mode').value;
+  const v=nbF(document.getElementById('cc-conc-val').value);
+  if(v===null)return null;
+  return mode==='chl'?v*3.1542:v;
+}
+
+function onChocModeChange(){
+  const mode=document.getElementById('cc-mode').value;
+  const unitEl=document.getElementById('cc-conc-unit');
+  const convEl=document.getElementById('cc-chl-conv');
+  if(mode==='chl'){
+    unitEl.textContent='°Chl';
+    document.getElementById('cc-conc-val').value='48';
+    const gl=48*3.1542;convEl.textContent=`= ${gl.toFixed(2)} g/L`;
+  } else {
+    unitEl.textContent='g/L';
+    document.getElementById('cc-conc-val').value='151.42';
+    convEl.textContent='';
+  }
+  calcChoc();
+}
+
+function calcChoc(){
+  const V2=nbF(document.getElementById('cc-vol').value);
+  const res=nbF(document.getElementById('cc-res').value)??0;
+  const cible=nbF(document.getElementById('cc-cible').value);
+  const gl=getGLChoc();
+  // update conversion display
+  if(document.getElementById('cc-mode').value==='chl'){
+    const v=nbF(document.getElementById('cc-conc-val').value);
+    document.getElementById('cc-chl-conv').textContent=v?`= ${(v*3.1542).toFixed(2)} g/L`:'';
+  }
+  const bloc=document.getElementById('cc-res-bloc');
+  if(V2===null||cible===null||gl===null||gl<=0||cible<=res){bloc.style.display='none';return;}
+  bloc.style.display='';
+  const dC=cible-res;
+  const masseG=dC*V2*1000/1000;   // (mg/L)*(m³)*1000L/m³ /1000mg/g = g
+  const volL=masseG/gl;
+  const volML=volL*1000;
+  const disp=volML<500?`${volML.toFixed(0)} mL`:volL>=1?`${volL.toFixed(2)} L`:`${volML.toFixed(0)} mL`;
+  const dispUnit=volML<500?'mL':volL>=1?'L':'mL';
+  document.getElementById('cc-val').innerHTML=`${volML<500?volML.toFixed(0):volL.toFixed(2)}<small>${dispUnit}</small>`;
+  document.getElementById('cc-vol-javel').textContent=volML<500?`${volML.toFixed(0)} mL`:`${volL.toFixed(2)} L`;
+  document.getElementById('cc-masse').textContent=`${masseG.toFixed(1)} g Cl actif`;
+  document.getElementById('cc-delta').textContent=`${dC.toFixed(2)} mg/L`;
+  // abaque
+  const abaqueVols=[50,100,200,300,500,1000,2000,5000];
+  const rows=abaqueVols.map(v=>{
+    const vJ=(dC*v/1000)*1000/gl;  // V2 en m³ = v/1000
+    const hl=Math.abs(v-V2*1000)<V2*50;
+    const d=vJ<0.5?`${(vJ*1000).toFixed(0)} mL`:`${vJ.toFixed(2)} L`;
+    return `<tr${hl?' class="hl"':''}><td>${v} m³</td><td>${d}</td></tr>`;
+  }).join('');
+  document.getElementById('cc-abaque').innerHTML=
+    `<table class="abaque"><thead><tr><th>Volume réservoir</th><th>Javel à verser</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function sauverLogChoc(){
+  const nom=document.getElementById('cc-nom').value.trim();
+  const V2=nbF(document.getElementById('cc-vol').value);
+  const res=nbF(document.getElementById('cc-res').value)??0;
+  const cible=nbF(document.getElementById('cc-cible').value);
+  const gl=getGLChoc();
+  if(!nom){toast('Saisis le nom du réservoir');return;}
+  if(!V2||!cible||!gl)return;
+  const {data:sess}=await db.auth.getSession();
+  const uid=sess?.session?.user?.id;
+  const {error}=await db.from('log_calcul_choc_reservoir').insert({
+    nom_reservoir:nom,vol_reservoir_m3:V2,conc_javel_gl:gl,
+    chlore_residuel:res,chlore_cible:cible,saisi_par:uid
+  });
+  const el=document.getElementById('cc-log');
+  el.textContent=error?`Erreur : ${error.message}`:`Calcul enregistré ✓ (${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})})`;
+}
+
 start().catch(e=>{view.innerHTML=`<div class="loading">Chargement impossible : ${e.message}</div>`;});
 </script>
 </body>
