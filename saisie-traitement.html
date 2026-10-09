@@ -671,7 +671,7 @@ function calcChoc(){
   // abaque
   const vols=[10,25,50,100,200,300,500,1000,2000,5000];
   const rows=vols.map(v=>{
-    const vJ=dC*(v/1000.0)*1000.0/gl/1000; // L
+    const vJ=dC*v/gl; // L
     const ml=vJ*1000;
     const d=ml<500?`${ml.toFixed(0)} mL`:`${vJ.toFixed(2)} L`;
     const hl=V2&&Math.abs(v-V2*1000)<V2*1000*0.15;
