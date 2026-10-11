@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Config pompes – AquaPilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC;--card:#FFFFFF;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;
+  --acc:#B84712;--acc-soft:#FBE9DC;
+  --ok:#2F7D4F;--ok-soft:#E3F1E8;--warn:#B7791F;--warn-soft:#FCF1DC;--bad:#B42318;--bad-soft:#FDE7E4;
+  --font:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.ic{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--card);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--acc);display:grid;place-items:center;flex:none}
+.brand b{font-size:1rem;display:block}.brand small{font-size:.7rem;color:var(--mute)}
+.nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-weight:500;font-size:.93rem}
+.nav a:hover{background:#F7F3EE}
+.nav a.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.nav .ic{width:28px;height:28px;margin:-4px;stroke-width:4.5;flex:none}
+.who{margin-top:auto;border-top:1px solid var(--line);padding:14px 8px 0;font-size:.82rem;color:var(--mute)}
+.who button{background:none;border:none;color:var(--acc);font-weight:600;padding:0;margin-top:4px}
+main{padding:28px 32px 60px;min-width:0}
+.crumb{font-size:.82rem;color:var(--mute);margin-bottom:6px}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin-top:4px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.btn-s{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-weight:600;font-size:.88rem}
+.btn-s:disabled{opacity:.4;cursor:default}
+.btn-l{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;font-weight:600;font-size:.88rem;color:var(--ink)}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom,0));transform:translate(-50%,40px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:.88rem;font-weight:500;transition:.2s;z-index:60;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1}
+
+/* Tableau config pompes */
+.table-wrap{overflow-x:auto;border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+thead th{background:var(--bg);padding:10px 14px;text-align:left;font-weight:600;font-size:.8rem;color:var(--mute);white-space:nowrap;border-bottom:1px solid var(--line)}
+tbody tr{border-bottom:1px solid var(--line)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#FBF8F4}
+tbody td{padding:11px 14px;vertical-align:middle}
+td.site{font-weight:600}
+td.model{color:var(--mute);font-size:.82rem}
+td.ml{font-variant-numeric:tabular-nums;color:var(--mute);font-size:.85rem}
+td.edit-cell{padding:6px 10px}
+
+/* Champ éditable */
+.field-wrap{display:flex;align-items:center;gap:6px}
+.field-wrap input{width:88px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:.88rem;text-align:right;background:#fff}
+.field-wrap input:focus{border-color:var(--acc);outline:none}
+.field-wrap input.changed{border-color:var(--warn);background:var(--warn-soft)}
+.field-wrap span{font-size:.8rem;color:var(--mute);white-space:nowrap}
+.save-row{display:none;align-items:center;gap:8px;padding:0 14px 12px}
+.save-row.visible{display:flex}
+.badge-ok{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.76rem;font-weight:600;background:var(--ok-soft);color:var(--ok)}
+.badge-miss{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.76rem;font-weight:600;background:var(--warn-soft);color:var(--warn)}
+
+/* Alerte maintenance */
+.alerte-maint{display:flex;align-items:center;gap:10px;background:var(--warn-soft);border:1px solid #E5C97A;border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.9rem}
+.alerte-maint strong{color:var(--warn)}
+
+/* Legend */
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--mute);margin-bottom:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+
+/* Login */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login p{color:var(--mute);font-size:.88rem;margin:4px 0 16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+
+/* Mobile */
+.mtop,.bnav{display:none}
+@media(max-width:860px){
+  .shell{grid-template-columns:1fr}.side{display:none}
+  main{padding:0 16px calc(96px + env(safe-area-inset-bottom,0))}
+  .mtop{display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top,0)) 0 12px;border-bottom:2px solid var(--acc);margin:0 -16px 18px;padding-left:16px;padding-right:16px;background:var(--card)}
+  .avatar{width:40px;height:40px;border-radius:50%;background:#EFEBE5;display:grid;place-items:center;font-weight:700;font-size:.85rem;border:none;color:var(--ink)}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0));z-index:20}
+  .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--mute);text-decoration:none;font-weight:500}
+  .bnav a.on{color:var(--acc)}
+  .bnav .ic{width:32px;height:32px;margin:-4px;stroke-width:4.5}
+  thead{display:none}
+  tbody tr{display:block;padding:12px 14px;border-bottom:1px solid var(--line)}
+  tbody td{display:block;padding:2px 0}
+  td.edit-cell{padding:6px 0}
+  .field-wrap input{width:100px}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="ic-maintenance" viewBox="0 0 96 96"><path d="M57 26a13 13 0 0 0-12 17L27 61a5.5 5.5 0 0 0 8 8l18-18a13 13 0 0 0 17-12l-8 5-7-7z"/></symbol>
+<symbol id="ic-home" viewBox="0 0 96 96"><path d="M26 46 48 28l22 18v24H56V56H40v14H26z"/></symbol>
+<symbol id="ic-chlore" viewBox="0 0 96 96"><path d="M36.766 24H59.234M40.5106 24V40L25.5319 62.6667C21.7872 68.8889 24.9078 72 34.8936 72H61.1064C71.0922 72 74.2128 68.8889 70.4681 62.6667L55.4894 40V24M33.0213 56H62.9787M40.5106 62.6667H55.4894"/></symbol>
+<symbol id="ic-utilisateurs" viewBox="0 0 96 96"><path d="M50 38a10 10 0 1 1-20 0a10 10 0 1 1 20 0zM20 74c0-12 9-19 20-19s20 7 20 19zM58 29a9 9 0 1 1 4 17M66 55c8 2 12 8 12 17"/></symbol>
+</svg>
+
+<div class="login off" id="login"><div class="card">
+  <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+  <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+  <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+  <button class="btn" id="bl" onclick="login()">Se connecter</button><div class="err" id="er"></div>
+</div></div>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <div><b>AquaPilot</b><small>Eau potable</small></div>
+    </div>
+    <nav class="nav">
+      <a href="index.html"><svg class="ic" viewBox="0 0 96 96" width="28" height="28" style="margin:-4px;stroke-width:4.5;flex:none"><use href="#ic-home"/></svg>Accueil</a>
+      <a href="saisie-traitement.html"><svg class="ic" viewBox="0 0 96 96" width="28" height="28" style="margin:-4px;stroke-width:4.5;flex:none"><use href="#ic-chlore"/></svg>Tournée chlore</a>
+      <a href="config-pompes.html" class="on"><svg class="ic" viewBox="0 0 96 96" width="28" height="28" style="margin:-4px;stroke-width:4.5;flex:none"><use href="#ic-maintenance"/></svg>Config pompes</a>
+    </nav>
+    <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
+  </aside>
+
+  <main>
+    <div class="mtop">
+      <div class="logo" style="width:44px;height:44px;border-radius:12px"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
+      <button class="avatar" id="avatar" onclick="location.href='compte.html'" aria-label="Mon compte"></button>
+    </div>
+
+    <div class="crumb"><a href="index.html" style="color:inherit">Accueil</a> › Maintenance › Config pompes</div>
+    <div class="head">
+      <div>
+        <h1>Config pompes doseuses</h1>
+        <div class="sub">Paramètres opérationnels par site — K compteur, taux cible, volume cuve</div>
+      </div>
+    </div>
+
+    <div id="alerte-maint"></div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--ok)"></span>Complet</span>
+      <span><span class="dot" style="background:var(--warn)"></span>Incomplet (calculateur désactivé)</span>
+    </div>
+
+    <div class="card table-wrap" id="table-wrap">
+      <div style="padding:18px;color:var(--mute)">Chargement…</div>
+    </div>
+
+  </main>
+</div>
+
+<nav class="bnav">
+  <a href="index.html"><svg class="ic" viewBox="0 0 96 96" width="32" height="32" style="margin:-4px;stroke-width:4.5"><use href="#ic-home"/></svg>Accueil</a>
+  <a href="saisie-traitement.html"><svg class="ic" viewBox="0 0 96 96" width="32" height="32" style="margin:-4px;stroke-width:4.5"><use href="#ic-chlore"/></svg>Chlore</a>
+  <a href="config-pompes.html" class="on"><svg class="ic" viewBox="0 0 96 96" width="32" height="32" style="margin:-4px;stroke-width:4.5"><use href="#ic-maintenance"/></svg>Config</a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const db = supabase.createClient(
+  'https://xvdryqptuejenspbypvy.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs'
+);
+
+let user = null, pompes = [], dirty = {};
+
+/* ── Auth ── */
+async function start() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { document.getElementById('login').classList.remove('off'); return; }
+  user = session.user;
+  document.getElementById('login').classList.add('off');
+  await chargerProfil(db, user);
+  document.getElementById('who').textContent = user.email;
+  const p = prenom();
+  document.getElementById('avatar').textContent = p.slice(0, 2).toUpperCase();
+
+  if (niv('maintenance') < 1) {
+    document.getElementById('table-wrap').innerHTML = pageSansDroit('Niveau maintenance insuffisant.');
+    return;
+  }
+  charger();
+}
+function prenom() {
+  const p = (user.email.split('@')[0].split(/[._-]/)[0] || '');
+  return p.charAt(0).toUpperCase() + p.slice(1);
+}
+async function login() {
+  er.textContent = ''; bl.disabled = true;
+  const { error } = await db.auth.signInWithPassword({ email: em.value.trim(), password: pw.value });
+  bl.disabled = false;
+  if (error) { er.textContent = 'Email ou mot de passe incorrect.'; return; }
+  start();
+}
+async function logout() { if (!confirm('Se déconnecter ?')) return; await db.auth.signOut(); location.href = 'index.html'; }
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+/* ── Chargement des pompes ── */
+async function charger() {
+  const { data, error } = await db
+    .from('config_pompe_doseuse')
+    .select('id,nom_site,modele_pompe,ml_par_impulsion,k_compteur,taux_cible,volume_cuve_l,conc_javel_gl,date_prochaine_maintenance,actif')
+    .order('nom_site');
+  if (error) {
+    document.getElementById('table-wrap').innerHTML = `<div style="padding:18px;color:var(--bad)">Erreur : ${error.message}</div>`;
+    return;
+  }
+  pompes = data;
+  dirty = {};
+  afficherAlertes();
+  rendreau();
+}
+
+/* ── Alertes maintenance imminente ── */
+function afficherAlertes() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const en60 = new Date(today); en60.setDate(en60.getDate() + 60);
+  const imminentes = pompes.filter(p => {
+    if (!p.date_prochaine_maintenance) return false;
+    const d = new Date(p.date_prochaine_maintenance);
+    return d <= en60;
+  }).sort((a, b) => a.date_prochaine_maintenance.localeCompare(b.date_prochaine_maintenance));
+  if (!imminentes.length) { document.getElementById('alerte-maint').innerHTML = ''; return; }
+  const msg = imminentes.map(p => {
+    const d = new Date(p.date_prochaine_maintenance);
+    const diff = Math.round((d - today) / 864e5);
+    const label = diff < 0 ? `dépassée de ${-diff} j` : diff === 0 ? 'aujourd\'hui' : `dans ${diff} j`;
+    return `<strong>${p.nom_site}</strong> (${label})`;
+  }).join(' · ');
+  document.getElementById('alerte-maint').innerHTML =
+    `<div class="alerte-maint">⚠️ <span>Maintenance à planifier : ${msg}</span></div>`;
+}
+
+/* ── Rendu du tableau ── */
+function rendreau() {
+  const peutEditer = niv('maintenance') >= 2;
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+  const complet = p => p.k_compteur != null && p.taux_cible != null && p.volume_cuve_l != null;
+
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>Site</th>
+        <th>Modèle</th>
+        <th style="text-align:right">mL/imp</th>
+        <th style="text-align:right">K compteur <span style="font-weight:400">(L/imp)</span></th>
+        <th style="text-align:right">Taux cible <span style="font-weight:400">(mg/L)</span></th>
+        <th style="text-align:right">Volume cuve <span style="font-weight:400">(L)</span></th>
+        <th style="text-align:right">Javel <span style="font-weight:400">(g/L)</span></th>
+        <th>Prochaine maint.</th>
+        <th></th>
+      </tr>
+    </thead><tbody>`;
+
+  for (const p of pompes) {
+    const ok = complet(p);
+    const badge = ok
+      ? '<span class="badge-ok">✓ complet</span>'
+      : '<span class="badge-miss">à compléter</span>';
+
+    html += `<tr id="row-${p.id}">
+      <td class="site">${p.nom_site} ${badge}</td>
+      <td class="model">${p.modele_pompe}</td>
+      <td class="ml" style="text-align:right">${p.ml_par_impulsion}</td>`;
+
+    if (peutEditer) {
+      html += `
+      <td class="edit-cell">${champNum(p, 'k_compteur', 'L/imp', 1, 10000)}</td>
+      <td class="edit-cell">${champNum(p, 'taux_cible', 'mg/L', 0.01, 5, 2)}</td>
+      <td class="edit-cell">${champNum(p, 'volume_cuve_l', 'L', 1, 99999)}</td>
+      <td class="edit-cell">${champNum(p, 'conc_javel_gl', 'g/L', 1, 500, 2)}</td>`;
+    } else {
+      html += `
+      <td style="text-align:right">${p.k_compteur ?? '—'}</td>
+      <td style="text-align:right">${p.taux_cible ?? '—'}</td>
+      <td style="text-align:right">${p.volume_cuve_l ?? '—'}</td>
+      <td style="text-align:right">${p.conc_javel_gl ?? '—'}</td>`;
+    }
+
+    html += `
+      <td>${fmtDate(p.date_prochaine_maintenance)}</td>
+      <td>${peutEditer ? `<button class="btn-s" id="save-${p.id}" onclick="sauver(${p.id})" disabled>Enregistrer</button>` : ''}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('table-wrap').innerHTML = html;
+}
+
+function champNum(p, col, unit, min, max, decimals = 0) {
+  const val = p[col] != null ? p[col] : '';
+  return `<div class="field-wrap">
+    <input type="number" min="${min}" max="${max}" step="${decimals > 0 ? Math.pow(10, -decimals) : 1}"
+      value="${val}" id="f-${p.id}-${col}"
+      oninput="marquerChange(${p.id},'${col}',this)"
+      onblur="marquerChange(${p.id},'${col}',this)"
+      ${niv('maintenance') < 2 ? 'disabled' : ''}>
+    <span>${unit}</span>
+  </div>`;
+}
+
+/* ── Gestion des modifications ── */
+function marquerChange(id, col, input) {
+  const pompe = pompes.find(p => p.id === id);
+  if (!pompe) return;
+  const val = input.value === '' ? null : +input.value;
+  const original = pompe[col] ?? null;
+  if (val === original) {
+    input.classList.remove('changed');
+    if (dirty[id]) { delete dirty[id][col]; if (!Object.keys(dirty[id]).length) delete dirty[id]; }
+  } else {
+    input.classList.add('changed');
+    if (!dirty[id]) dirty[id] = {};
+    dirty[id][col] = val;
+  }
+  const btn = document.getElementById(`save-${id}`);
+  if (btn) btn.disabled = !dirty[id];
+}
+
+async function sauver(id) {
+  if (!dirty[id]) return;
+  const btn = document.getElementById(`save-${id}`);
+  btn.disabled = true; btn.textContent = '…';
+  const { error } = await db
+    .from('config_pompe_doseuse')
+    .update({ ...dirty[id], modifie_le: new Date().toISOString() })
+    .eq('id', id);
+  if (error) {
+    toast('Erreur : ' + error.message, true);
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+    return;
+  }
+  // Mettre à jour la copie locale
+  const idx = pompes.findIndex(p => p.id === id);
+  if (idx !== -1) pompes[idx] = { ...pompes[idx], ...dirty[id] };
+  delete dirty[id];
+  toast('Enregistré — ' + pompes.find(p => p.id === id)?.nom_site);
+  btn.textContent = 'Enregistrer';
+  // Rafraîchir la ligne (badge ok/incomplet)
+  rendreau();
+}
+
+function toast(m, err = false) {
+  const t = document.getElementById('toast');
+  t.textContent = m;
+  t.style.background = err ? 'var(--bad)' : 'var(--ink)';
+  t.classList.add('on');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 2800);
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+start();
+</script>
+</body>
+</html>
