@@ -128,6 +128,14 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#FBF8F4}
 .btn-d{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:.88rem;color:var(--bad)}
 .sec{padding:18px 20px;margin-bottom:14px}
 .sec h2{font-size:1rem;margin-bottom:12px;color:var(--acc)}
+/* ── Thèmes ── */
+.swatches{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.swatch{width:44px;height:44px;border-radius:50%;border:3px solid transparent;cursor:pointer;position:relative;transition:transform .15s}
+.swatch:hover{transform:scale(1.12)}
+.swatch.on{border-color:var(--ink)}
+.swatch .ck{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;opacity:0}
+.swatch.on .ck{opacity:1}
+.theme-label{font-size:.85rem;color:var(--mute);margin-bottom:14px;min-height:1.2em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:860px){.grid2{grid-template-columns:1fr}}
 .fl label{display:block;font-size:.8rem;font-weight:600;margin-bottom:5px}
@@ -237,7 +245,7 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
-  await chargerProfil(db,user);montrerMenu('');afficher();
+  await chargerProfil(db,user);montrerMenu('');afficher();initTheme();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
 async function logout(){if(!confirm('Se déconnecter ?'))return;await db.auth.signOut();location.href='index.html';}
@@ -254,6 +262,11 @@ function afficher(){
       <label class="site-c" style="display:flex;gap:6px;align-items:center;margin-bottom:12px"><input type="checkbox" onchange="['p0','p1','p2'].forEach(i=>document.getElementById(i).type=this.checked?'text':'password')"> Afficher les mots de passe</label>
       <button class="btn-a" id="bm" onclick="changer()">Enregistrer le nouveau mot de passe</button>
     </div></div>
+  <div class="card sec" id="sec-theme"><h2>Apparence</h2>
+    <div class="swatches" id="swatches"></div>
+    <div class="theme-label" id="theme-label"></div>
+    <button class="btn-a" id="bt" onclick="sauveTheme()">Enregistrer</button>
+  </div>
   <div class="card sec"><h2>Mes droits</h2>
     <dl class="dt"><dt>Email</dt><dd>${esc(user.email)}</dd><dt>Rôle</dt><dd>${ROLES[PROFIL.role]||PROFIL.role}</dd>
     ${Object.entries(MODULES_DROITS).map(([k,l])=>`<dt>${l}</dt><dd>${NIVEAUX[niv(k)]}</dd>`).join('')}</dl>
@@ -274,6 +287,35 @@ async function espace(){
   esp.innerHTML=jauge('Fichiers (PDF de la documentation)',data.fichiers,1073741824,data.nb_fichiers+' fichier(s)')+jauge('Base de données',data.base,524288000,'')+
    `<div style="margin-top:6px"><b style="color:var(--ink)">Ce qui occupe la base :</b><dl class="dt" style="margin-top:6px">${T.map(t=>`<dt>${LIB[t.table]||t.table}</dt><dd>${mo(t.octets)}</dd>`).join('')}</dl></div>
    <p class="note">Limites du plan gratuit Supabase : 1 Go de fichiers, 500 Mo de base. La base contient aussi des éléments techniques de Supabase, d'où un total supérieur à la somme des tables.</p>`;
+}
+/* ── Thèmes ── */
+let THEME_ACTIF='terracotta';
+function initTheme(){
+  THEME_ACTIF=PROFIL.theme||localStorage.getItem('ap-theme')||'terracotta';
+  const box=document.getElementById('swatches');
+  box.innerHTML=Object.entries(THEMES).map(([k,t])=>`
+    <button class="swatch${k===THEME_ACTIF?' on':''}" id="sw-${k}" style="background:${t.acc}"
+      onclick="choisirTheme('${k}')" title="${t.label}" aria-label="${t.label}">
+      <span class="ck">✓</span>
+    </button>`).join('');
+  majLabel();
+}
+function choisirTheme(nom){
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('on'));
+  document.getElementById('sw-'+nom)?.classList.add('on');
+  THEME_ACTIF=nom;
+  appliquerTheme(nom);
+  majLabel();
+}
+function majLabel(){document.getElementById('theme-label').textContent=THEMES[THEME_ACTIF]?.label||'';}
+async function sauveTheme(){
+  bt.disabled=true;bt.textContent='Enregistrement…';
+  const {error}=await db.from('profils').update({theme:THEME_ACTIF}).eq('user_id',user.id);
+  bt.disabled=false;bt.textContent='Enregistrer';
+  if(error){toast('Erreur : '+error.message);return;}
+  if(PROFIL)PROFIL.theme=THEME_ACTIF;
+  try{localStorage.setItem('ap-theme',THEME_ACTIF);}catch(e){}
+  toast('Thème enregistré ✓');
 }
 function force(){const v=p1.value,ok=v.length>=8&&/\d/.test(v);fo.style.color=v?(ok?'var(--ok)':'var(--bad)'):'';fo.textContent=!v?'8 caractères minimum, avec au moins un chiffre.':ok?'✓ Mot de passe valide':'Trop court ou sans chiffre';}
 async function changer(){

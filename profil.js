@@ -1,9 +1,30 @@
 /* Profil et droits de l'utilisateur connecté — partagé par toutes les pages.
    Niveaux : 0 aucun · 1 consultation · 2 saisie · 3 gestion
    L'affichage s'adapte, mais c'est la base de données qui fait réellement respecter ces droits. */
-const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',compteurs:'Index compteurs',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance',taches:'Tâches (À faire)',planning:'Planning'};
+const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',compteurs:'Index compteurs',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance',taches:'Tâches (À faire)'};
 const ROLES={super_admin:'Super admin',chef_equipe:'Chef d\'équipe',agent:'Agent terrain',consultant:'Consultant'};
 const NIVEAUX=['Aucun','Consultation','Saisie','Gestion'];
+
+/* ── Thèmes de couleur ── */
+const THEMES={
+  terracotta:{label:'Terracotta',acc:'#B84712',acc2:'#C2410C',soft:'#FBE9DC',soft2:'#F3D0B5'},
+  saphir:    {label:'Saphir',    acc:'#1E6FA8',acc2:'#165A8C',soft:'#DFF0FA',soft2:'#BFDEF5'},
+  foret:     {label:'Forêt',     acc:'#267B4A',acc2:'#1E6340',soft:'#DFF2E9',soft2:'#B8E2CB'},
+  ardoise:   {label:'Ardoise',   acc:'#4B5563',acc2:'#374151',soft:'#EAEDEF',soft2:'#D4D9E0'},
+  prune:     {label:'Prune',     acc:'#7C3AED',acc2:'#6D28D9',soft:'#EDE9FE',soft2:'#DDD6FE'},
+};
+function appliquerTheme(nom){
+  const t=THEMES[nom]||THEMES.terracotta;
+  const r=document.documentElement.style;
+  r.setProperty('--acc',t.acc);
+  r.setProperty('--acc-2',t.acc2);
+  r.setProperty('--acc-soft',t.soft);
+  r.setProperty('--acc-soft2',t.soft2);
+  try{localStorage.setItem('ap-theme',nom);}catch(e){}
+}
+/* Appliqué le plus tôt possible (avant même le profil Supabase) */
+(function(){try{const n=localStorage.getItem('ap-theme');if(n&&THEMES[n])appliquerTheme(n);}catch(e){}})();
+
 let PROFIL=null;
 function niveauParDefaut(role,m){
   if(role==='super_admin'||role==='chef_equipe')return 3;
@@ -25,17 +46,19 @@ async function chargerProfil(db,user){
     if(error)throw error;
     PROFIL=data||{role:'consultant',modules:{},actif:true,email:user.email};
     try{localStorage.setItem(cle,JSON.stringify(PROFIL));}catch(e){}
-  }catch(e){ // hors connexion ou script 17 non lancé : dernier profil connu, sinon consultation
+  }catch(e){
     try{PROFIL=JSON.parse(localStorage.getItem(cle));}catch(_){}
     PROFIL=PROFIL||{role:'consultant',modules:{},actif:true,email:user.email};
   }
+  /* Appliquer le thème stocké en base (prioritaire sur localStorage) */
+  if(PROFIL.theme&&THEMES[PROFIL.theme])appliquerTheme(PROFIL.theme);
   return PROFIL;
 }
 /* Peut-on modifier un relevé existant ? (gestion, ou auteur depuis moins de 30 jours) */
 function peutModifier(m,ligne,user){
   if(niv(m)>=3)return true;
   if(niv(m)<2)return false;
-  if(!ligne.id)return true;                         // encore en attente d'envoi : c'est le sien
+  if(!ligne.id)return true;
   const auteur=ligne.created_by?ligne.created_by===user.id:ligne.agent===user.email;
   const recent=ligne.created_at?(Date.now()-Date.parse(ligne.created_at))<30*864e5:false;
   return auteur&&recent;
