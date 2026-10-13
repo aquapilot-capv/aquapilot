@@ -46,6 +46,8 @@ h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
 .head-l{display:flex;gap:14px;align-items:center}
 .hico{width:56px;height:56px;border-radius:14px;flex:none}
 .bnav{display:none}
+.btn-config{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--line);background:var(--card);border-radius:10px;color:var(--mute);text-decoration:none;font-size:.85rem;font-weight:600;white-space:nowrap}
+.btn-config:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
 
 /* ── Cartes ── */
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px}
@@ -246,7 +248,10 @@ const lastOf=p=>RECENT.filter(m=>m.point_id===p.id&&m.statut!=='douteux').pop();
 
 window.addEventListener('hashchange',route);
 function route(){const m=location.hash.match(/site=(\d+)/);m?detail(+m[1]):liste();}
-function entete(t,sub,crumb){return `<div class="crumb">${crumb}</div><div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-cl" style="color:var(--acc)"/></svg><div><h1>${t}</h1><div class="sub">${sub}</div></div></div></div>`;}
+function entete(t,sub,crumb){
+  const cfg=niv('traitement')>=3?`<a href="config-traitement.html" class="btn-config" title="Configurer les paliers">⚙ Paliers</a>`:'';
+  return `<div class="crumb">${crumb}</div><div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-cl" style="color:var(--acc)"/></svg><div><h1>${t}</h1><div class="sub">${sub}</div></div></div>${cfg}</div>`;
+}
 
 /* ── Liste : dernier relevé et part des 8 dernières semaines dans la cible ── */
 function liste(){
