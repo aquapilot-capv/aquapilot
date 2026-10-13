@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="profil.js"></script>
+<script src="menu.js"></script>
 <style>
 :root{
   --bg:#F4F1EC;--card:#FFFFFF;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;
@@ -129,11 +130,7 @@ td.edit-cell{padding:6px 10px}
       <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" fill="none" stroke="#fff" stroke-width="1.8"/></svg></div>
       <div><b>AquaPilot</b><small>Eau potable</small></div>
     </div>
-    <nav class="nav">
-      <a href="index.html"><svg class="ic" viewBox="0 0 96 96" width="28" height="28" style="margin:-4px;stroke-width:4.5;flex:none"><use href="#ic-home"/></svg>Accueil</a>
-      <a href="saisie-traitement.html"><svg class="ic" viewBox="0 0 96 96" width="28" height="28" style="margin:-4px;stroke-width:4.5;flex:none"><use href="#ic-chlore"/></svg>Tournée chlore</a>
-      <a href="config-pompes.html" class="on"><svg class="ic" viewBox="0 0 96 96" width="28" height="28" style="margin:-4px;stroke-width:4.5;flex:none"><use href="#ic-maintenance"/></svg>Config pompes</a>
-    </nav>
+    <nav class="nav" id="sidenav"></nav>
     <div class="who"><span id="who"></span><br><a href="compte.html" style="color:var(--acc);font-weight:600;text-decoration:none">Mon compte</a> · <button onclick="logout()">Se déconnecter</button></div>
   </aside>
 
@@ -165,11 +162,7 @@ td.edit-cell{padding:6px 10px}
   </main>
 </div>
 
-<nav class="bnav">
-  <a href="index.html"><svg class="ic" viewBox="0 0 96 96" width="32" height="32" style="margin:-4px;stroke-width:4.5"><use href="#ic-home"/></svg>Accueil</a>
-  <a href="saisie-traitement.html"><svg class="ic" viewBox="0 0 96 96" width="32" height="32" style="margin:-4px;stroke-width:4.5"><use href="#ic-chlore"/></svg>Chlore</a>
-  <a href="config-pompes.html" class="on"><svg class="ic" viewBox="0 0 96 96" width="32" height="32" style="margin:-4px;stroke-width:4.5"><use href="#ic-maintenance"/></svg>Config</a>
-</nav>
+<nav class="bnav" id="bnav"></nav>
 
 <div class="toast" id="toast"></div>
 
@@ -187,7 +180,7 @@ async function start() {
   if (!session) { document.getElementById('login').classList.remove('off'); return; }
   user = session.user;
   document.getElementById('login').classList.add('off');
-  await chargerProfil(db, user);
+  await chargerProfil(db, user);montrerMenu(\'config-pompes\');
   document.getElementById('who').textContent = user.email;
   const p = prenom();
   document.getElementById('avatar').textContent = p.slice(0, 2).toUpperCase();

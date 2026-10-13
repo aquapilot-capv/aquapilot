@@ -207,7 +207,7 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   document.getElementById('login').classList.add('off');document.getElementById('who').textContent=session.user.email;
-  await chargerProfil(db,session.user);montrerMenu('donnees');if(niv('piezos')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
+  await chargerProfil(db,session.user);montrerMenu('piezos');if(niv('piezos')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
   await charger();route();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;

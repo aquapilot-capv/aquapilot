@@ -214,7 +214,7 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){$('login').classList.remove('off');return;}
   user=session.user;$('login').classList.add('off');$('who').textContent=user.email;
-  await chargerProfil(db,user);montrerMenu('maintenance');
+  await chargerProfil(db,user);montrerMenu('chlore');
   if(N()<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à la maintenance.');return;}
   await charger();route();
 }
