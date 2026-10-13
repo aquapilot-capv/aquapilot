@@ -384,7 +384,7 @@ function route(){
 const sitesZone=z=>REF.sites.filter(s=>s.zone===z).sort((a,b)=>(ORDRE.indexOf(a.nom)+999*(ORDRE.indexOf(a.nom)<0))-(ORDRE.indexOf(b.nom)+999*(ORDRE.indexOf(b.nom)<0)));
 function choixZone(){
   FS=null;foot.style.display='none';
-  view.innerHTML=`<div class="top"><a href="index.html" aria-label="Retour au portail">‹</a><div><h1>Tournée chlore / dioxyde</h1><div class="sub">Choisis ta zone</div></div></div>
+  view.innerHTML=`<div class="top"><a href="index.html" aria-label="Retour au portail">‹</a><div><h1>Tournée chlore / dioxyde</h1><div class="sub">Choisis ta zone</div></div>${niv('traitement')>=3?'<a href="config-traitement.html" style="margin-left:auto;font-size:1.1rem" title="Configurer les paliers" aria-label="Paliers">⚙</a>':''}</div>
   <div class="zones">${[1,2,3].map(z=>`<button class="card zone" onclick="setZone(${z})"><img src="${ZIMG[z]}" alt="Carte de la zone ${z}"><b>Zone ${z}</b><small>${sitesZone(z).length} sites</small></button>`).join('')}</div>`;banner();
 }
 function setZone(z){zone=z;LS.set('tr-zone',z);liste();}
@@ -396,7 +396,7 @@ function liste(){
   const S=sitesZone(zone),rs=relevesSemaine(sem),P=Object.fromEntries(REF.points.map(p=>[p.id,p]));
   const etat={};for(const m of rs){const p=P[m.point_id];if(!p)continue;(etat[p.site_id]??=[]).push(m);}
   const fait=S.filter(s=>etat[s.id]).length,[a,b]=semBornes(sem);
-  let h=`<div class="top"><a href="index.html" aria-label="Retour au portail">‹</a><div><h1>Tournée zone ${zone}</h1><div class="sub"><a href="#" onclick="event.preventDefault();zone=null;LS.set('tr-zone',null);choixZone()" style="color:var(--acc)">Changer de zone</a></div></div></div>
+  let h=`<div class="top"><a href="index.html" aria-label="Retour au portail">‹</a><div><h1>Tournée zone ${zone}</h1><div class="sub"><a href="#" onclick="event.preventDefault();zone=null;LS.set('tr-zone',null);choixZone()" style="color:var(--acc)">Changer de zone</a></div></div>${niv('traitement')>=3?'<a href="config-traitement.html" style="margin-left:auto;font-size:1.1rem" title="Configurer les paliers" aria-label="Paliers">⚙</a>':''}</div>
   <div class="card prog"><div class="row"><div><b>${fait}</b> / ${S.length} sites relevés</div>
     <div class="sem"><button onclick="sem=semDecal(sem,-1);liste()" aria-label="Semaine précédente">‹</button><span>Semaine ${sem.w}<br><small style="font-weight:500;color:var(--mute)">${a.slice(8)}/${a.slice(5,7)} – ${b.slice(8)}/${b.slice(5,7)}</small></span><button onclick="sem=semDecal(sem,1);liste()" aria-label="Semaine suivante">›</button></div></div>
     <div class="bar"><i style="width:${S.length?fait/S.length*100:0}%"></i></div></div>`;
