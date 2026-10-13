@@ -79,7 +79,12 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .hist td{padding:5px 6px;border-top:1px solid var(--line);text-align:right;white-space:nowrap;color:#5C534C}
 .hist .chip{padding:1px 7px}
 .hist caption{text-align:left;font-size:.75rem;font-weight:600;color:var(--mute);padding-bottom:4px}
-.up{color:var(--bad)}.dn{color:var(--blue)}
+.up{color:var(--bad);font-size:1.2em;font-weight:700;vertical-align:-.05em}.dn{color:var(--blue);font-size:1.2em;font-weight:700;vertical-align:-.05em}
+.pompe-arret-warn{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:6px 10px;font-size:.85rem;font-weight:500;margin-bottom:10px}
+.flag-row{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:500;cursor:pointer}
+.flag-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+@media(max-width:620px){.g2{grid-template-columns:1fr 1fr}}
 
 /* ── Calculateurs ── */
 #calc-backdrop{position:fixed;inset:0;z-index:290;background:rgba(0,0,0,.45);display:none}
@@ -411,7 +416,7 @@ function liste(){
 
 /* ── Fiche d'un site ── */
 const CH=[['chlore_libre','Chlore libre','mg/l'],['chlore_total','Chlore total','mg/l'],['turbidite','Turbidité','NTU'],['temperature','Température','°C']];
-const RG=[['reglage','Réglage',''],['pourcentage','%',''],['frequence','Fréquence',''],['vol_eau','Vol. eau','l'],['vol_javel','Vol. javel','l']];
+const RG=[['pourcentage','%',''],['frequence','Contact',''],['vol_eau','Vol. eau','l'],['vol_javel','Vol. javel','l']];
 function ouvrir(sid){
   const s=REF.sites.find(x=>x.id===sid);if(!s){location.hash='';return;}
   sem??=isoWeek(new Date());zone??=s.zone;
@@ -420,7 +425,7 @@ function ouvrir(sid){
   const [a,b]=semBornes(sem),t=today();
   const ro=ex.some(m=>!peutModifier('traitement',m,user));
   FS={sid,ro,variante:ex[0]?.variante||'',date:ex[0]?.date_releve||(t>=a&&t<=b?t:a),obs:ex[0]?.observations||'',del:ex.filter(m=>m.id).map(m=>m.id),edit:ex.length>0,
-    v:Object.fromEntries(pts.map(p=>{const e=ex.find(m=>m.point_id===p.id)||{};const o={statut:e.statut==='arret'?'arret':'mesure',variante:e.variante||'',ok:false};
+    v:Object.fromEntries(pts.map(p=>{const e=ex.find(m=>m.point_id===p.id)||{};const o={pompe_arret:e.statut==='arret',variante:e.variante||'',ok:false,filtre_change:!!e.filtre_change};
       for(const [k] of [...CH,...RG])o[k]=e[k]!=null?String(e[k]).replace('.',','):'';return [p.id,o];}))};
   drawForm();
 }
@@ -430,7 +435,7 @@ function drawForm(){
   <div class="fld"><label for="dt">Date du relevé</label><input class="inp" id="dt" type="date" value="${FS.date}" max="${today()}" onchange="FS.date=this.value"></div>
   ${(()=>{const vs=varSite(pts);return vs?`<div class="fld"><span class="lab">Lieu de prélèvement</span><div class="seg">${vs.map(x=>`<button class="${FS.variante===x?'on':''}" onclick="FS.variante=FS.variante==='${x}'?'':'${x}';drawForm()">${x}</button>`).join('')}</div></div>`:''})()}
   ${pts.map(bloc).join('')}
-  <div class="fld"><label for="ob">Observations</label><textarea class="inp" id="ob" rows="2" oninput="FS.obs=this.value" placeholder="Ex : PID sur stop, 4 contacts…">${FS.obs}</textarea></div>
+  <div class="fld"><label for="ob">Observations</label><textarea class="inp" id="ob" rows="2" oninput="FS.obs=this.value" placeholder="Ex : P/D sur valeur haute, 4 contacts…">${FS.obs}</textarea></div>
   <p class="note">En grisé dans les champs : la valeur de la semaine précédente. Laisse un lieu vide s'il n'a pas été relevé cette semaine : il ne sera pas enregistré.</p>`;
   foot.style.display='block';
   foot.innerHTML=`<div class="in">${FS.edit?'<button class="btn2" onclick="supprimer()">Supprimer</button>':''}<button class="btn" id="bs" onclick="enregistrer()">${FS.edit?'Mettre à jour':'Enregistrer'}</button></div>`;
@@ -448,26 +453,33 @@ function tableHisto(p,H){
   const dx=p.famille==='dioxyde',rg=p.params.reglages;
   const evo=(i,k)=>{const a=H[i]?.[k],b=H[i+1]?.[k];if(a==null||b==null||a==b)return '';return a>b?' <span class="up">↑</span>':' <span class="dn">↓</span>';};
   const c=(m)=>{const v=dx?m.clo2:m.chlore_libre,pl=palier(p,v);return v==null?'–':`<span class="chip c-${pl?pl.c:'todo'}">${f(v)}</span>`;};
-  return `<div class="hist"><table><caption>Semaines précédentes</caption><thead><tr><th>Semaine</th><th>${dx?'ClO₂':'Cl libre'}</th>${rg?'<th>%</th><th>Réglage</th><th>Fréq.</th>':''}${dx?'':'<th>Cl total</th>'}<th>Turb.</th><th>T °C</th>${rg?'<th>Javel</th>':''}</tr></thead><tbody>
+  /* colonnes : semaine | Cl libre | [% Contact Javel si rg] | [Cl total si !dx] | Turb | T | Filtre */
+  const colspan=(dx?3:4)+(rg?3:0)+1;
+  return `<div class="hist"><table><caption>Semaines précédentes</caption><thead><tr><th>Semaine</th><th>${dx?'ClO₂':'Cl libre'}</th>${rg?'<th>%</th><th>Contact</th><th>Javel</th>':''}${dx?'':'<th>Cl total</th>'}<th>Turb.</th><th>T °C</th><th>Filtre</th></tr></thead><tbody>
   ${H.map((m,i)=>{const w=isoWeek(new Date(m.date_releve));return `<tr><td>S${w.w} <span style="color:var(--mute)">${m.date_releve.slice(8)}/${m.date_releve.slice(5,7)}</span></td>
-    ${m.statut==='arret'?`<td colspan="${(dx?3:4)+(rg?4:0)}" style="text-align:left">Traitement à l'arrêt</td>`:`<td>${c(m)}</td>${rg?`<td><b>${m.pourcentage!=null?m.pourcentage+evo(i,'pourcentage'):'–'}</b></td><td>${m.reglage||'–'}</td><td>${m.frequence!=null?m.frequence+evo(i,'frequence'):'–'}</td>`:''}${dx?'':`<td>${f(m.chlore_total)}</td>`}<td>${f(m.turbidite)}</td><td>${f(m.temperature,1)}</td>${rg?`<td>${m.vol_javel??'–'}</td>`:''}`}</tr>`;}).join('')}
+    ${m.statut==='arret'?`<td colspan="${colspan}" style="text-align:left">P/D arrêtée</td>`:`<td>${c(m)}</td>${rg?`<td><b>${m.pourcentage!=null?m.pourcentage+evo(i,'pourcentage'):'–'}</b></td><td>${m.frequence!=null?m.frequence+evo(i,'frequence'):'–'}</td><td>${m.vol_javel??'–'}</td>`:''}${dx?'':`<td>${f(m.chlore_total)}</td>`}<td>${f(m.turbidite)}</td><td>${f(m.temperature,1)}</td><td>${m.filtre_change?'🔧':''}</td>`}</tr>`;}).join('')}
   </tbody></table></div>`;
 }
 function varSite(pts){const v=pts.find(p=>p.params.variantes)?.params.variantes;if(!v)return null;if(v.join()==='Réservoir,Réseau'&&pts.length>1)return null;return v;}
 function bloc(p){
-  const v=FS.v[p.id],dx=p.famille==='dioxyde',vars=null;
+  const v=FS.v[p.id],dx=p.famille==='dioxyde',hasPump=!!p.params.reglages;
   const champs=dx?CH.filter(([k])=>k!=='chlore_total'):CH;
-  const H=histo(p),prev=H.find(m=>m.statut==='mesure')||{};
+  const H=histo(p),prev=H.find(m=>m.statut!=='arret')||{};
   const ph=k=>prev[k]!=null?String(prev[k]).replace('.',','):'–';
-  return `<div class="card pt"><h3>${p.nom}<span class="seg"><button class="${v.statut==='mesure'?'on':''}" onclick="FS.v[${p.id}].statut='mesure';drawForm()">Relevé</button><button class="${v.statut==='arret'?'on':''}" onclick="FS.v[${p.id}].statut='arret';drawForm()">Arrêt</button></span></h3>
-    ${vars?`<div class="seg" style="margin-bottom:10px">${vars.map(x=>`<button class="${v.variante===x?'on':''}" onclick="FS.v[${p.id}].variante=FS.v[${p.id}].variante==='${x}'?'':'${x}';drawForm()">${x}</button>`).join('')}</div>`:''}
-    ${v.statut==='arret'?'<div class="skip">Traitement à l\'arrêt : le relevé sera enregistré comme tel.</div>':`
+  /* Drapeaux en ligne dans le titre */
+  const flags=`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">
+    ${hasPump?`<label class="flag-row"><input type="checkbox" ${v.pompe_arret?'checked':''} onchange="FS.v[${p.id}].pompe_arret=this.checked;drawForm()"> P/D arrêtée</label>`:''}
+    <label class="flag-row"><input type="checkbox" ${v.filtre_change?'checked':''} onchange="FS.v[${p.id}].filtre_change=this.checked"> Filtre changé</label>
+  </div>`;
+  return `<div class="card pt">
+    <h3 style="flex-wrap:wrap;row-gap:4px">${p.nom}${flags}</h3>
+    ${hasPump&&v.pompe_arret?'<div class="pompe-arret-warn">⚠ P/D arrêtée — note quand même les valeurs mesurées avant l\'arrêt.</div>':''}
     <div class="g4">${champs.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${dx&&k==='chlore_libre'?'Chlore libre mesuré':l}</label><input id="i${p.id}${k}" inputmode="decimal" value="${v[k]}" placeholder="${ph(k)}" oninput="FS.v[${p.id}]['${k}']=this.value;FS.v[${p.id}].ok=false;calc(${p.id})"><div class="u" id="u${p.id}${k}">${u}</div></div>`).join('')}</div>
     ${dx?`<div class="clo2" id="cl${p.id}"></div>`:''}
-    ${p.params.reglages?`<div class="g5">${RG.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${l}</label><input id="i${p.id}${k}" ${k==='reglage'?'':'inputmode="decimal"'} value="${v[k]}" placeholder="${ph(k)}" oninput="FS.v[${p.id}]['${k}']=this.value"><div class="u">${u}</div></div>`).join('')}</div>`:''}
-    <div id="w${p.id}"></div>`}
+    ${hasPump?`<div class="g4" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)">${RG.map(([k,l,u])=>`<div class="f"><label for="i${p.id}${k}">${l}</label><input id="i${p.id}${k}" inputmode="decimal" value="${v[k]}" placeholder="${ph(k)}" oninput="FS.v[${p.id}]['${k}']=this.value"><div class="u">${u}</div></div>`).join('')}</div>`:''}
+    <div id="w${p.id}"></div>
     ${tableHisto(p,H)}
-    <button class="btn-open-calc" onclick="ouvrirCalc(${p.id})">🧮 Calculateurs chlore</button>
+    ${hasPump&&!dx?`<button class="btn-open-calc" onclick="ouvrirCalc(${p.id})">🧮 Calculateurs chlore</button>`:''}
   </div>`;
 }
 function calc(id){
@@ -495,16 +507,16 @@ function enregistrer(){
   const pts=REF.points.filter(p=>p.site_id===FS.sid),rows=[];
   for(const p of pts){
     const v=FS.v[p.id],dx=p.famille==='dioxyde';
-    const r={point_id:p.id,date_releve:FS.date,statut:v.statut,variante:FS.variante||null,observations:FS.obs.trim()||null,agent:user.email,source:'terrain'};
-    if(v.statut==='mesure'){
-      for(const [k] of CH)r[k]=nb(v[k]);
-      if(p.params.reglages){r.reglage=v.reglage.trim()||null;for(const k of ['pourcentage','frequence','vol_eau','vol_javel'])r[k]=nb(v[k]);}
-      const vide=CH.every(([k])=>r[k]==null);if(vide)continue;
-      if([...CH,...RG].some(([k])=>k!=='reglage'&&r[k]!=null&&isNaN(r[k]))){toast(p.nom+' : une valeur n\'est pas un nombre');return;}
-      if(dx&&r.chlore_libre!=null)r.clo2=Math.round(r.chlore_libre*2*1000)/1000;
-
-      if(v.alerte&&!v.ok){if(!confirm(p.nom+' — '+v.alerte+'\n\nEnregistrer quand même ?'))return;v.ok=true;}
-    }
+    const hasPump=!!p.params.reglages;
+    const r={point_id:p.id,date_releve:FS.date,variante:FS.variante||null,observations:FS.obs.trim()||null,agent:user.email,source:'terrain',filtre_change:v.filtre_change||false};
+    for(const [k] of CH)r[k]=nb(v[k]);
+    if(hasPump){for(const k of ['pourcentage','frequence','vol_eau','vol_javel'])r[k]=nb(v[k]);}
+    const vide=CH.every(([k])=>r[k]==null);
+    if(vide&&!v.filtre_change&&!v.pompe_arret)continue;   // rien à enregistrer
+    r.statut=hasPump&&v.pompe_arret?'arret':'mesure';
+    if([...CH,...RG].some(([k])=>r[k]!=null&&isNaN(r[k]))){toast(p.nom+' : une valeur n\'est pas un nombre');return;}
+    if(dx&&r.chlore_libre!=null)r.clo2=Math.round(r.chlore_libre*2*1000)/1000;
+    if(v.alerte&&!v.ok&&!vide){if(!confirm(p.nom+' — '+v.alerte+'\n\nEnregistrer quand même ?'))return;v.ok=true;}
     rows.push(r);
   }
   if(!rows.length){toast('Aucune valeur saisie');return;}
