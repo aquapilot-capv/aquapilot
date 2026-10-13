@@ -3,42 +3,19 @@
    Usage dans une page :  <script src="menu.js"></script> (après profil.js)
      <nav class="nav" id="sidenav"></nav>   …   <nav class="bnav" id="bnav"></nav>
      puis, après chargerProfil() :  montrerMenu('cle_de_la_page');
-   Sur index.html (navigation par #) : montrerMenu(niveau, true).
-   Entrées avec sub:true → affichées en retrait, sans icône, sous leur section parente. */
+   Sur index.html (navigation par #) : montrerMenu(niveau, true). */
 const MENU=[
-  {k:'root',        label:'Accueil',            ic:'home',        href:'index.html'},
-  {k:'alertes',     label:'Alertes',            ic:'alerte',      href:'index.html#alertes',    droit:[['jaugeages',1]]},
-
-  /* ── RELEVÉS ── */
-  {k:'releves',     label:'Relevés',            ic:'releves',     href:'index.html#releves',    droit:[['jaugeages',2],['piezos',2],['traitement',2],['compteurs',2]]},
-  {k:'saisie-traitement',label:'Tournée chlore',  sub:true,       href:'saisie-traitement.html',droit:[['traitement',2]]},
-  {k:'saisie-jaugeages', label:'Jaugeages',       sub:true,       href:'saisie-jaugeages.html', droit:[['jaugeages',2]]},
-  {k:'saisie-piezos',    label:'Piézos',          sub:true,       href:'saisie-piezos.html',    droit:[['piezos',2]]},
-  {k:'compteurs',        label:'Compteurs',        sub:true,       href:'compteurs.html',        droit:[['compteurs',1]]},
-
-  /* ── DONNÉES ── */
-  {k:'donnees',     label:'Données',            ic:'donnees',     href:'index.html#donnees'},
-  {k:'traitement',  label:'Traitement',          sub:true,        href:'traitement.html',       droit:[['traitement',1]]},
-  {k:'piezos',      label:'Piézos',             sub:true,        href:'piezos.html',           droit:[['piezos',1]]},
-  {k:'jaugeages',   label:'Jaugeages',           sub:true,        href:'jaugeages.html',        droit:[['jaugeages',1]]},
-
-  /* ── MAINTENANCE ── */
-  {k:'maintenance', label:'Maintenance',         ic:'maintenance', href:'index.html#maintenance'},
-  {k:'ballons',     label:'Ballons',             sub:true,        href:'ballons.html',          droit:[['maintenance',1]]},
-  {k:'uv',          label:'Lampes UV',           sub:true,        href:'uv.html',               droit:[['maintenance',1]]},
-  {k:'chlore',      label:'Gaz chlore',          sub:true,        href:'chlore.html',           droit:[['maintenance',1]]},
-  {k:'config-pompes',    label:'Config pompes',  sub:true,        href:'config-pompes.html',    droit:[['maintenance',2]]},
-  {k:'config-traitement',label:'Config traitement',sub:true,      href:'config-traitement.html',droit:[['traitement',3]]},
-
-  /* ── ORGANISATION ── */
-  {k:'afaire',      label:'À faire',            ic:'afaire',      href:'taches.html',           droit:[['taches',1]]},
-  {k:'planning',    label:'Planning',           ic:'planning',    href:'planning.html',         droit:[['planning',1]]},
-
-  /* ── RESSOURCES ── */
-  {k:'docs',        label:'Documentation',      ic:'docs',        href:'documentation.html',    droit:[['documentation',1]]},
-  {k:'projets',     label:'Fiches projets',     ic:'projets',     href:'fiches.html',           droit:[['projets',1]]},
-  {k:'contacts',    label:'Contacts',           ic:'contacts',    href:'index.html#contacts'},
-  {k:'utilisateurs',label:'Utilisateurs',       ic:'utilisateurs',href:'utilisateurs.html',     droit:'super'}
+  {k:'root',      label:'Accueil',       ic:'home',        href:'index.html'},
+  {k:'alertes',   label:'Alertes',       ic:'alerte',      href:'index.html#alertes',   droit:[['jaugeages',1]]},
+  {k:'releves',   label:'Relevés',       ic:'releves',     href:'index.html#releves',   droit:[['jaugeages',2],['piezos',2],['traitement',2],['compteurs',2]]},
+  {k:'donnees',   label:'Données',       ic:'donnees',     href:'index.html#donnees'},
+  {k:'maintenance',label:'Maintenance',  ic:'maintenance', href:'index.html#maintenance'},
+  {k:'afaire',    label:'À faire',       ic:'afaire',      href:'taches.html',          droit:[['taches',1]]},
+  {k:'docs',      label:'Documentation', ic:'docs',        href:'documentation.html',   droit:[['documentation',1]]},
+  {k:'projets',   label:'Fiches projets',ic:'projets',     href:'fiches.html',          droit:[['projets',1]]},
+  {k:'planning',  label:'Planning',      ic:'planning',    href:'planning.html',        droit:[['planning',1]]},
+  {k:'contacts',  label:'Contacts',      ic:'contacts',    href:'index.html#contacts'},
+  {k:'utilisateurs',label:'Utilisateurs',ic:'utilisateurs',href:'utilisateurs.html',    droit:'super'}
 ];
 const MENU_BAS=['root','releves','donnees','afaire'];   // barre du bas (mobile)
 const MENU_SPRITE=`<svg width="0" height="0" style="position:absolute" aria-hidden="true" id="mn-sprite">
@@ -54,8 +31,6 @@ const MENU_SPRITE=`<svg width="0" height="0" style="position:absolute" aria-hidd
 <symbol id="mn-contacts" viewBox="0 0 96 96"><path d="M35 26l8 2 3 11-6 4c3 7 8 12 15 15l4-6 11 3 2 8c0 4-3 7-7 7-22-1-38-17-39-39 0-4 3-7 7-7z"/></symbol>
 <symbol id="mn-utilisateurs" viewBox="0 0 96 96"><path d="M50 38a10 10 0 1 1-20 0a10 10 0 1 1 20 0zM20 74c0-12 9-19 20-19s20 7 20 19zM58 29a9 9 0 1 1 4 17M66 55c8 2 12 8 12 17"/></symbol>
 </svg>`;
-/* CSS injecté une seule fois pour les sous-entrées */
-const MENU_CSS=`<style id="mn-css">.nav a.sub{padding-left:2.3rem;font-size:.86rem;opacity:.85}.nav a.sub::before{content:"›";margin-right:.45rem;opacity:.45;font-style:normal}.nav a.sub.on{opacity:1;font-weight:600}</style>`;
 function menuVisible(m){
   if(!m.droit)return true;
   if(m.droit==='super')return estSuperAdmin();
@@ -69,14 +44,7 @@ function menuLien(m,local){            // local = on est sur index.html : liens 
 }
 function montrerMenu(actif,local){
   if(!document.getElementById('mn-sprite'))document.body.insertAdjacentHTML('afterbegin',MENU_SPRITE);
-  if(!document.getElementById('mn-css'))document.head.insertAdjacentHTML('beforeend',MENU_CSS);
-  const a=m=>{
-    const isOn=m.k===actif;
-    const cls=(m.sub?'sub ':'')+( isOn?'on':'');
-    const clsAttr=cls.trim()?` class="${cls.trim()}"${isOn?' aria-current="page"':''}`:isOn?' aria-current="page"':'';
-    if(m.sub)return `<a${clsAttr} href="${menuLien(m,local)}">${m.label}</a>`;
-    return `<a${clsAttr} href="${menuLien(m,local)}"><svg class="ic" viewBox="0 0 96 96"><use href="#mn-${m.ic}"/></svg>${m.label}</a>`;
-  };
+  const a=m=>`<a href="${menuLien(m,local)}"${m.k===actif?' class="on" aria-current="page"':''}><svg class="ic" viewBox="0 0 96 96"><use href="#mn-${m.ic}"/></svg>${m.label}</a>`;
   const lat=document.getElementById('sidenav'),bas=document.getElementById('bnav');
   if(lat)lat.innerHTML=MENU.filter(menuVisible).map(a).join('');
   if(bas)bas.innerHTML=MENU_BAS.map(k=>MENU.find(m=>m.k===k)).filter(menuVisible).map(a).join('');

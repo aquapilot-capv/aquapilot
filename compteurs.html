@@ -273,7 +273,7 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
-  await chargerProfil(db,user);montrerMenu(\'compteurs\');
+  await chargerProfil(db,user);montrerMenu('releves');
   if(niv('compteurs')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
   try{S=JSON.parse(localStorage.getItem('cpt-brouillon-'+user.id))||S;if(!S.vals)S.vals={};}catch(e){S={date:auj(),vals:{}};}
   await charger();

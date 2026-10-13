@@ -180,7 +180,7 @@ async function start() {
   if (!session) { document.getElementById('login').classList.remove('off'); return; }
   user = session.user;
   document.getElementById('login').classList.add('off');
-  await chargerProfil(db, user);montrerMenu(\'config-pompes\');
+  await chargerProfil(db, user);montrerMenu('maintenance');
   document.getElementById('who').textContent = user.email;
   const p = prenom();
   document.getElementById('avatar').textContent = p.slice(0, 2).toUpperCase();

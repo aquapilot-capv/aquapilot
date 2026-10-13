@@ -210,7 +210,7 @@ async function start(){
   if(!session){document.getElementById('login').classList.remove('off');return;}
   document.getElementById('login').classList.add('off');
   document.getElementById('who').textContent=session.user.email;
-  await chargerProfil(db,session.user);montrerMenu('jaugeages');if(niv('jaugeages')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
+  await chargerProfil(db,session.user);montrerMenu('donnees');if(niv('jaugeages')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès à ce module.');return;}
   await charger(); route();
 }
 async function login(){
