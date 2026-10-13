@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F1EC">
+<title>Config paliers — Traitement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="profil.js"></script>
+<style>
+:root{
+  --bg:#F4F1EC;--card:#fff;--line:#E7E1D8;--ink:#26221E;--mute:#7A7068;
+  --acc:#B84712;--acc-soft:#FBE9DC;
+  --ok:#2F7D4F;--ok-soft:#E3F1E8;
+  --warn:#B7791F;--warn-soft:#FCF1DC;
+  --bad:#B42318;--bad-soft:#FDE7E4;
+  --blue:#2F6F9F;--blue-soft:#E3EEF7;
+  --font:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+button,input{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+.wrap{max-width:680px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0)) 16px 100px}
+
+/* ── En-tête ── */
+.top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.back{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+  display:grid;place-items:center;color:var(--ink);text-decoration:none;font-size:1.2rem;flex:none}
+.top h1{font-size:1.3rem;font-weight:700;line-height:1.2}
+.top .sub{font-size:.82rem;color:var(--mute)}
+
+/* ── Tabs familles ── */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:18px}
+.tabs button{flex:1;padding:10px 8px;border:none;background:none;font-size:.9rem;font-weight:600;
+  color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:0}
+.tabs button.on{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* ── Card palier ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.card-head{padding:14px 16px;border-bottom:1px solid var(--line);background:#FDFBF8;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-head b{font-size:.95rem}
+.card-head .hint{font-size:.78rem;color:var(--mute)}
+
+/* ── Table paliers ── */
+.pal-table{width:100%;border-collapse:collapse}
+.pal-table th{font-size:.72rem;font-weight:600;color:var(--mute);text-align:left;
+  padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.pal-table th:last-child{width:32px}
+.pal-table td{padding:6px 8px;border-bottom:1px solid #F3EDE5;vertical-align:middle}
+.pal-table tr:last-child td{border-bottom:none}
+.pal-table input[type=text]{width:80px;padding:6px 8px;border:1.5px solid var(--line);
+  border-radius:8px;font-size:.88rem;font-variant-numeric:tabular-nums;text-align:right;background:#fff}
+.pal-table input[type=text]:focus{border-color:var(--acc);outline:none}
+.pal-table input.label-in{width:100%;min-width:140px;text-align:left}
+.pal-table .inf{color:var(--mute);font-size:.88rem;padding:6px 8px;font-style:italic}
+
+/* ── Couleur selector ── */
+.cols{display:flex;gap:5px;flex-wrap:wrap}
+.col-btn{padding:4px 9px;border-radius:999px;border:2px solid transparent;
+  font-size:.74rem;font-weight:600;cursor:pointer;white-space:nowrap;line-height:1.4}
+.col-btn.rouge{background:var(--bad-soft);color:var(--bad)}
+.col-btn.orange{background:var(--warn-soft);color:var(--warn)}
+.col-btn.vert{background:var(--ok-soft);color:var(--ok)}
+.col-btn.bleu{background:var(--blue-soft);color:var(--blue)}
+.col-btn.on.rouge{border-color:var(--bad)}
+.col-btn.on.orange{border-color:var(--warn)}
+.col-btn.on.vert{border-color:var(--ok)}
+.col-btn.on.bleu{border-color:var(--blue)}
+
+/* ── Boutons actions ── */
+.row-del{width:28px;height:28px;border:none;background:none;color:var(--mute);
+  font-size:1.1rem;border-radius:6px;display:grid;place-items:center;padding:0}
+.row-del:hover{background:var(--bad-soft);color:var(--bad)}
+.btn-add{display:flex;align-items:center;gap:6px;padding:9px 14px;border:1.5px dashed var(--line);
+  background:none;border-radius:10px;color:var(--mute);font-size:.85rem;font-weight:500;width:100%;
+  justify-content:center;margin:8px 16px;width:calc(100% - 32px)}
+.btn-add:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
+
+/* ── Foot actions ── */
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0));z-index:10}
+.foot .in{max-width:680px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.btn-save{flex:1;background:var(--acc);color:#fff;border:none;border-radius:12px;
+  padding:13px;font-weight:700;font-size:1rem}
+.btn-save:disabled{opacity:.45}
+.btn-save:not(:disabled):hover{background:#a03d0e}
+.propagate-info{font-size:.78rem;color:var(--mute);text-align:center;margin-top:6px}
+
+/* ── Chip aperçu ── */
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.74rem;font-weight:600}
+.c-rouge{background:var(--bad-soft);color:var(--bad)}
+.c-orange{background:var(--warn-soft);color:var(--warn)}
+.c-vert{background:var(--ok-soft);color:var(--ok)}
+.c-bleu{background:var(--blue-soft);color:var(--blue)}
+
+/* ── Connexion ── */
+.login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.login.off{display:none}
+.login .card{width:100%;max-width:360px;padding:28px}
+.login h2{margin-bottom:4px}.login p{color:var(--mute);font-size:.88rem;margin-bottom:16px}
+.login label{display:block;font-size:.8rem;font-weight:600;margin:10px 0 4px}
+.login input{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.btn-login{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:600;width:100%;margin-top:16px}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+.loading{padding:60px;text-align:center;color:var(--mute)}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0));
+  transform:translate(-50%,30px);opacity:0;background:var(--ink);color:#fff;
+  padding:12px 16px;border-radius:12px;font-size:.9rem;font-weight:500;
+  transition:.2s;z-index:80;pointer-events:none;max-width:92vw;text-align:center}
+.toast.on{transform:translate(-50%,0);opacity:1}
+.warn-box{background:var(--warn-soft);color:var(--warn);border-radius:10px;
+  padding:10px 14px;font-size:.83rem;font-weight:500;margin-bottom:14px;line-height:1.55}
+.err-box{background:var(--bad-soft);color:var(--bad);border-radius:10px;
+  padding:10px 14px;font-size:.83rem;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div class="login off" id="login">
+  <div class="card">
+    <h2>Connexion</h2><p>Accès réservé aux agents du service.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username">
+    <label for="pw">Mot de passe</label><input id="pw" type="password" autocomplete="current-password">
+    <button class="btn-login" id="bl" onclick="login()">Se connecter</button>
+    <div class="err" id="er"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="traitement.html" aria-label="Retour au traitement">‹</a>
+    <div><h1>Paliers de qualité</h1><div class="sub">Seuils affichés dans la tournée chlore / dioxyde</div></div>
+  </div>
+  <div id="view"><div class="loading"><div class="spin"></div>Chargement…</div></div>
+</div>
+
+<div class="foot" id="foot" style="display:none">
+  <div class="in">
+    <button class="btn-save" id="btn-save" onclick="enregistrer()">Enregistrer et propager</button>
+  </div>
+  <p class="propagate-info">Met à jour la config ET tous les points de la famille active</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const db=supabase.createClient(
+  'https://xvdryqptuejenspbypvy.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2ZHJ5cXB0dWVqZW5zcGJ5cHZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NDU0ODEsImV4cCI6MjEwNjUyMTQ4MX0.PuHAhD1ipYXQeXDFsJfoxIu1AhciTk5qwU0WU5wKIhs'
+);
+
+let user=null, DATA={}, famille='chlore';
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m,d=2600){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),d);}
+
+const COULEURS=['rouge','orange','vert','bleu'];
+const COULEUR_LABEL={rouge:'Rouge',orange:'Orange',vert:'Vert',bleu:'Bleu'};
+
+/* ── Auth ── */
+async function login(){
+  document.getElementById('er').textContent='';
+  document.getElementById('bl').disabled=true;
+  const {error}=await db.auth.signInWithPassword({
+    email:document.getElementById('em').value.trim(),
+    password:document.getElementById('pw').value
+  });
+  document.getElementById('bl').disabled=false;
+  if(error){document.getElementById('er').textContent='Email ou mot de passe incorrect.';return;}
+  start();
+}
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+
+async function start(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){document.getElementById('login').classList.remove('off');return;}
+  user=session.user;
+  document.getElementById('login').classList.add('off');
+  await chargerProfil(db,user);
+
+  // Accès : gestionnaire traitement ou super admin ou chef
+  if(niv('traitement')<3 && !estSuperAdmin() && niv('traitement')<3){
+    document.getElementById('view').innerHTML=`<div class="err-box">🔒 Réservé aux gestionnaires du module Traitement.</div>`;
+    return;
+  }
+
+  await charger();
+  afficher();
+}
+
+async function charger(){
+  const {data,error}=await db.from('paliers_traitement').select('*');
+  if(error){
+    document.getElementById('view').innerHTML=`<div class="err-box">Impossible de charger les paliers : ${esc(error.message)}<br><small>Le script SQL a-t-il été lancé ?</small></div>`;
+    throw error;
+  }
+  for(const row of data) DATA[row.famille]=JSON.parse(JSON.stringify(row.paliers));
+}
+
+/* ── Affichage ── */
+function afficher(){
+  const familles=['chlore','dioxyde'];
+  const labels={chlore:'Chlore libre',dioxyde:'Dioxyde de chlore (ClO₂)'};
+
+  let h=`<div class="tabs">
+    ${familles.map(f=>`<button id="tab-${f}" class="${f===famille?'on':''}" onclick="switchFamille('${f}')">${esc(labels[f])}</button>`).join('')}
+  </div>`;
+
+  for(const f of familles){
+    h+=`<div id="panel-${f}" style="${f!==famille?'display:none':''}">`;
+    h+=renderCard(f);
+    h+=`</div>`;
+  }
+
+  document.getElementById('view').innerHTML=h;
+  document.getElementById('foot').style.display='';
+}
+
+function switchFamille(f){
+  famille=f;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.id===`tab-${f}`));
+  document.querySelectorAll('[id^="panel-"]').forEach(p=>p.style.display=p.id===`panel-${f}`?'':'none');
+}
+
+function renderCard(f){
+  const paliers=DATA[f]||[];
+  const npts=f==='chlore'?'points chlore actifs':'points dioxyde actifs';
+  let rows='';
+  paliers.forEach((p,i)=>{
+    const [a,b,c,l]=p;
+    const isLast=i===paliers.length-1;
+    rows+=`<tr id="row-${f}-${i}">
+      <td><span class="chip c-${esc(c)}" id="preview-${f}-${i}">${esc(l||c)}</span></td>
+      <td style="font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--mute)">${a}</td>
+      <td>${isLast
+        ?`<span class="inf">∞</span>`
+        :`<input type="text" inputmode="decimal" value="${b??''}" id="max-${f}-${i}" style="width:72px"
+            oninput="onMaxChange('${f}',${i})" placeholder="0.00">`
+      }</td>
+      <td>
+        <div class="cols">
+          ${COULEURS.map(col=>`<button class="col-btn ${col}${c===col?' on':''}" id="col-${f}-${i}-${col}"
+            onclick="setCouleur('${f}',${i},'${col}')">${COULEUR_LABEL[col]}</button>`).join('')}
+        </div>
+      </td>
+      <td><input type="text" class="label-in" value="${esc(l)}" id="lbl-${f}-${i}"
+          oninput="updatePreview('${f}',${i})" placeholder="Libellé"></td>
+      <td><button class="row-del" onclick="supprimerLigne('${f}',${i})" title="Supprimer">✕</button></td>
+    </tr>`;
+  });
+
+  return `<div class="card">
+    <div class="card-head">
+      <div><b>${f==='chlore'?'Chlore libre':'Dioxyde de chlore (ClO₂)'}</b></div>
+      <span class="hint">${paliers.length} zone${paliers.length>1?'s':''}</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="pal-table">
+        <thead><tr>
+          <th>Aperçu</th><th>De ≥</th><th>À &lt;</th><th>Couleur</th><th>Libellé</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-${f}">${rows}</tbody>
+      </table>
+    </div>
+    <button class="btn-add" onclick="ajouterLigne('${f}')">+ Ajouter une zone</button>
+  </div>
+  <p style="font-size:.78rem;color:var(--mute);margin-bottom:12px">
+    Les bornes se lisent comme des intervalles fermés à gauche : [De, À[.
+    La dernière zone s'étend jusqu'à l'infini. « Enregistrer et propager » applique ces paliers
+    à tous les ${npts}.
+  </p>`;
+}
+
+/* ── Interactions ── */
+function onMaxChange(f,i){
+  // Met à jour le "De" de la ligne suivante (affichage lecture seule)
+  const val=parseFloat(document.getElementById(`max-${f}-${i}`)?.value?.replace(',','.'));
+  const nextRow=document.getElementById(`row-${f}-${i+1}`);
+  if(nextRow){
+    const cells=nextRow.querySelectorAll('td');
+    if(cells[1])cells[1].textContent=isNaN(val)?'':val;
+  }
+  updatePreview(f,i);
+}
+
+function setCouleur(f,i,col){
+  COULEURS.forEach(c=>{
+    const btn=document.getElementById(`col-${f}-${i}-${c}`);
+    if(btn)btn.classList.toggle('on',c===col);
+  });
+  updatePreview(f,i);
+}
+
+function updatePreview(f,i){
+  const lbl=document.getElementById(`lbl-${f}-${i}`)?.value||'';
+  const col=getActiveCouleur(f,i)||'mute';
+  const prev=document.getElementById(`preview-${f}-${i}`);
+  if(prev){prev.textContent=lbl||col;prev.className=`chip c-${col}`;}
+}
+
+function getActiveCouleur(f,i){
+  return COULEURS.find(c=>document.getElementById(`col-${f}-${i}-${c}`)?.classList.contains('on'))||'rouge';
+}
+
+function ajouterLigne(f){
+  // Récupère le max de la dernière ligne comme début de la nouvelle
+  const paliers=lirePaliers(f);
+  const dernMax=paliers.length>0?paliers[paliers.length-1][1]:0;
+  DATA[f]=paliers;
+  // Ajoute une nouvelle zone après la dernière
+  const prev=DATA[f];
+  // La dernière zone perd son ∞, on lui fixe un max
+  if(prev.length>0)prev[prev.length-1][1]=dernMax??0;
+  prev.push([dernMax??0,null,'orange','Nouveau libellé']);
+  rerender(f);
+}
+
+function supprimerLigne(f,i){
+  const paliers=lirePaliers(f);
+  if(paliers.length<=1){toast('Il faut au moins une zone.');return;}
+  paliers.splice(i,1);
+  // Dernier élément : max = null
+  paliers[paliers.length-1][1]=null;
+  DATA[f]=paliers;
+  rerender(f);
+}
+
+function rerender(f){
+  const panel=document.getElementById(`panel-${f}`);
+  if(panel)panel.innerHTML=renderCard(f);
+}
+
+/* ── Lecture DOM → tableau ── */
+function lirePaliers(f){
+  const paliers=[];
+  let i=0;
+  while(document.getElementById(`lbl-${f}-${i}`)!==null||document.querySelector(`#row-${f}-${i} .inf`)){
+    const row=document.getElementById(`row-${f}-${i}`);
+    if(!row)break;
+    const cells=row.querySelectorAll('td');
+    const a=parseFloat(String(cells[1]?.textContent).replace(',','.'))||0;
+    const maxEl=document.getElementById(`max-${f}-${i}`);
+    const b=maxEl?parseFloat(maxEl.value.replace(',','.'))||null:null;
+    const c=getActiveCouleur(f,i);
+    const l=document.getElementById(`lbl-${f}-${i}`)?.value?.trim()||c;
+    paliers.push([a,b,c,l]);
+    i++;
+  }
+  return paliers;
+}
+
+/* ── Validation ── */
+function valider(f,paliers){
+  if(!paliers.length)return 'Au moins une zone requise.';
+  for(let i=0;i<paliers.length-1;i++){
+    const [,b]=paliers[i];
+    if(b==null||isNaN(b)||b<=paliers[i][0])return `Zone ${i+1} : la borne supérieure doit être > ${paliers[i][0]}.`;
+  }
+  if(paliers[paliers.length-1][1]!==null)return 'La dernière zone doit se terminer à ∞.';
+  return null;
+}
+
+/* ── Enregistrement + propagation ── */
+async function enregistrer(){
+  const f=famille;
+  const paliers=lirePaliers(f);
+  const err=valider(f,paliers);
+  if(err){toast('⚠ '+err,3500);return;}
+
+  const btn=document.getElementById('btn-save');
+  btn.disabled=true;btn.textContent='Enregistrement…';
+
+  try{
+    // 1. Mise à jour de la table paliers_traitement
+    const {error:e1}=await db.from('paliers_traitement')
+      .upsert({famille:f,paliers:paliers,updated_at:new Date().toISOString(),updated_by:user.email});
+    if(e1)throw e1;
+
+    // 2. Propagation aux points
+    btn.textContent='Propagation aux points…';
+    const {data:pts,error:e2}=await db.from('points').select('id,params').eq('famille',f).eq('actif',true);
+    if(e2)throw e2;
+
+    let ok=0,ko=0;
+    for(const pt of pts){
+      const newParams={...(pt.params||{}),paliers};
+      const {error:e3}=await db.from('points').update({params:newParams}).eq('id',pt.id);
+      if(e3){ko++;console.warn('Point',pt.id,e3.message);}else ok++;
+    }
+
+    DATA[f]=paliers;
+    rerender(f);
+
+    if(ko)toast(`✓ Config sauvegardée. ${ok} points mis à jour, ${ko} erreur(s).`,4000);
+    else toast(`✓ Paliers enregistrés et propagés à ${ok} point${ok>1?'s':''} !`);
+
+  }catch(e){
+    toast('Erreur : '+e.message,4000);
+    console.error(e);
+  }finally{
+    btn.disabled=false;btn.textContent='Enregistrer et propager';
+  }
+}
+
+start();
+</script>
+</body>
+</html>
