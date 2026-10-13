@@ -240,8 +240,7 @@ async function start(){
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user; document.getElementById('login').classList.add('off');
   await chargerProfil(db,user);
-  document.getElementById('who').textContent=user.email;
-  const n=prenom(); document.getElementById('avatar').textContent=n.slice(0,2).toUpperCase();
+  const n=prenomDepuisEmail(user.email)||prenom(); document.getElementById('avatar').textContent=n.slice(0,2).toUpperCase();
   await loadCfg(); route(); if(niv('jaugeages')>=1)chargerAlertes();
 }
 function prenom(){const p=(user.email.split('@')[0].split(/[._-]/)[0]||'');return p.charAt(0).toUpperCase()+p.slice(1);}
@@ -296,7 +295,7 @@ function render(){
   const date=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
   view.innerHTML=`
   <div class="crumb">${isRoot?date.charAt(0).toUpperCase()+date.slice(1):'<a href="#" style="color:inherit">Accueil</a> › '+M[level].label}</div>
-  <div class="head"><div><h1>${isRoot?'Bonjour '+prenom():M[level].label}</h1>
+  <div class="head"><div><h1>${isRoot?'Bonjour '+(prenomDepuisEmail(user.email)||prenom()):M[level].label}</h1>
     <div class="sub">${isRoot?'Le terrain et la ressource, en un coup d\'œil':M[level].desc}</div></div>
     <button class="btn-l ${editing?'on':''}" onclick="toggleEdit()">${editing?'Terminer':'Personnaliser'}</button></div>
   <div class="dens"><p>Icônes par écran</p>${[9,12,15].map(n=>`<button class="${d===n?'on':''}" onclick="setDens(${n})">${n}</button>`).join('')}</div>
