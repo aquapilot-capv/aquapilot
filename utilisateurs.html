@@ -236,7 +236,7 @@ async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
-  await chargerProfil(db,user);montrerMenu(\'utilisateurs\');
+  await chargerProfil(db,user);montrerMenu('utilisateurs');
   if(!estSuperAdmin()){view.innerHTML=pageSansDroit('La gestion des utilisateurs est réservée au super admin.');return;}
   await charger();afficher();
 }
