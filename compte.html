@@ -244,7 +244,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
-  user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=user.email;
+  user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=prenomDepuisEmail(user.email)||user.email;
   await chargerProfil(db,user);montrerMenu('');afficher();initTheme();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
@@ -253,7 +253,7 @@ pw.addEventListener('keydown',e=>{if(e.key==='Enter')login()});
 function afficher(){
   const ico=`<svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><g class="ic" style="color:var(--acc);stroke-width:2.6"><use href="#ic-utilisateur"/></g></svg>`;
   view.innerHTML=`<div class="crumb"><a href="index.html">Accueil</a> › Mon compte</div>
-  <div class="head"><div class="head-l">${ico}<div><h1>Mon compte</h1><div class="sub">${esc(PROFIL.nom||user.email)}</div></div></div><button class="btn-l" onclick="logout()">Se déconnecter</button></div>
+  <div class="head"><div class="head-l">${ico}<div><h1>${esc(nomAffiche(PROFIL,user.email)?'Bonjour '+nomAffiche(PROFIL,user.email):'Mon compte')}</h1><div class="sub">${esc(user.email)}</div></div></div><button class="btn-l" onclick="logout()">Se déconnecter</button></div>
   <div class="card sec"><h2>Changer mon mot de passe</h2>
     <div style="max-width:420px">
       <div class="fl"><label for="p0">Mot de passe actuel</label><input id="p0" type="password" autocomplete="current-password"></div>

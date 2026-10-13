@@ -1,6 +1,23 @@
 /* Profil et droits de l'utilisateur connecté — partagé par toutes les pages.
    Niveaux : 0 aucun · 1 consultation · 2 saisie · 3 gestion
    L'affichage s'adapte, mais c'est la base de données qui fait réellement respecter ces droits. */
+
+/* ── Extraction du prénom depuis l'email ──
+   prenom.nom@paysvoironnais.com        → "Prenom"
+   jean-philippe.jacquin@paysvoironnais → "Jean-Philippe"
+   jbellec@gmail.com                    → null (pas de format prénom.nom) */
+function prenomDepuisEmail(email){
+  if(!email)return null;
+  const local=(email.split('@')[0]||'');
+  const dot=local.indexOf('.');
+  if(dot<1)return null;                              // pas de point → inconnu
+  const part=local.slice(0,dot);                     // tout avant le premier point
+  return part.split('-').map(s=>s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()).join('-');
+}
+/* Nom à afficher : profil.nom > extrait de l'email > null */
+function nomAffiche(profil,email){
+  return (profil&&profil.nom&&profil.nom.trim())||prenomDepuisEmail(email)||null;
+}
 const MODULES_DROITS={jaugeages:'Jaugeages',piezos:'Piézomètres',traitement:'Tournées chlore / dioxyde',compteurs:'Index compteurs',documentation:'Documentation',projets:'Fiches projets',maintenance:'Maintenance',taches:'Tâches (À faire)'};
 const ROLES={super_admin:'Super admin',chef_equipe:'Chef d\'équipe',agent:'Agent terrain',consultant:'Consultant'};
 const NIVEAUX=['Aucun','Consultation','Saisie','Gestion'];
@@ -52,6 +69,9 @@ async function chargerProfil(db,user){
   }
   /* Appliquer le thème stocké en base (prioritaire sur localStorage) */
   if(PROFIL.theme&&THEMES[PROFIL.theme])appliquerTheme(PROFIL.theme);
+  /* Mettre à jour l'affichage du nom dans la sidebar (toutes les pages) */
+  const whoEl=document.getElementById('who');
+  if(whoEl){const n=nomAffiche(PROFIL,PROFIL.email||'');if(n)whoEl.textContent=n;}
   return PROFIL;
 }
 /* Peut-on modifier un relevé existant ? (gestion, ou auteur depuis moins de 30 jours) */

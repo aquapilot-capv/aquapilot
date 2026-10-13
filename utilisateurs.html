@@ -168,7 +168,8 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 const BADGE_CLS={super_admin:'b-super',chef_equipe:'b-chef',agent:'b-agent',consultant:'b-consult'};
 
 function initiales(nom,email){
-  if(nom&&nom.trim()){const p=nom.trim().split(/\s+/);return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();}
+  const n=nom&&nom.trim()?nom.trim():prenomDepuisEmail(email);
+  if(n){const p=n.split(/[\s-]+/);return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();}
   return (email||'?')[0].toUpperCase();
 }
 
@@ -199,7 +200,7 @@ function renderCard(u){
     <div class="ucard-head">
       <div class="avatar${u.actif?'':' off'}">${inits}</div>
       <div class="uinfo">
-        <div class="uname">${u.nom?esc(u.nom):'<span style="color:var(--mute);font-weight:400;font-style:italic">Sans nom</span>'}</div>
+        <div class="uname">${(()=>{const n=nomAffiche(u,u.email);return n?esc(n):'<span style="color:var(--mute);font-weight:400;font-style:italic">Sans nom</span>';})()}</div>
         <div class="uemail">${esc(u.email||'')}</div>
       </div>
       <div class="urole">
@@ -255,7 +256,7 @@ async function start(){
     if(!session){document.getElementById('login').classList.remove('off');return;}
     user=session.user;
     document.getElementById('login').classList.add('off');
-    document.getElementById('who').textContent=user.email;
+    document.getElementById('who').textContent=prenomDepuisEmail(user.email)||user.email;
     await chargerProfil(db,user);
     montrerMenu('utilisateurs');
     if(!estSuperAdmin()){document.getElementById('view').innerHTML=pageSansDroitLocal('La gestion des utilisateurs est réservée au super admin.');return;}
