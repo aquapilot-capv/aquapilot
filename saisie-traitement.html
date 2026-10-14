@@ -81,6 +81,8 @@ button,input,textarea{font:inherit}button{cursor:pointer}
 .hist caption{text-align:left;font-size:.75rem;font-weight:600;color:var(--mute);padding-bottom:4px}
 .up{color:var(--bad);font-size:1.2em;font-weight:700;vertical-align:-.05em}.dn{color:var(--blue);font-size:1.2em;font-weight:700;vertical-align:-.05em}
 .pompe-arret-warn{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:6px 10px;font-size:.85rem;font-weight:500;margin-bottom:10px}
+.btn-arret{border:2px solid var(--bad);background:#fff;color:var(--bad);border-radius:10px;padding:6px 14px;font-size:.84rem;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+.btn-arret.on{background:var(--bad);color:#fff}
 .flag-row{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:500;cursor:pointer}
 .flag-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex:none}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
@@ -467,8 +469,8 @@ function bloc(p){
   const H=histo(p),prev=H.find(m=>m.statut!=='arret')||{};
   const ph=k=>prev[k]!=null?String(prev[k]).replace('.',','):'–';
   /* Drapeaux en ligne dans le titre */
-  const flags=`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">
-    ${hasPump?`<label class="flag-row"><input type="checkbox" ${v.pompe_arret?'checked':''} onchange="FS.v[${p.id}].pompe_arret=this.checked;drawForm()"> P/D arrêtée</label>`:''}
+  const flags=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px">
+    ${hasPump?`<button class="btn-arret${v.pompe_arret?' on':''}" onclick="FS.v[${p.id}].pompe_arret=!FS.v[${p.id}].pompe_arret;drawForm()">⏹ P/D arrêtée</button>`:''}
     <label class="flag-row"><input type="checkbox" ${v.filtre_change?'checked':''} onchange="FS.v[${p.id}].filtre_change=this.checked"> Filtre changé</label>
   </div>`;
   return `<div class="card pt">
@@ -483,7 +485,7 @@ function bloc(p){
   </div>`;
 }
 function calc(id){
-  const p=REF.points.find(x=>x.id===id),v=FS.v[id];if(v.statut!=='mesure')return;
+  const p=REF.points.find(x=>x.id===id),v=FS.v[id];if(v.pompe_arret)return;
   const cl=nb(v.chlore_libre),ct=nb(v.chlore_total),tu=nb(v.turbidite),te=nb(v.temperature),dx=p.famille==='dioxyde';
   const ref=dx?(cl==null?null:cl*2):cl,pl=palier(p,ref);
   const mark=(k,bad)=>{const el=document.getElementById('i'+id+k);if(el)el.classList.toggle('bad',!!bad);};
