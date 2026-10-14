@@ -245,7 +245,11 @@ const SECTIONS=[
  ['11. Validation',[['responsable_validation','Responsable de validation'],['date_validation','Date de validation','date']]]];
 const CHAMPS=SECTIONS.flatMap(s=>s[1]);
 const STATUTS={'En cours':'b-ok','Suspendu':'b-warn','Clôturé':'b-mute'};
-let ME=null,FICHES=[],filtre='En cours',rech='',photos=[],saving=false;
+let ME=null,FICHES=[],filtre='En cours',rech='';
+let fiche_id_edit=null; // null = nouvelle fiche, sinon id de la fiche en cours d'édition
+let photosNouv=[];      // [{blob,preview,nom}] — photos en attente pour une nouvelle fiche
+let PH_edit=[];         // [{id,fiche_id,chemin,taille,legende,signedUrl}] — fiche existante
+let saving=false;
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dfr=d=>d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'–';
 const ph=f=>{try{return f.photos?JSON.parse(f.photos):[]}catch(e){return []}};
@@ -255,7 +259,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 async function start(){
   const {data:{session}}=await db.auth.getSession();
   if(!session){document.getElementById('login').classList.remove('off');return;}
-  document.getElementById('login').classList.add('off');document.getElementById('who').textContent=session.user.email;
+  document.getElementById('login').classList.add('off');
   ME=session.user;await chargerProfil(db,ME);montrerMenu('projets');if(niv('projets')<1){view.innerHTML=pageSansDroit('Ton profil ne donne pas accès aux fiches projets.');return;}
   await charger();route();
 }
@@ -292,19 +296,53 @@ function liste(){
 }
 
 /* ── Consultation ── */
-function fiche(id){
+async function fiche(id){
   const f=FICHES.find(x=>x.id===id);if(!f)return liste();
-  const P=ph(f);
+  // Photos depuis le bucket (nouveau système)
+  const {data:fp}=await db.from('fiche_photos').select('*').eq('fiche_id',id).order('created_at');
+  let photosHTML='';let hasPhotos=false;
+  if(fp&&fp.length){
+    hasPhotos=true;
+    const {data:signed}=await db.storage.from('photos').createSignedUrls(fp.map(p=>p.chemin),3600);
+    photosHTML=fp.map((p,i)=>`<div class="ph"><img src="${signed[i]?.signedUrl||''}" alt="${esc(p.legende||'Photo')}" onclick="lbi.src=this.src;lb.classList.add('on')"></div>`).join('');
+  } else {
+    // Rétrocompatibilité : anciennes photos base64
+    const P=ph(f);
+    if(P.length){hasPhotos=true;photosHTML=P.map(p=>`<div class="ph"><img src="${p}" alt="Photo du projet" onclick="lbi.src=this.src;lb.classList.add('on')"></div>`).join('');}
+  }
   view.innerHTML=`<button class="back" onclick="location.hash=''">‹ Toutes les fiches</button>
   <div class="crumb">Fiches projets</div>
   <div class="head"><div class="head-l">${ico}<div><h1>${esc(f.nom_projet)}</h1><div class="sub"><span class="badge ${STATUTS[f.statut]||'b-mute'}">${esc(f.statut)}</span> ${esc(f.ref_interne||'')} · mise à jour le ${dfr((f.updated_at||'').slice(0,10))}</div></div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${peutEditer(f)?`<button class="btn-d" onclick="supprimer(${f.id})">Supprimer</button>`:''}<button class="btn-l" onclick="window.print()">Imprimer</button>${peutEditer(f)?`<button class="btn-a" onclick="location.hash='modifier=${f.id}'">Modifier</button>`:''}</div></div>
-  ${P.length?`<div class="card sec"><h2>Photos</h2><div class="photos">${P.map(p=>`<div class="ph"><img src="${p}" alt="Photo du projet" onclick="lbi.src=this.src;lb.classList.add('on')"></div>`).join('')}</div></div>`:''}
+  ${hasPhotos?`<div class="card sec"><h2>Photos</h2><div class="photos">${photosHTML}</div></div>`:''}
   ${SECTIONS.map(([t,ch])=>{const rows=ch.filter(([k])=>f[k]!=null&&f[k]!=='');if(!rows.length)return '';
     return `<div class="card sec"><h2>${t}</h2><dl class="dt">${rows.map(([k,l,ty])=>`<dt>${l}</dt><dd>${ty==='date'?dfr(f[k]):esc(f[k])}</dd>`).join('')}</dl></div>`;}).join('')}`;
 }
 
 /* ── Formulaire ── */
+async function chargerPhotosEdit(id){
+  const {data:fp}=await db.from('fiche_photos').select('*').eq('fiche_id',id).order('created_at');
+  PH_edit=fp||[];
+  if(PH_edit.length){
+    const {data:signed}=await db.storage.from('photos').createSignedUrls(PH_edit.map(p=>p.chemin),3600);
+    PH_edit.forEach((p,i)=>p.signedUrl=signed[i]?.signedUrl||'');
+  }
+}
+function boutonAddPhoto(){
+  return `<label class="add" for="pin-camera" style="font-size:.8rem">📷 Caméra</label><label class="add" for="pin-gallery" style="font-size:.8rem">🖼️ Galerie</label>`;
+}
+// Compresse un File en Blob JPEG (max 1600 px, qualité 0.75)
+function compresserImage(file){
+  return new Promise(resolve=>{
+    const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{
+      const M=1600;let w=im.width,h=im.height;
+      if(w>M||h>M){const k=M/Math.max(w,h);w=Math.round(w*k);h=Math.round(h*k);}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      c.toBlob(blob=>resolve(blob),'image/jpeg',0.75);
+    };im.src=e.target.result;};r.readAsDataURL(file);
+  });
+}
 function champ([k,l,ty,req,opts],v){
   const id='f_'+k,val=esc(v??'');
   let inp;
@@ -315,39 +353,86 @@ function champ([k,l,ty,req,opts],v){
   else inp=`<input id="${id}" value="${val}">`;
   return `<div class="fl"><label for="${id}">${l}${req?' <span class="req">*</span>':''}</label>${inp}</div>`;
 }
-function formulaire(id){
+async function formulaire(id){
   if(id?!peutEditer(FICHES.find(x=>x.id===id)||{}):niv('projets')<2){view.innerHTML=pageSansDroit('Tu ne peux pas modifier cette fiche.');return;}
   const f=id?FICHES.find(x=>x.id===id):{statut:'En cours',date_ouverture:new Date().toISOString().slice(0,10)};
   if(id&&!f)return liste();
-  photos=ph(f);
+  fiche_id_edit=id||null;photosNouv=[];PH_edit=[];
+  if(id)await chargerPhotosEdit(id);
   view.innerHTML=`<button class="back" onclick="history.back()">‹ Annuler</button>
   <div class="crumb">Fiches projets</div><div class="head"><div class="head-l">${ico}<div><h1>${id?'Modifier la fiche':'Nouvelle fiche projet'}</h1><div class="sub">${id?esc(f.nom_projet):'Seul le nom du projet est obligatoire'}</div></div></div></div>
   <div class="card sec"><h2>Photos (3 maximum)</h2><div class="photos" id="phs"></div>
-    <input type="file" id="pin" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this)"></div>
+    <input type="file" id="pin-camera" accept="image/*" capture="environment" style="display:none" onchange="ajouterPhotos(this)">
+    <input type="file" id="pin-gallery" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this)">
+    <span class="site-c" id="pst" style="font-size:.8rem;margin-top:6px;display:block">Compressées automatiquement</span></div>
   ${SECTIONS.map(([t,ch])=>`<div class="card sec"><h2>${t}</h2><div class="${ch.length>2&&ch.every(c=>c[2]!=='area')?'grid2':''}">${ch.map(c=>champ(c,f[c[0]])).join('')}</div></div>`).join('')}
   <div class="foot"><button class="btn-l" onclick="history.back()">Annuler</button><button class="btn-a" id="bsv" onclick="enregistrer(${id||'null'})">${id?'Enregistrer les modifications':'Créer la fiche'}</button></div>`;
   dessinerPhotos();
 }
 function dessinerPhotos(){
-  phs.innerHTML=photos.map((p,i)=>`<div class="ph"><img src="${p}" alt="Photo ${i+1}" onclick="lbi.src=this.src;lb.classList.add('on')"><button class="x" onclick="photos.splice(${i},1);dessinerPhotos()" aria-label="Retirer la photo">✕</button></div>`).join('')
-    +(photos.length<3?`<label class="add" for="pin">+ Ajouter<br>une photo</label>`:'');
+  const el=document.getElementById('phs');if(!el)return;
+  let html='';
+  if(fiche_id_edit!==null){
+    const f=FICHES.find(x=>x.id===fiche_id_edit)||{};
+    html=PH_edit.map(p=>`<div class="ph"><img src="${p.signedUrl}" alt="${esc(p.legende||'Photo')}" onclick="lbi.src=this.src;lb.classList.add('on')">${peutEditer(f)?`<button class="x" onclick="supprPhotoFiche(${p.id})" aria-label="Retirer">✕</button>`:''}</div>`).join('');
+    if(PH_edit.length<3)html+=boutonAddPhoto();
+  } else {
+    html=photosNouv.map((p,i)=>`<div class="ph"><img src="${p.preview}" alt="Photo ${i+1}" onclick="lbi.src=this.src;lb.classList.add('on')"><button class="x" onclick="photosNouv.splice(${i},1);dessinerPhotos()" aria-label="Retirer">✕</button></div>`).join('');
+    if(photosNouv.length<3)html+=boutonAddPhoto();
+  }
+  el.innerHTML=html;
 }
-function ajouterPhotos(inp){
-  const fs=[...inp.files].slice(0,3-photos.length);
-  fs.forEach(file=>{const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{const M=900;let w=im.width,h=im.height;if(w>M||h>M){const k=M/Math.max(w,h);w*=k;h*=k;}
-    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);photos.push(c.toDataURL('image/jpeg',0.7));dessinerPhotos();};im.src=e.target.result;};r.readAsDataURL(file);});
-  inp.value='';
+async function ajouterPhotos(inp){
+  const deja=fiche_id_edit!==null?PH_edit.length:photosNouv.length;
+  const reste=3-deja;if(reste<=0){inp.value='';return;}
+  const fs=[...inp.files].slice(0,reste);inp.value='';if(!fs.length)return;
+  const pst=document.getElementById('pst');if(pst)pst.textContent='Envoi en cours…';
+  for(const file of fs){
+    const blob=await compresserImage(file);
+    if(fiche_id_edit!==null){
+      const chemin=`fiches/${fiche_id_edit}/${Date.now()}_${file.name.replace(/[^a-z0-9.]/gi,'_').slice(0,40)}.jpg`;
+      const {error:upErr}=await db.storage.from('photos').upload(chemin,blob,{contentType:'image/jpeg'});
+      if(upErr){toast('Erreur upload : '+upErr.message);continue;}
+      const {data:row,error:dbErr}=await db.from('fiche_photos').insert({fiche_id:fiche_id_edit,chemin,taille:blob.size,legende:file.name}).select().single();
+      if(dbErr){toast('Erreur DB : '+dbErr.message);await db.storage.from('photos').remove([chemin]);continue;}
+      const {data:s}=await db.storage.from('photos').createSignedUrls([chemin],3600);
+      PH_edit.push({...row,signedUrl:s[0]?.signedUrl||''});
+    } else {
+      const preview=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(blob);});
+      photosNouv.push({blob,preview,nom:file.name});
+    }
+  }
+  if(pst)pst.textContent='Compressées automatiquement';
+  dessinerPhotos();
+}
+async function supprPhotoFiche(pid){
+  if(!confirm('Supprimer cette photo ?'))return;
+  const p=PH_edit.find(x=>x.id===pid);if(!p)return;
+  const {error}=await db.from('fiche_photos').delete().eq('id',pid);
+  if(error){toast('Erreur : '+error.message);return;}
+  await db.storage.from('photos').remove([p.chemin]);
+  PH_edit=PH_edit.filter(x=>x.id!==pid);dessinerPhotos();
 }
 async function enregistrer(id){
   if(saving)return;
   const d={};for(const [k,,ty] of CHAMPS){let v=document.getElementById('f_'+k).value;v=typeof v==='string'?v.trim():v;d[k]=v===''?null:v;}
   if(!d.nom_projet){toast('Le nom du projet est obligatoire');document.getElementById('f_nom_projet').focus();return;}
-  d.photos=JSON.stringify(photos);d.updated_at=new Date().toISOString();
+  d.updated_at=new Date().toISOString();
   saving=true;bsv.disabled=true;bsv.textContent='Enregistrement…';
   const r=id?await db.from('fiches').update(d).eq('id',id).select():await db.from('fiches').insert([d]).select();
   saving=false;
   if(r.error){bsv.disabled=false;bsv.textContent='Réessayer';toast('Erreur : '+r.error.message);return;}
-  await charger();toast(id?'Fiche mise à jour ✓':'Fiche créée ✓');location.hash='fiche='+(id||r.data[0].id);
+  const newId=id||r.data[0].id;
+  // Upload photos en attente pour une nouvelle fiche
+  if(!id&&photosNouv.length){
+    for(const p of photosNouv){
+      const chemin=`fiches/${newId}/${Date.now()}_${p.nom.replace(/[^a-z0-9.]/gi,'_').slice(0,40)}.jpg`;
+      const {error:upErr}=await db.storage.from('photos').upload(chemin,p.blob,{contentType:'image/jpeg'});
+      if(!upErr)await db.from('fiche_photos').insert({fiche_id:newId,chemin,taille:p.blob.size,legende:p.nom});
+    }
+    photosNouv=[];
+  }
+  await charger();toast(id?'Fiche mise à jour ✓':'Fiche créée ✓');location.hash='fiche='+newId;
 }
 async function supprimer(id){
   const f=FICHES.find(x=>x.id===id);
