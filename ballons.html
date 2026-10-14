@@ -351,7 +351,7 @@ async function fiche(id){
       <td>${peutModifier('maintenance',c,user)?`<button class="mini" onclick="supprCtrl(${c.id},${id})" aria-label="Supprimer">✕</button>`:''}</td></tr>`;}).join('')}</tbody></table></div>`:'<p class="site-c">Aucun contrôle enregistré.</p>'}</div>
 
   <div class="card sec"><h2>Photos</h2>
-    ${saisie?`<input type="file" id="pin" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this,${id})"><label class="btn-l" for="pin" style="display:inline-block;margin-bottom:12px;cursor:pointer">+ Ajouter des photos</label><span class="site-c" id="pst" style="margin-left:10px">Compressées automatiquement (environ 300 Ko chacune)</span>`:''}
+    ${saisie?`<input type="file" id="pin-camera" accept="image/*" capture="environment" style="display:none" onchange="ajouterPhotos(this,${id})"><input type="file" id="pin-gallery" accept="image/*" multiple style="display:none" onchange="ajouterPhotos(this,${id})"><div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap"><label class="btn-l" for="pin-camera" style="display:inline-block;cursor:pointer">📷 Caméra</label><label class="btn-l" for="pin-gallery" style="display:inline-block;cursor:pointer">🖼️ Galerie</label><span class="site-c" id="pst">Compressées automatiquement (environ 300 Ko chacune)</span></div>`:''}
     <div class="gal" id="gal">${P.length?'<span class="site-c">Chargement…</span>':'<span class="site-c">Aucune photo.</span>'}</div></div>`;
   if(P.length)galerie(P,gest);
   if(document.getElementById('k_s'))calcA();else if(document.getElementById('k_b'))calcH();
