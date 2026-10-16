@@ -39,6 +39,42 @@ function appliquerTheme(nom){
   r.setProperty('--acc-soft2',t.soft2);
   try{localStorage.setItem('ap-theme',nom);}catch(e){}
 }
+// ── après la définition de THEMES ──
+
+const DEMO_EMAIL = 'demo@paysvoironnais.fr';
+
+function activerModeDemo() {
+  document.body.classList.add('mode-demo');
+
+  // Désactiver inputs/selects/textareas
+  document.querySelectorAll('input:not([type="search"]), select, textarea').forEach(el => {
+    el.disabled = true;
+  });
+
+  // Désactiver boutons de saisie (pas ceux marqués data-lecture)
+  document.querySelectorAll('button:not([data-lecture]), [type="submit"]').forEach(btn => {
+    btn.disabled = true;
+  });
+
+  // Bloquer toute soumission de formulaire (filet de sécurité)
+  document.addEventListener('submit', e => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    toastDemo();
+  }, true);
+}
+
+function toastDemo() {
+  if (document.getElementById('toast-demo')) return;
+  const t = document.createElement('div');
+  t.id = 'toast-demo';
+  t.textContent = '🔒 Mode démo — saisie désactivée';
+  t.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);' +
+    'background:#92400e;color:#fef3c7;padding:.55rem 1.1rem;border-radius:6px;' +
+    'font-size:.88rem;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
 /* Appliqué le plus tôt possible (avant même le profil Supabase) */
 (function(){try{const n=localStorage.getItem('ap-theme');if(n&&THEMES[n])appliquerTheme(n);}catch(e){}})();
 
