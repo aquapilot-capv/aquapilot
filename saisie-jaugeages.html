@@ -108,7 +108,7 @@ async function start(){
   if(!session){login_.classList.remove('off');return;}
   user=session.user; login_.classList.add('off');
   await chargerProfil(db,user);
-  if(niv('jaugeages')<2){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
+  if(niv('jaugeages')<1){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
   await chargerRef(); sync(); route();
 }
 const login_=document.getElementById('login');
