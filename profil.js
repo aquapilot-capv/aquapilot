@@ -1,3 +1,42 @@
+// ── Mode Démo : CSS injecté une fois pour toutes les pages ──────────────
+(function injecterCssDemo() {
+  const style = document.createElement('style');
+  style.textContent = `
+    body.mode-demo::before {
+      content: '👁️  MODE DÉMO  —  Accès lecture seule';
+      display: block;
+      background: #f59e0b;
+      color: #1c1917;
+      text-align: center;
+      font-weight: 600;
+      font-size: .82rem;
+      letter-spacing: .05em;
+      padding: 6px 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 10000;
+    }
+    body.mode-demo input:not([type="search"]),
+    body.mode-demo select,
+    body.mode-demo textarea {
+      background: #f3f4f6 !important;
+      color: #9ca3af !important;
+      cursor: not-allowed !important;
+      border-color: #e5e7eb !important;
+    }
+    body.mode-demo button:disabled {
+      opacity: .4;
+      cursor: not-allowed !important;
+      pointer-events: none;
+    }
+    body.mode-demo button[data-lecture] {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
+  `;
+  document.head.appendChild(style);
+})();
 /* Profil et droits de l'utilisateur connecté — partagé par toutes les pages.
    Niveaux : 0 aucun · 1 consultation · 2 saisie · 3 gestion
    L'affichage s'adapte, mais c'est la base de données qui fait réellement respecter ces droits. */
