@@ -246,6 +246,15 @@ async function start(){
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user;document.getElementById('login').classList.add('off');document.getElementById('who').textContent=prenomDepuisEmail(user.email)||user.email;
   await chargerProfil(db,user);montrerMenu('');afficher();initTheme();
+  if (window.isDemoMode) {
+  const sectionMdp = document.getElementById('section-mdp'); // adapte l'id à ton HTML
+  if (sectionMdp) {
+    sectionMdp.innerHTML = `
+      <div style="padding:14px;background:#FBE9DC;border-radius:10px;font-size:.88rem;color:#7A7068">
+        🔒 Le mot de passe du compte démo ne peut pas être modifié.
+      </div>`;
+  }
+}
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;if(error){er.textContent='Email ou mot de passe incorrect.';return;}start();}
 async function logout(){if(!confirm('Se déconnecter ?'))return;await db.auth.signOut();location.href='index.html';}
