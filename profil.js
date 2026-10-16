@@ -80,7 +80,7 @@ function appliquerTheme(nom){
 }
 // ── après la définition de THEMES ──
 
-const DEMO_EMAIL = 'demo@paysvoironnais.fr';
+const DEMO_EMAIL = 'demo@paysvoironnais.com';
 
 function activerModeDemo() {
   document.body.classList.add('mode-demo');
