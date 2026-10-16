@@ -341,7 +341,7 @@ function route(){
   const h=location.hash.slice(1),m=h.match(/^c=(\d+)/);
   if(m){detail(+m[1]);return;}
   tab=['releve','conso','export'].includes(h)?h:(tab||(niv('compteurs')>=2?'releve':'conso'));
-  if(tab==='releve'&&niv('compteurs')<2)tab='conso';
+  if(tab==='releve'&&niv('compteurs')<1)tab='conso';
   page();
 }
 function entete(t,sub,crumb){return `<div class="crumb">${crumb}</div><div class="head"><div class="head-l"><svg class="hico" viewBox="0 0 96 96"><rect width="96" height="96" rx="24" fill="url(#tile)"/><use href="#i-cpt" style="color:var(--acc)"/></svg><div><h1>${t}</h1><div class="sub">${sub}</div></div></div></div>`;}
