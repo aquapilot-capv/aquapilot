@@ -108,7 +108,8 @@ async function chargerProfil(db,user){
   /* Mettre à jour l'affichage du nom dans la sidebar (toutes les pages) */
   const whoEl=document.getElementById('who');
   if(whoEl){const n=nomAffiche(PROFIL,PROFIL.email||'');if(n)whoEl.textContent=n;}
-  return PROFIL;
+  if ((PROFIL.email || user.email) === DEMO_EMAIL) activerModeDemo();
+   return PROFIL;
 }
 /* Peut-on modifier un relevé existant ? (gestion, ou auteur depuis moins de 30 jours) */
 function peutModifier(m,ligne,user){
