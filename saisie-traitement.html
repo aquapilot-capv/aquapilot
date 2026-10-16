@@ -314,7 +314,7 @@ async function start(){
   if(!session){document.getElementById('login').classList.remove('off');return;}
   user=session.user;document.getElementById('login').classList.add('off');
   await chargerProfil(db,user);
-  if(niv('traitement')<2){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
+  if(niv('traitement')<1){view.innerHTML=pageSansDroit('Ton profil ne permet pas de saisir des relevés dans ce module.');return;}
   await chargerRef();sync();route();
 }
 async function login(){er.textContent='';bl.disabled=true;const {error}=await db.auth.signInWithPassword({email:em.value.trim(),password:pw.value});bl.disabled=false;
