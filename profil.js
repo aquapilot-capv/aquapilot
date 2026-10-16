@@ -101,6 +101,7 @@ function activerModeDemo() {
     e.stopImmediatePropagation();
     toastDemo();
   }, true);
+   window.isDemoMode = true;
 }
 
 function toastDemo() {
